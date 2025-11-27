@@ -1,0 +1,505 @@
+#include "DraggableMapScene.h"
+#include "cocos2d.h"
+#include "ui/CocosGUI.h"
+
+USING_NS_CC;
+using namespace ui;
+
+Scene* DraggableMapScene::createScene()
+{
+    return DraggableMapScene::create();
+}
+
+bool DraggableMapScene::init()
+{
+    if (!Scene::init())
+    {
+        return false;
+    }
+
+    _visibleSize = Director::getInstance()->getVisibleSize();
+
+    // 初始化缩放参数
+    _currentScale = 1.0f;
+    _minScale = 0.1f;
+    _maxScale = 3.0f;
+
+    // 初始化地图列表
+    _mapNames = { "202501.png", "202502.png", "202503.png", "202504.png",
+                 "202505.png", "202506.png", "202507.png", "202508.png" };
+    _currentMapName = "202507.png"; // 默认地图
+
+    _isMapListVisible = false;
+
+    setupMap();
+    setupUI();
+    setupTouchListener();
+    setupMouseListener();
+
+    return true;
+}
+
+void DraggableMapScene::setupMap()
+{
+    // 创建大地图精灵
+    _mapSprite = Sprite::create(_currentMapName);
+
+    if (_mapSprite) {
+        auto mapSize = _mapSprite->getContentSize();
+        CCLOG("Map size: %f x %f", mapSize.width, mapSize.height);
+        CCLOG("Screen size: %f x %f", _visibleSize.width, _visibleSize.height);
+
+        // 设置地图初始位置（居中）
+        Vec2 initialPosition = Vec2(_visibleSize.width / 2, _visibleSize.height / 2);
+        _mapSprite->setPosition(initialPosition);
+        this->addChild(_mapSprite, 0); // 地图在最底层
+
+        // 初始边界计算
+        updateBoundary();
+
+        // 创建示例地图元素
+        createSampleMapElements();
+
+    }
+    else {
+        CCLOG("Error: Failed to load map image %s", _currentMapName.c_str());
+
+        auto errorLabel = Label::createWithSystemFont(
+            "Failed to load " + _currentMapName, "Arial", 32);
+        errorLabel->setPosition(_visibleSize.width / 2, _visibleSize.height / 2);
+        errorLabel->setTextColor(Color4B::RED);
+        this->addChild(errorLabel);
+    }
+
+    // 添加背景色
+    auto background = LayerColor::create(Color4B(50, 50, 50, 255));
+    this->addChild(background, -1);
+}
+
+void DraggableMapScene::setupUI()
+{
+    // 地图切换按钮
+    _mapButton = Button::create();
+    _mapButton->setTitleText("地图");
+    _mapButton->setTitleFontSize(20);
+    _mapButton->setContentSize(Size(80, 40));
+    _mapButton->setPosition(Vec2(_visibleSize.width - 60, _visibleSize.height - 30));
+    _mapButton->addClickEventListener(CC_CALLBACK_1(DraggableMapScene::onMapButtonClicked, this));
+    this->addChild(_mapButton, 10);
+
+    // 创建地图列表（初始隐藏）
+    createMapList();
+
+    // 操作提示
+    auto tipLabel = Label::createWithSystemFont("Drag: Move  Scroll: Zoom  Button: Switch Map", "Arial", 16);
+    tipLabel->setPosition(Vec2(_visibleSize.width / 2, 25));
+    tipLabel->setTextColor(Color4B::YELLOW);
+    this->addChild(tipLabel, 10);
+
+    // 当前地图名称显示
+    auto mapNameLabel = Label::createWithSystemFont("Current: " + _currentMapName, "Arial", 18);
+    mapNameLabel->setPosition(Vec2(_visibleSize.width / 2, _visibleSize.height - 30));
+    mapNameLabel->setTextColor(Color4B::GREEN);
+    mapNameLabel->setName("mapNameLabel");
+    this->addChild(mapNameLabel, 10);
+}
+
+void DraggableMapScene::createMapList()
+{
+    _mapList = ListView::create();
+    _mapList->setContentSize(Size(150, 200));
+    _mapList->setPosition(Vec2(_visibleSize.width - 160, _visibleSize.height - 240));
+    _mapList->setBackGroundColor(Color3B(80, 80, 80));
+    _mapList->setBackGroundColorType(ui::Layout::BackGroundColorType::SOLID);
+    _mapList->setOpacity(200);
+    _mapList->setVisible(false);
+    _mapList->setScrollBarEnabled(true);
+
+    for (const auto& mapName : _mapNames) {
+        auto item = Layout::create();
+        item->setContentSize(Size(140, 40));
+        item->setTouchEnabled(true);
+
+        auto label = Label::createWithSystemFont(mapName, "Arial", 16);
+        label->setPosition(Vec2(70, 20));
+        label->setTextColor(Color4B::WHITE);
+        label->setName("label");
+        item->addChild(label);
+
+        // 添加点击事件
+        item->addClickEventListener([this, mapName](Ref* sender) {
+            this->onMapItemClicked(sender);
+            });
+
+        _mapList->pushBackCustomItem(item);
+    }
+
+    this->addChild(_mapList, 20);
+}
+
+void DraggableMapScene::onMapButtonClicked(cocos2d::Ref* sender)
+{
+    toggleMapList();
+}
+
+void DraggableMapScene::toggleMapList()
+{
+    _isMapListVisible = !_isMapListVisible;
+    _mapList->setVisible(_isMapListVisible);
+}
+
+void DraggableMapScene::onMapItemClicked(cocos2d::Ref* sender)
+{
+    auto item = static_cast<Layout*>(sender);
+    auto label = static_cast<Label*>(item->getChildByName("label"));
+    std::string selectedMapName = label->getString();
+
+    CCLOG("Selected map: %s", selectedMapName.c_str());
+
+    // 切换地图
+    switchMap(selectedMapName);
+
+    // 隐藏地图列表
+    toggleMapList();
+}
+
+// 修改 switchMap 函数
+void DraggableMapScene::switchMap(const std::string& mapName)
+{
+    if (mapName == _currentMapName) {
+        return; // 已经是当前地图
+    }
+
+    CCLOG("Switching map from %s to %s", _currentMapName.c_str(), mapName.c_str());
+
+    // 1. 保存当前地图上所有元素的状态
+    saveMapElementsState();
+
+    // 2. 移除旧地图（元素会随着地图一起被移除）
+    if (_mapSprite) {
+        this->removeChild(_mapSprite);
+        _mapSprite = nullptr;
+    }
+
+    // 3. 创建新地图
+    _currentMapName = mapName;
+    _mapSprite = Sprite::create(_currentMapName);
+
+    if (_mapSprite) {
+        // 设置地图到相同的位置和缩放
+        _mapSprite->setPosition(_visibleSize.width / 2, _visibleSize.height / 2);
+        _mapSprite->setScale(_currentScale);
+        this->addChild(_mapSprite, 0); // 放在最底层
+
+        // 更新边界
+        updateBoundary();
+
+        // 4. 恢复地图元素状态
+        restoreMapElementsState();
+
+        // 5. 更新UI显示
+        auto mapNameLabel = static_cast<Label*>(this->getChildByName("mapNameLabel"));
+        if (mapNameLabel) {
+            mapNameLabel->setString("Current: " + _currentMapName);
+        }
+
+        CCLOG("Map switched successfully to %s", mapName.c_str());
+    }
+    else {
+        CCLOG("Error: Failed to load new map %s", mapName.c_str());
+
+        // 恢复旧地图名称
+        _currentMapName = "202507.png"; // 回退到默认地图
+        _mapSprite = Sprite::create(_currentMapName);
+        if (_mapSprite) {
+            _mapSprite->setPosition(_visibleSize.width / 2, _visibleSize.height / 2);
+            _mapSprite->setScale(_currentScale);
+            this->addChild(_mapSprite, 0);
+            updateBoundary();
+            restoreMapElementsState();
+        }
+    }
+}
+
+// 修改 saveMapElementsState 函数
+void DraggableMapScene::saveMapElementsState()
+{
+    // 保存元素的本地坐标
+    for (auto& element : _mapElements) {
+        if (element.node) {
+            element.localPosition = element.node->getPosition();
+            element.node->retain(); // 保持引用，防止被自动释放
+        }
+    }
+}
+
+// 修改 restoreMapElementsState 函数
+void DraggableMapScene::restoreMapElementsState()
+{
+    // 恢复地图元素到新地图上
+    for (auto& element : _mapElements) {
+        if (element.node && element.node->getParent() == nullptr) {
+            _mapSprite->addChild(element.node, 1); // 添加到新地图上
+            element.node->setPosition(element.localPosition);
+        }
+        element.node->release(); // 释放之前保留的引用
+    }
+}
+
+// 修改 createSampleMapElements 函数
+void DraggableMapScene::createSampleMapElements()
+{
+    // 清除旧元素
+    _mapElements.clear();
+
+    if (!_mapSprite) return;
+
+    // 创建一些示例元素（标记点等）
+    auto createMarker = [this](const Vec2& worldPosition, const Color4B& color, const std::string& text) {
+        // 将世界坐标转换为地图本地坐标
+        Vec2 localPos = _mapSprite->convertToNodeSpace(worldPosition);
+
+        // 标记点
+        auto marker = DrawNode::create();
+        marker->drawDot(Vec2::ZERO, 10, Color4F(color));
+        marker->setPosition(localPos);
+        _mapSprite->addChild(marker, 1);  // 添加到地图上，而不是场景上
+
+        // 文字标签
+        auto label = Label::createWithSystemFont(text, "Arial", 16);
+        label->setPosition(localPos + Vec2(0, 20));
+        label->setTextColor(Color4B::WHITE);
+        _mapSprite->addChild(label, 1);  // 添加到地图上
+
+        // 保存元素信息
+        MapElement markerElement = { marker, localPos };
+        MapElement labelElement = { label, localPos + Vec2(0, 20) };
+        _mapElements.push_back(markerElement);
+        _mapElements.push_back(labelElement);
+        };
+
+    // 在世界坐标中创建几个示例标记
+    createMarker(Vec2(_visibleSize.width * 0.3f, _visibleSize.height * 0.7f), Color4B::RED, "Point A");
+    createMarker(Vec2(_visibleSize.width * 0.7f, _visibleSize.height * 0.5f), Color4B::GREEN, "Point B");
+    createMarker(Vec2(_visibleSize.width * 0.5f, _visibleSize.height * 0.3f), Color4B::BLUE, "Point C");
+
+    CCLOG("Created %zd map elements", _mapElements.size());
+}
+
+// 新增：更新地图元素位置（缩放时调用）
+void DraggableMapScene::updateMapElementsPosition()
+{
+    if (!_mapSprite) return;
+
+    for (auto& element : _mapElements) {
+        if (element.node && element.node->getParent() == _mapSprite) {
+            // 保持相对于地图的本地位置不变
+            element.node->setPosition(element.localPosition);
+        }
+    }
+}
+
+void DraggableMapScene::setupTouchListener()
+{
+    auto touchListener = EventListenerTouchOneByOne::create();
+    touchListener->setSwallowTouches(true);
+
+    touchListener->onTouchBegan = [this](Touch* touch, Event* event) {
+        // 如果点击在地图列表上，不处理地图拖动
+        if (_isMapListVisible) {
+            Vec2 touchPos = touch->getLocation();
+            Rect listRect = _mapList->getBoundingBox();
+            if (listRect.containsPoint(touchPos)) {
+                return false; // 让列表自己处理点击
+            }
+        }
+        _lastTouchPos = touch->getLocation();
+        return true;
+        };
+
+    touchListener->onTouchMoved = CC_CALLBACK_2(DraggableMapScene::onTouchMoved, this);
+    touchListener->onTouchEnded = CC_CALLBACK_2(DraggableMapScene::onTouchEnded, this);
+    touchListener->onTouchCancelled = CC_CALLBACK_2(DraggableMapScene::onTouchCancelled, this);
+
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
+}
+
+void DraggableMapScene::setupMouseListener()
+{
+    auto mouseListener = EventListenerMouse::create();
+
+    mouseListener->onMouseScroll = CC_CALLBACK_1(DraggableMapScene::onMouseScroll, this);
+
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(mouseListener, this);
+}
+
+void DraggableMapScene::onMouseScroll(cocos2d::Event* event)
+{
+    if (!_mapSprite) return;
+
+    EventMouse* mouseEvent = dynamic_cast<EventMouse*>(event);
+    if (mouseEvent) {
+        float scrollY = mouseEvent->getScrollY();  // 获取滚轮增量
+
+        // 计算缩放因子（滚轮向上为正，向下为负）
+        float zoomFactor = 1.0f;
+        if (scrollY > 0) {
+            // 滚轮向上 - 放大
+            zoomFactor = 1.1f;
+        }
+        else if (scrollY < 0) {
+            // 滚轮向下 - 缩小
+            zoomFactor = 0.9f;
+        }
+        else {
+            return;  // 没有滚动
+        }
+
+        // 获取鼠标当前位置作为缩放中心点
+        Vec2 mousePos = Vec2(mouseEvent->getCursorX(), mouseEvent->getCursorY());
+
+        // 执行缩放
+        zoomMap(zoomFactor, mousePos);
+
+        CCLOG("Mouse scroll: %.1f, Scale: %.2f", scrollY, _currentScale);
+    }
+}
+
+// 修改 zoomMap 函数，在缩放后更新元素位置
+void DraggableMapScene::zoomMap(float scaleFactor, const cocos2d::Vec2& pivotPoint)
+{
+    if (!_mapSprite) return;
+
+    // 计算新缩放比例
+    float newScale = _currentScale * scaleFactor;
+
+    // 限制缩放范围
+    newScale = MAX(_minScale, MIN(_maxScale, newScale));
+
+    if (newScale == _currentScale) {
+        return;  // 缩放比例没有变化
+    }
+
+    // 保存缩放前的状态
+    Vec2 oldPosition = _mapSprite->getPosition();
+    Vec2 oldAnchor = _mapSprite->getAnchorPoint();
+
+    // 如果指定了中心点，计算基于该点的缩放
+    if (pivotPoint != Vec2::ZERO) {
+        // 将中心点转换到地图的本地坐标系
+        Vec2 worldPos = pivotPoint;
+        Vec2 localPos = _mapSprite->convertToNodeSpace(worldPos);
+
+        // 计算缩放前后的位置变化
+        Vec2 offsetBefore = localPos * _currentScale;
+        Vec2 offsetAfter = localPos * newScale;
+        Vec2 positionDelta = offsetAfter - offsetBefore;
+
+        // 应用缩放和位置调整
+        _mapSprite->setScale(newScale);
+        _mapSprite->setPosition(oldPosition - positionDelta);
+    }
+    else {
+        // 没有指定中心点，简单缩放
+        _mapSprite->setScale(newScale);
+    }
+
+    // 更新当前缩放比例
+    _currentScale = newScale;
+
+    // 更新边界（缩放后边界会变化）
+    updateBoundary();
+
+    // 更新地图元素位置
+    updateMapElementsPosition();
+
+    // 确保地图在边界内
+    ensureMapInBoundary();
+}
+
+void DraggableMapScene::updateBoundary()
+{
+    if (!_mapSprite) return;
+
+    auto mapSize = _mapSprite->getContentSize() * _currentScale;
+
+    // 计算拖动边界
+    float minX = _visibleSize.width - mapSize.width / 2;
+    float maxX = mapSize.width / 2;
+    float minY = _visibleSize.height - mapSize.height / 2;
+    float maxY = mapSize.height / 2;
+
+    // 如果地图比屏幕小，则应该居中不能拖动
+    if (mapSize.width <= _visibleSize.width) {
+        minX = maxX = _visibleSize.width / 2;
+    }
+    if (mapSize.height <= _visibleSize.height) {
+        minY = maxY = _visibleSize.height / 2;
+    }
+
+    _mapBoundary = Rect(minX, minY, maxX - minX, maxY - minY);
+
+    CCLOG("Boundary updated - Scale: %.2f, Boundary: minX=%.1f, maxX=%.1f",
+        _currentScale, minX, maxX);
+}
+
+bool DraggableMapScene::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
+{
+    _lastTouchPos = touch->getLocation();
+    return true;
+}
+
+void DraggableMapScene::onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event)
+{
+    cocos2d::Vec2 currentPos = touch->getLocation();
+    cocos2d::Vec2 delta = currentPos - _lastTouchPos;
+
+    moveMap(delta);
+
+    _lastTouchPos = currentPos;
+}
+
+void DraggableMapScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
+{
+    // 触摸结束处理
+}
+
+void DraggableMapScene::onTouchCancelled(cocos2d::Touch* touch, cocos2d::Event* event)
+{
+    // 触摸取消处理
+    this->onTouchEnded(touch, event);
+}
+
+void DraggableMapScene::moveMap(const cocos2d::Vec2& delta)
+{
+    if (!_mapSprite) return;
+
+    _mapSprite->setPosition(_mapSprite->getPosition() + delta);
+    ensureMapInBoundary();
+}
+
+void DraggableMapScene::ensureMapInBoundary()
+{
+    if (!_mapSprite) return;
+
+    cocos2d::Vec2 currentPos = _mapSprite->getPosition();
+    cocos2d::Vec2 newPos = currentPos;
+
+    if (currentPos.x < _mapBoundary.getMinX()) {
+        newPos.x = _mapBoundary.getMinX();
+    }
+    else if (currentPos.x > _mapBoundary.getMaxX()) {
+        newPos.x = _mapBoundary.getMaxX();
+    }
+
+    if (currentPos.y < _mapBoundary.getMinY()) {
+        newPos.y = _mapBoundary.getMinY();
+    }
+    else if (currentPos.y > _mapBoundary.getMaxY()) {
+        newPos.y = _mapBoundary.getMaxY();
+    }
+
+    if (newPos != currentPos) {
+        _mapSprite->setPosition(newPos);
+    }
+}
