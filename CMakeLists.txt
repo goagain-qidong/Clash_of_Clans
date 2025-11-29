@@ -59,11 +59,15 @@ list(APPEND GAME_SOURCE
      Classes/AppDelegate.cpp
      Classes/HelloWorldScene.cpp
      Classes/DraggableMapScene.cpp
+     Classes/Building.cpp
+     Classes/GridMap.cpp
      )
 list(APPEND GAME_HEADER
      Classes/AppDelegate.h
      Classes/HelloWorldScene.h
      Classes/DraggableMapScene.h
+     Classes/Building.h
+     Classes/GridMap.h
      )
 
 if(ANDROID)
