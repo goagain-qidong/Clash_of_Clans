@@ -17,12 +17,15 @@ bool DraggableMapScene::init()
         return false;
     }
 
+    _isBuildingMode = false;
+    _ghostSprite = nullptr;
+
     _visibleSize = Director::getInstance()->getVisibleSize();
 
     // 初始化缩放参数
-    _currentScale = 1.0f;
-    _minScale = 0.1f;
-    _maxScale = 3.0f;
+    _currentScale = 1.3f;
+    _minScale = 1.0f;
+    _maxScale = 2.5f;
 
     // 初始化地图列表
     _mapNames = { "202501.png", "202502.png", "202503.png", "202504.png",
@@ -41,25 +44,22 @@ bool DraggableMapScene::init()
 
 void DraggableMapScene::setupMap()
 {
-    // 创建大地图精灵
     _mapSprite = Sprite::create(_currentMapName);
-
     if (_mapSprite) {
         auto mapSize = _mapSprite->getContentSize();
-        CCLOG("Map size: %f x %f", mapSize.width, mapSize.height);
-        CCLOG("Screen size: %f x %f", _visibleSize.width, _visibleSize.height);
+        _mapSprite->setPosition(_visibleSize.width / 2, _visibleSize.height / 2);
+        this->addChild(_mapSprite, 0);
 
-        // 设置地图初始位置（居中）
-        Vec2 initialPosition = Vec2(_visibleSize.width / 2, _visibleSize.height / 2);
-        _mapSprite->setPosition(initialPosition);
-        this->addChild(_mapSprite, 0); // 地图在最底层
+        // --------------------------------------------------------
+        // 【修改】这里传入小格子的尺寸！
+        // 假设原本 100 是大格子，现在我们把大格子切成 3x3
+        // 那么小格子大约是 33.3f
+        // --------------------------------------------------------
+        _gridMap = GridMap::create(mapSize, 33.3f);
+        _mapSprite->addChild(_gridMap, 999);
 
-        // 初始边界计算
         updateBoundary();
-
-        // 创建示例地图元素
         createSampleMapElements();
-
     }
     else {
         CCLOG("Error: Failed to load map image %s", _currentMapName.c_str());
@@ -78,10 +78,27 @@ void DraggableMapScene::setupMap()
 
 void DraggableMapScene::setupUI()
 {
+
+    auto buildBtn = Button::create();
+    buildBtn->setTitleText("Build");
+    buildBtn->setTitleFontSize(40);
+    buildBtn->setContentSize(Size(80, 40));
+    // 放在左下角
+    buildBtn->setPosition(Vec2(1000, 1000));
+    buildBtn->addClickEventListener([this](Ref* sender) {
+        if (_isBuildingMode) {
+            this->cancelPlacing();
+        }
+        else {
+            this->startPlacingBuilding();
+        }
+        });
+    this->addChild(buildBtn, 10);
+
     // 地图切换按钮
     _mapButton = Button::create();
-    _mapButton->setTitleText("地图");
-    _mapButton->setTitleFontSize(20);
+    _mapButton->setTitleText("Map");
+    _mapButton->setTitleFontSize(40);
     _mapButton->setContentSize(Size(80, 40));
     _mapButton->setPosition(Vec2(_visibleSize.width - 60, _visibleSize.height - 30));
     _mapButton->addClickEventListener(CC_CALLBACK_1(DraggableMapScene::onMapButtonClicked, this));
@@ -166,19 +183,15 @@ void DraggableMapScene::onMapItemClicked(cocos2d::Ref* sender)
 // 修改 switchMap 函数
 void DraggableMapScene::switchMap(const std::string& mapName)
 {
-    if (mapName == _currentMapName) {
-        return; // 已经是当前地图
-    }
+    if (mapName == _currentMapName) return;
 
-    CCLOG("Switching map from %s to %s", _currentMapName.c_str(), mapName.c_str());
-
-    // 1. 保存当前地图上所有元素的状态
+    // ... (保存状态、移除旧地图代码保持不变) ...
     saveMapElementsState();
 
-    // 2. 移除旧地图（元素会随着地图一起被移除）
     if (_mapSprite) {
         this->removeChild(_mapSprite);
         _mapSprite = nullptr;
+        _gridMap = nullptr; // 指针置空
     }
 
     // 3. 创建新地图
@@ -186,15 +199,23 @@ void DraggableMapScene::switchMap(const std::string& mapName)
     _mapSprite = Sprite::create(_currentMapName);
 
     if (_mapSprite) {
-        // 设置地图到相同的位置和缩放
+        // 设置位置和缩放
         _mapSprite->setPosition(_visibleSize.width / 2, _visibleSize.height / 2);
         _mapSprite->setScale(_currentScale);
-        this->addChild(_mapSprite, 0); // 放在最底层
+        this->addChild(_mapSprite, 0);
+
+        // --------------------------------------------------------
+        // 【新增代码】给新地图添加网格
+        // --------------------------------------------------------
+        auto mapSize = _mapSprite->getContentSize();
+        _gridMap = GridMap::create(mapSize, 100.0f);
+        _mapSprite->addChild(_gridMap, 999);
+        // --------------------------------------------------------
 
         // 更新边界
         updateBoundary();
 
-        // 4. 恢复地图元素状态
+        // 恢复地图元素
         restoreMapElementsState();
 
         // 5. 更新UI显示
@@ -341,14 +362,12 @@ void DraggableMapScene::onMouseScroll(cocos2d::Event* event)
     if (mouseEvent) {
         float scrollY = mouseEvent->getScrollY();  // 获取滚轮增量
 
-        // 计算缩放因子（滚轮向上为正，向下为负）
+        // 计算缩放因子（滚轮向下为正，向上为负）
         float zoomFactor = 1.0f;
-        if (scrollY > 0) {
-            // 滚轮向上 - 放大
+        if (scrollY < 0) {
             zoomFactor = 1.1f;
         }
-        else if (scrollY < 0) {
-            // 滚轮向下 - 缩小
+        else if (scrollY > 0) {
             zoomFactor = 0.9f;
         }
         else {
@@ -443,25 +462,92 @@ void DraggableMapScene::updateBoundary()
         _currentScale, minX, maxX);
 }
 
-bool DraggableMapScene::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
+bool DraggableMapScene::onTouchBegan(Touch* touch, Event* event)
 {
     _lastTouchPos = touch->getLocation();
+
+    if (_isBuildingMode) {
+        // 建造模式下，点击屏幕 = 尝试放置
+        // 1. 将屏幕坐标转为地图内部坐标 (关键一步！)
+        Vec2 mapPos = _mapSprite->convertToNodeSpace(touch->getLocation());
+        // 2. 获取格子坐标
+        Vec2 gridPos = _gridMap->getGridPosition(mapPos);
+
+        // 3. 执行放置
+        placeBuilding(gridPos);
+
+        return true; // 吞噬触摸，不让它穿透到底下的逻辑
+    }
+
     return true;
 }
 
-void DraggableMapScene::onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event)
+void DraggableMapScene::onTouchMoved(Touch* touch, Event* event)
 {
-    cocos2d::Vec2 currentPos = touch->getLocation();
-    cocos2d::Vec2 delta = currentPos - _lastTouchPos;
+    Vec2 currentTouchPos = touch->getLocation();
 
+    if (_isBuildingMode && _ghostSprite) {
+        // 1. 获取小格子坐标
+        Vec2 gridPos = _gridMap->getGridPosition(currentTouchPos);
+
+        // 2. 假设这个塔是 3x3 的大建筑
+        Size buildingSize = Size(3, 3);
+
+        // 3. 冲突检测
+        bool canBuild = _gridMap->checkArea(gridPos, buildingSize);
+
+        // 4. 更新底座（现在会画一个覆盖 3x3 区域的大菱形）
+        _gridMap->updateBuildingBase(gridPos, buildingSize, canBuild);
+
+        // 5. 更新幻影位置
+        // 注意：BuildingBase 是画在格子的正中间，
+        // 但如果我们的锚点是 (0.5, 0.5)，sprite 应该位于这个 3x3 区域的中心。
+        // getPositionFromGrid 返回的是 (x,y) 这个单一小格子的中心。
+        // 这里的中心点计算稍微复杂一点：
+
+        Vec2 centerGridPos = gridPos + Vec2(1.0f, 1.0f); // 3x3 的中心是偏移 1,1 (0,1,2 中间是 1)
+        // 或者更精确地，计算几何中心：
+        // Vec2 p1 = getPositionFromGrid(gridPos);
+        // Vec2 p2 = getPositionFromGrid(gridPos + Vec2(2,2));
+        // Vec2 visualCenter = (p1 + p2) / 2; 
+
+        // 简单起见，我们对齐到 gridPos 这个小格子的位置，
+        // 但因为塔很大，看起来可能会偏。
+        // 完美的做法是计算 3x3 区域的像素中心：
+        Vec2 posStart = _gridMap->getPositionFromGrid(gridPos);
+        Vec2 posEnd = _gridMap->getPositionFromGrid(gridPos + Vec2(2, 2));
+        Vec2 centerPos = (posStart + posEnd) / 2.0f;
+
+        _ghostSprite->setPosition(centerPos);
+
+        // 保存状态供 Ended 使用
+        _ghostSprite->setUserData((void*)(canBuild ? 1 : 0)); // 简单hack存状态
+
+        return;
+    }
+
+    // 普通拖拽地图逻辑
+    Vec2 delta = currentTouchPos - _lastTouchPos;
     moveMap(delta);
-
-    _lastTouchPos = currentPos;
+    _lastTouchPos = currentTouchPos;
 }
 
-void DraggableMapScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
+void DraggableMapScene::onTouchEnded(Touch* touch, Event* event)
 {
-    // 触摸结束处理
+    if (_isBuildingMode) {
+        Vec2 touchPos = touch->getLocation();
+        Vec2 gridPos = _gridMap->getGridPosition(touchPos);
+        Size buildingSize = Size(3, 3); // 定义建筑大小
+
+        // 再次检查（防止多点触控或其他边缘情况）
+        if (_gridMap->checkArea(gridPos, buildingSize)) {
+            placeBuilding(gridPos);
+        }
+        else {
+            // 播放一个错误音效或红色闪烁
+            CCLOG("Cannot build here!");
+        }
+    }
 }
 
 void DraggableMapScene::onTouchCancelled(cocos2d::Touch* touch, cocos2d::Event* event)
@@ -501,5 +587,87 @@ void DraggableMapScene::ensureMapInBoundary()
 
     if (newPos != currentPos) {
         _mapSprite->setPosition(newPos);
+    }
+}
+
+void DraggableMapScene::startPlacingBuilding()
+{
+    if (!_mapSprite || !_gridMap) return;
+
+    _isBuildingMode = true;
+
+    // 1. 【新增】开启全屏网格显示
+    _gridMap->showWholeGrid(true);
+
+    // 1. 创建幻影 (Tower.png)
+    _ghostSprite = Sprite::create("Tower.png");
+    if (_ghostSprite) {
+        _ghostSprite->setOpacity(150); // 半透明
+
+        // 【关键】设置锚点 (0.5, 0.2) 让脚底对齐网格中心
+        _ghostSprite->setAnchorPoint(Vec2(0.5f, 0.15f));
+
+        // 加到地图上！这样缩放地图时，幻影大小也会跟着变
+        _mapSprite->addChild(_ghostSprite, 2000);
+
+        // 2. 添加攻击范围圈 (画在幻影内部)
+        auto rangeCircle = DrawNode::create();
+        rangeCircle->drawDot(Vec2(_ghostSprite->getContentSize().width / 2,
+            _ghostSprite->getContentSize().height * 0.2f), // 圆心在脚底
+            300, Color4F(1, 1, 1, 0.2f)); // 半径300
+        _ghostSprite->addChild(rangeCircle, -1);
+    }
+}
+
+void DraggableMapScene::placeBuilding(Vec2 gridPos)
+{
+    if (!_ghostSprite && !_isBuildingMode) return;
+
+    Size buildingSize = Size(3, 3);
+
+    // 1. 标记占用
+    _gridMap->markArea(gridPos, buildingSize, true);
+
+    auto building = Sprite::create("Tower.png");
+    building->setAnchorPoint(Vec2(0.5f, 0.2f));
+
+    // 计算 3x3 区域中心
+    Vec2 posStart = _gridMap->getPositionFromGrid(gridPos);
+    Vec2 posEnd = _gridMap->getPositionFromGrid(gridPos + Vec2(2, 2));
+    Vec2 centerPos = (posStart + posEnd) / 2.0f;
+
+    building->setPosition(centerPos);
+
+    // Z-Order: 基于 ISO Y 轴排序。通常使用最下方的点的 Y
+    building->setLocalZOrder(10000 - centerPos.y);
+
+    _mapSprite->addChild(building);
+
+    // 动画
+    building->setScale(0.0f);
+    building->runAction(EaseBackOut::create(ScaleTo::create(0.4f, 1.0f)));
+
+    endPlacing();
+}
+
+void DraggableMapScene::cancelPlacing()
+{
+    // 直接统一退出建造模式
+    endPlacing();
+}
+
+// 统一结束建造，确保所有清理都在同一处执行
+void DraggableMapScene::endPlacing()
+{
+    _isBuildingMode = false;
+
+    if (_gridMap) {
+        _gridMap->showWholeGrid(false);
+        _gridMap->hideBuildingBase();
+    }
+
+    if (_ghostSprite) {
+        _ghostSprite->removeFromParent();
+        _ghostSprite = nullptr;
     }
 }
