@@ -31,6 +31,10 @@ bool DraggableMapScene::init()
 
     _isMapListVisible = false;
 
+    // 创建英雄管理器
+    _heroManager = HeroManager::create();
+    this->addChild(_heroManager);
+
     setupMap();
     setupUI();
     setupTouchListener();
@@ -39,6 +43,7 @@ bool DraggableMapScene::init()
     return true;
 }
 
+// 添加缺失的 setupMap 方法
 void DraggableMapScene::setupMap()
 {
     // 创建大地图精灵
@@ -59,7 +64,6 @@ void DraggableMapScene::setupMap()
 
         // 创建示例地图元素
         createSampleMapElements();
-
     }
     else {
         CCLOG("Error: Failed to load map image %s", _currentMapName.c_str());
@@ -78,22 +82,28 @@ void DraggableMapScene::setupMap()
 
 void DraggableMapScene::setupUI()
 {
-    // 地图切换按钮
+    // 地图切换按钮 - 增大尺寸
     _mapButton = Button::create();
-    _mapButton->setTitleText("地图");
-    _mapButton->setTitleFontSize(20);
-    _mapButton->setContentSize(Size(80, 40));
-    _mapButton->setPosition(Vec2(_visibleSize.width - 60, _visibleSize.height - 30));
+    _mapButton->setTitleText("Map");
+    _mapButton->setTitleFontSize(24);
+    _mapButton->setContentSize(Size(120, 60));  // 这里应该是 _mapButton，不是 _heroButton
+    _mapButton->setPosition(Vec2(_visibleSize.width - 80, _visibleSize.height - 50));
     _mapButton->addClickEventListener(CC_CALLBACK_1(DraggableMapScene::onMapButtonClicked, this));
     this->addChild(_mapButton, 10);
+
+    // 设置英雄UI
+    _heroManager->setupHeroUI(this, _visibleSize);
 
     // 创建地图列表（初始隐藏）
     createMapList();
 
     // 操作提示
-    auto tipLabel = Label::createWithSystemFont("Drag: Move  Scroll: Zoom  Button: Switch Map", "Arial", 16);
-    tipLabel->setPosition(Vec2(_visibleSize.width / 2, 25));
+    auto tipLabel = Label::createWithSystemFont(
+        "Drag: Move Map  Scroll: Zoom  Buttons: Switch Map/Hero\nClick Hero to Select, Click Ground to Move",
+        "Arial", 14);
+    tipLabel->setPosition(Vec2(_visibleSize.width / 2, 40));
     tipLabel->setTextColor(Color4B::YELLOW);
+    tipLabel->setAlignment(TextHAlignment::CENTER);
     this->addChild(tipLabel, 10);
 
     // 当前地图名称显示
@@ -146,6 +156,11 @@ void DraggableMapScene::toggleMapList()
 {
     _isMapListVisible = !_isMapListVisible;
     _mapList->setVisible(_isMapListVisible);
+
+    // 如果打开地图列表，关闭英雄列表
+    if (_isMapListVisible && _heroManager->isHeroListVisible()) {
+        _heroManager->hideHeroList();
+    }
 }
 
 void DraggableMapScene::onMapItemClicked(cocos2d::Ref* sender)
@@ -163,7 +178,6 @@ void DraggableMapScene::onMapItemClicked(cocos2d::Ref* sender)
     toggleMapList();
 }
 
-// 修改 switchMap 函数
 void DraggableMapScene::switchMap(const std::string& mapName)
 {
     if (mapName == _currentMapName) {
@@ -197,7 +211,11 @@ void DraggableMapScene::switchMap(const std::string& mapName)
         // 4. 恢复地图元素状态
         restoreMapElementsState();
 
-        // 5. 更新UI显示
+        // 5. 通知英雄管理器地图已切换
+        _heroManager->onMapSwitched(_mapSprite);
+        _heroManager->updateHeroesScale(_currentScale);  // 立即更新英雄缩放
+
+        // 6. 更新UI显示
         auto mapNameLabel = static_cast<Label*>(this->getChildByName("mapNameLabel"));
         if (mapNameLabel) {
             mapNameLabel->setString("Current: " + _currentMapName);
@@ -221,7 +239,6 @@ void DraggableMapScene::switchMap(const std::string& mapName)
     }
 }
 
-// 修改 saveMapElementsState 函数
 void DraggableMapScene::saveMapElementsState()
 {
     // 保存元素的本地坐标
@@ -233,7 +250,6 @@ void DraggableMapScene::saveMapElementsState()
     }
 }
 
-// 修改 restoreMapElementsState 函数
 void DraggableMapScene::restoreMapElementsState()
 {
     // 恢复地图元素到新地图上
@@ -246,7 +262,6 @@ void DraggableMapScene::restoreMapElementsState()
     }
 }
 
-// 修改 createSampleMapElements 函数
 void DraggableMapScene::createSampleMapElements()
 {
     // 清除旧元素
@@ -286,7 +301,6 @@ void DraggableMapScene::createSampleMapElements()
     CCLOG("Created %zd map elements", _mapElements.size());
 }
 
-// 新增：更新地图元素位置（缩放时调用）
 void DraggableMapScene::updateMapElementsPosition()
 {
     if (!_mapSprite) return;
@@ -304,19 +318,8 @@ void DraggableMapScene::setupTouchListener()
     auto touchListener = EventListenerTouchOneByOne::create();
     touchListener->setSwallowTouches(true);
 
-    touchListener->onTouchBegan = [this](Touch* touch, Event* event) {
-        // 如果点击在地图列表上，不处理地图拖动
-        if (_isMapListVisible) {
-            Vec2 touchPos = touch->getLocation();
-            Rect listRect = _mapList->getBoundingBox();
-            if (listRect.containsPoint(touchPos)) {
-                return false; // 让列表自己处理点击
-            }
-        }
-        _lastTouchPos = touch->getLocation();
-        return true;
-        };
-
+    // 使用传统方法绑定
+    touchListener->onTouchBegan = CC_CALLBACK_2(DraggableMapScene::onTouchBegan, this);
     touchListener->onTouchMoved = CC_CALLBACK_2(DraggableMapScene::onTouchMoved, this);
     touchListener->onTouchEnded = CC_CALLBACK_2(DraggableMapScene::onTouchEnded, this);
     touchListener->onTouchCancelled = CC_CALLBACK_2(DraggableMapScene::onTouchCancelled, this);
@@ -328,44 +331,40 @@ void DraggableMapScene::setupMouseListener()
 {
     auto mouseListener = EventListenerMouse::create();
 
-    mouseListener->onMouseScroll = CC_CALLBACK_1(DraggableMapScene::onMouseScroll, this);
+    mouseListener->onMouseScroll = [this](Event* event) {
+        if (!_mapSprite) return;
+
+        EventMouse* mouseEvent = dynamic_cast<EventMouse*>(event);
+        if (mouseEvent) {
+            float scrollY = mouseEvent->getScrollY();  // 获取滚轮增量
+
+            // 计算缩放因子（滚轮向上为正，向下为负）
+            float zoomFactor = 1.0f;
+            if (scrollY > 0) {
+                // 滚轮向上 - 放大
+                zoomFactor = 1.1f;
+            }
+            else if (scrollY < 0) {
+                // 滚轮向下 - 缩小
+                zoomFactor = 0.9f;
+            }
+            else {
+                return;  // 没有滚动
+            }
+
+            // 获取鼠标当前位置作为缩放中心点
+            Vec2 mousePos = Vec2(mouseEvent->getCursorX(), mouseEvent->getCursorY());
+
+            // 执行缩放
+            zoomMap(zoomFactor, mousePos);
+
+            CCLOG("Mouse scroll: %.1f, Scale: %.2f", scrollY, _currentScale);
+        }
+        };
 
     _eventDispatcher->addEventListenerWithSceneGraphPriority(mouseListener, this);
 }
 
-void DraggableMapScene::onMouseScroll(cocos2d::Event* event)
-{
-    if (!_mapSprite) return;
-
-    EventMouse* mouseEvent = dynamic_cast<EventMouse*>(event);
-    if (mouseEvent) {
-        float scrollY = mouseEvent->getScrollY();  // 获取滚轮增量
-
-        // 计算缩放因子（滚轮向上为正，向下为负）
-        float zoomFactor = 1.0f;
-        if (scrollY > 0) {
-            // 滚轮向上 - 放大
-            zoomFactor = 1.1f;
-        }
-        else if (scrollY < 0) {
-            // 滚轮向下 - 缩小
-            zoomFactor = 0.9f;
-        }
-        else {
-            return;  // 没有滚动
-        }
-
-        // 获取鼠标当前位置作为缩放中心点
-        Vec2 mousePos = Vec2(mouseEvent->getCursorX(), mouseEvent->getCursorY());
-
-        // 执行缩放
-        zoomMap(zoomFactor, mousePos);
-
-        CCLOG("Mouse scroll: %.1f, Scale: %.2f", scrollY, _currentScale);
-    }
-}
-
-// 修改 zoomMap 函数，在缩放后更新元素位置
 void DraggableMapScene::zoomMap(float scaleFactor, const cocos2d::Vec2& pivotPoint)
 {
     if (!_mapSprite) return;
@@ -413,6 +412,9 @@ void DraggableMapScene::zoomMap(float scaleFactor, const cocos2d::Vec2& pivotPoi
     // 更新地图元素位置
     updateMapElementsPosition();
 
+    // 更新英雄缩放
+    _heroManager->updateHeroesScale(_currentScale);
+
     // 确保地图在边界内
     ensureMapInBoundary();
 }
@@ -441,33 +443,6 @@ void DraggableMapScene::updateBoundary()
 
     CCLOG("Boundary updated - Scale: %.2f, Boundary: minX=%.1f, maxX=%.1f",
         _currentScale, minX, maxX);
-}
-
-bool DraggableMapScene::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
-{
-    _lastTouchPos = touch->getLocation();
-    return true;
-}
-
-void DraggableMapScene::onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event)
-{
-    cocos2d::Vec2 currentPos = touch->getLocation();
-    cocos2d::Vec2 delta = currentPos - _lastTouchPos;
-
-    moveMap(delta);
-
-    _lastTouchPos = currentPos;
-}
-
-void DraggableMapScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
-{
-    // 触摸结束处理
-}
-
-void DraggableMapScene::onTouchCancelled(cocos2d::Touch* touch, cocos2d::Event* event)
-{
-    // 触摸取消处理
-    this->onTouchEnded(touch, event);
 }
 
 void DraggableMapScene::moveMap(const cocos2d::Vec2& delta)
@@ -502,4 +477,57 @@ void DraggableMapScene::ensureMapInBoundary()
     if (newPos != currentPos) {
         _mapSprite->setPosition(newPos);
     }
+}
+// 在 DraggableMapScene.cpp 中添加这些方法实现
+
+bool DraggableMapScene::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
+{
+    Vec2 touchPos = touch->getLocation();
+
+    // 如果点击在UI元素上，不处理地图操作
+    if (_isMapListVisible || _heroManager->isHeroListVisible()) {
+        if (_isMapListVisible) {
+            Rect listRect = _mapList->getBoundingBox();
+            if (listRect.containsPoint(touchPos)) {
+                return false;
+            }
+        }
+        if (_heroManager->isHeroListVisible()) {
+            return false;
+        }
+    }
+
+    _lastTouchPos = touchPos;
+    return true;
+}
+
+void DraggableMapScene::onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event)
+{
+    cocos2d::Vec2 currentPos = touch->getLocation();
+    cocos2d::Vec2 delta = currentPos - _lastTouchPos;
+
+    moveMap(delta);
+
+    _lastTouchPos = currentPos;
+}
+
+void DraggableMapScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
+{
+    Vec2 touchPos = touch->getLocation();
+
+    // 如果打开任何列表，不处理地图操作
+    if (_isMapListVisible || _heroManager->isHeroListVisible()) {
+        return;
+    }
+
+    // 检查是否有待放置的新英雄
+    bool hasHeroToPlace = !_heroManager->getSelectedHeroName().empty();
+
+    // 处理英雄点击和移动
+    _heroManager->handleHeroTouch(touchPos, _mapSprite, hasHeroToPlace);
+}
+
+void DraggableMapScene::onTouchCancelled(cocos2d::Touch* touch, cocos2d::Event* event)
+{
+    this->onTouchEnded(touch, event);
 }

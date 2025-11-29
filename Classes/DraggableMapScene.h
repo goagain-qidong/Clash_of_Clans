@@ -3,6 +3,7 @@
 
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
+#include "HeroManager.h"
 
 class DraggableMapScene : public cocos2d::Scene
 {
@@ -32,7 +33,10 @@ private:
     cocos2d::ui::ListView* _mapList;
     bool _isMapListVisible;
 
-    // 修改：地图元素现在存储相对于地图的本地坐标
+    // 英雄管理器
+    HeroManager* _heroManager;
+
+    // 地图元素现在存储相对于地图的本地坐标
     struct MapElement {
         cocos2d::Node* node;
         cocos2d::Vec2 localPosition;  // 相对于地图的本地坐标
@@ -68,7 +72,7 @@ private:
     void saveMapElementsState();
     void restoreMapElementsState();
     void createSampleMapElements();
-    void updateMapElementsPosition();  // 新增：更新元素位置
+    void updateMapElementsPosition();
 };
 
 #endif
