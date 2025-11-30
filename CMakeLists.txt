@@ -61,6 +61,7 @@ list(APPEND GAME_SOURCE
      Classes/DraggableMapScene.cpp
      Classes/Building.cpp
      Classes/GridMap.cpp
+     Classes/Managers/ResourceManager.cpp
      )
 list(APPEND GAME_HEADER
      Classes/AppDelegate.h
@@ -68,6 +69,7 @@ list(APPEND GAME_HEADER
      Classes/DraggableMapScene.h
      Classes/Building.h
      Classes/GridMap.h
+     Classes/Managers/ResourceManager.h
      )
 
 if(ANDROID)
