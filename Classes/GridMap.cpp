@@ -136,17 +136,6 @@ void GridMap::updateBuildingBase(Vec2 gridPos, Size size, bool isValid)
     float halfW = _tileSize / 2.0f;
     float halfH = halfW * 0.75f;
 
-    Vec2 topGridCenter = getPositionFromGrid(gridPos);
-    Vec2 rightGridCenter = getPositionFromGrid(gridPos + Vec2(size.width - 1, 0));
-    Vec2 bottomGridCenter = getPositionFromGrid(gridPos + Vec2(size.width - 1, size.height - 1));
-    Vec2 leftGridCenter = getPositionFromGrid(gridPos + Vec2(0, size.height - 1));
-
-    Vec2 p[4];
-    p[0] = Vec2(topGridCenter.x, topGridCenter.y + halfH);
-    p[1] = Vec2(rightGridCenter.x + halfW, rightGridCenter.y);
-    p[2] = Vec2(bottomGridCenter.x, bottomGridCenter.y - halfH);
-    p[3] = Vec2(leftGridCenter.x - halfW, leftGridCenter.y);
-
     Color4F color;
     Color4F borderColor;
 
@@ -159,8 +148,22 @@ void GridMap::updateBuildingBase(Vec2 gridPos, Size size, bool isValid)
         borderColor = Color4F(1.0f, 0.0f, 0.0f, 0.8f);
     }
 
-    _baseNode->drawSolidPoly(p, 4, color);
-    _baseNode->drawPoly(p, 4, true, borderColor);
+    // 修改：循环绘制建筑底下的每一个网格，实现"只显示建筑脚下的网格"
+    for (int i = 0; i < size.width; i++) {
+        for (int j = 0; j < size.height; j++) {
+            Vec2 currentGridPos = gridPos + Vec2(i, j);
+            Vec2 center = getPositionFromGrid(currentGridPos);
+
+            Vec2 p[4];
+            p[0] = Vec2(center.x, center.y + halfH);
+            p[1] = Vec2(center.x + halfW, center.y);
+            p[2] = Vec2(center.x, center.y - halfH);
+            p[3] = Vec2(center.x - halfW, center.y);
+
+            _baseNode->drawSolidPoly(p, 4, color);
+            _baseNode->drawPoly(p, 4, true, borderColor);
+        }
+    }
 }
 
 void GridMap::hideBuildingBase()
