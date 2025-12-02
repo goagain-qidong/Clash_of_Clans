@@ -47,8 +47,8 @@ bool DraggableMapScene::init()
 
     _mapConfigs.clear();
     _mapConfigs["map/Map1.png"] = { 1.3f, Vec2(1406.0f, 2107.2f), 55.6f };
-    _mapConfigs["map/Map2.png"] = { 1.3f, Vec2(1403.0f, 2090.2f), 66.6f };
-    _mapConfigs["map/Map3.png"] = { 1.3f, Vec2(1401.0f, 2077.2f), 66.6f };
+    _mapConfigs["map/Map2.png"] = { 1.3f, Vec2(1402.0f, 2097.2f), 56.1f };
+    _mapConfigs["map/Map3.png"] = { 1.3f, Vec2(1403.0f, 2075.2f), 54.9f };
 
     _heroManager = HeroManager::create();
     this->addChild(_heroManager);
