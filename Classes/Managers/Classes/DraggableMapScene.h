@@ -1,100 +1,199 @@
-#ifndef __DRAGGABLE_MAP_SCENE_H__
+ï»¿#ifndef __DRAGGABLE_MAP_SCENE_H__
+
 #define __DRAGGABLE_MAP_SCENE_H__
 
+
+
 #include "cocos2d.h"
+
 #include "ui/CocosGUI.h"
-#include "GridMap.h" // <--- 1. ÒıÈëÍ·ÎÄ¼ş
+
+#include "GridMap.h" // <--- 1. å¼•å…¥å¤´æ–‡ä»¶
+
 #include "HeroManager.h"
 
+
+
 class DraggableMapScene : public cocos2d::Scene
+
 {
+
 public:
+
     static cocos2d::Scene* createScene();
+
     virtual bool init() override;
+
     CREATE_FUNC(DraggableMapScene);
+
     void showWholeGrid(bool visible);
 
+
+
 private:
+
     cocos2d::Size _mapSize;
+
     float _tileSize;
-    cocos2d::DrawNode* _gridNode; // ÓÃÓÚ»­È«ÆÁµ­Íø¸ñ
-    cocos2d::DrawNode* _baseNode; // ÓÃÓÚ»­µ±Ç°Êó±êÏÂµÄÂÌÉ«µ××ù
 
-    GridMap* _gridMap; // <--- 2. ĞÂÔöÍø¸ñ¶ÔÏóÖ¸Õë
+    cocos2d::DrawNode* _gridNode; // ç”¨äºç”»å…¨å±æ·¡ç½‘æ ¼
 
-    // --- ½¨ÔìÄ£Ê½Ïà¹Ø ---
-    bool _isBuildingMode;           // ÊÇ·ñ´¦ÓÚ½¨Ôì×´Ì¬
-    cocos2d::Sprite* _ghostSprite;  // ¸úËæÊó±êµÄ°ëÍ¸Ã÷½¨Öş
+    cocos2d::DrawNode* _baseNode; // ç”¨äºç”»å½“å‰é¼ æ ‡ä¸‹çš„ç»¿è‰²åº•åº§
 
-    // ¿ªÊ¼½¨Ôì£¨µã»÷UI°´Å¥´¥·¢£©
+
+
+    GridMap* _gridMap; // <--- 2. æ–°å¢ç½‘æ ¼å¯¹è±¡æŒ‡é’ˆ
+
+
+
+    // --- å»ºé€ æ¨¡å¼ç›¸å…³ ---
+
+    bool _isBuildingMode;           // æ˜¯å¦å¤„äºå»ºé€ çŠ¶æ€
+
+    cocos2d::Sprite* _ghostSprite;  // è·Ÿéšé¼ æ ‡çš„åŠé€æ˜å»ºç­‘
+
+
+
+    // å¼€å§‹å»ºé€ ï¼ˆç‚¹å‡»UIæŒ‰é’®è§¦å‘ï¼‰
+
     void startPlacingBuilding();
-    // È·ÈÏ½¨Ôì£¨µã»÷µØÍ¼´¥·¢£©
+
+    // ç¡®è®¤å»ºé€ ï¼ˆç‚¹å‡»åœ°å›¾è§¦å‘ï¼‰
+
     void placeBuilding(cocos2d::Vec2 gridPos);
-    // È¡Ïû½¨Ôì
+
+    // å–æ¶ˆå»ºé€ 
+
     void cancelPlacing();
-    // ½áÊø½¨Ôì£¨Í³Ò»µÄÍË³ö½¨ÔìÄ£Ê½½Ó¿Ú£©
+
+    // ç»“æŸå»ºé€ ï¼ˆç»Ÿä¸€çš„é€€å‡ºå»ºé€ æ¨¡å¼æ¥å£ï¼‰
+
     void endPlacing();
 
+
+
     cocos2d::Vec2 _lastTouchPos;
+
     cocos2d::Sprite* _mapSprite;
+
     cocos2d::Vec2 _velocity;
+
     cocos2d::Rect _mapBoundary;
+
     cocos2d::Size _visibleSize;
 
-    // Ëõ·ÅÏà¹Ø±äÁ¿
+
+
+    // ç¼©æ”¾ç›¸å…³å˜é‡
+
     float _currentScale;
+
     float _minScale;
+
     float _maxScale;
 
-    // µØÍ¼Ïà¹Ø
+
+
+    // åœ°å›¾ç›¸å…³
+
     std::string _currentMapName;
+
     std::vector<std::string> _mapNames;
 
-    // UIÔªËØ
+
+
+    // UIå…ƒç´ 
+
     cocos2d::ui::Button* _mapButton;
+
     cocos2d::ui::ListView* _mapList;
+
     bool _isMapListVisible;
 
-    // Ó¢ĞÛ¹ÜÀíÆ÷
+
+
+    // è‹±é›„ç®¡ç†å™¨
+
     HeroManager* _heroManager;
 
-    // µØÍ¼ÔªËØÏÖÔÚ´æ´¢Ïà¶ÔÓÚµØÍ¼µÄ±¾µØ×ø±ê
+
+
+    // åœ°å›¾å…ƒç´ ç°åœ¨å­˜å‚¨ç›¸å¯¹äºåœ°å›¾çš„æœ¬åœ°åæ ‡
+
     struct MapElement {
+
         cocos2d::Node* node;
-        cocos2d::Vec2 localPosition;  // Ïà¶ÔÓÚµØÍ¼µÄ±¾µØ×ø±ê
+
+        cocos2d::Vec2 localPosition;  // ç›¸å¯¹äºåœ°å›¾çš„æœ¬åœ°åæ ‡
+
     };
+
     std::vector<MapElement> _mapElements;
 
+
+
     void setupMap();
+
     void setupUI();
+
     void setupTouchListener();
+
     void setupMouseListener();
 
+
+
     bool onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event);
+
     void onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event);
+
     void onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event);
+
     void onTouchCancelled(cocos2d::Touch* touch, cocos2d::Event* event);
+
+
 
     void onMouseScroll(cocos2d::Event* event);
 
+
+
     void moveMap(const cocos2d::Vec2& delta);
+
     void ensureMapInBoundary();
 
+
+
     void zoomMap(float scaleFactor, const cocos2d::Vec2& pivotPoint = cocos2d::Vec2::ZERO);
+
     void updateBoundary();
 
-    // µØÍ¼ÇĞ»»¹¦ÄÜ
+
+
+    // åœ°å›¾åˆ‡æ¢åŠŸèƒ½
+
     void switchMap(const std::string& mapName);
+
     void onMapButtonClicked(cocos2d::Ref* sender);
+
     void createMapList();
+
     void toggleMapList();
+
     void onMapItemClicked(cocos2d::Ref* sender);
 
-    // µØÍ¼ÔªËØ¹ÜÀí
+
+
+    // åœ°å›¾å…ƒç´ ç®¡ç†
+
     void saveMapElementsState();
+
     void restoreMapElementsState();
+
     void createSampleMapElements();
+
     void updateMapElementsPosition();
+
 };
+
+
 
 #endif

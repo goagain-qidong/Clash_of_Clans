@@ -5,7 +5,8 @@ USING_NS_CC;
 GridMap* GridMap::create(const Size& mapSize, float tileSize)
 {
     GridMap* ret = new (std::nothrow) GridMap();
-    if (ret && ret->init(mapSize, tileSize)) {
+    if (ret && ret->init(mapSize, tileSize))
+    {
         ret->autorelease();
         return ret;
     }
@@ -15,7 +16,8 @@ GridMap* GridMap::create(const Size& mapSize, float tileSize)
 
 bool GridMap::init(const Size& mapSize, float tileSize)
 {
-    if (!Node::init()) return false;
+    if (!Node::init())
+        return false;
     _mapSize = mapSize;
     _tileSize = tileSize;
 
@@ -73,10 +75,12 @@ void GridMap::showWholeGrid(bool visible, const cocos2d::Size& currentBuildingSi
 {
     _gridVisible = visible;
     _gridNode->clear();
-    if (!visible) return;
+    if (!visible)
+        return;
 
     int bigGridStep = 3;
-    if (currentBuildingSize.width > 0 && currentBuildingSize.height > 0) {
+    if (currentBuildingSize.width > 0 && currentBuildingSize.height > 0)
+    {
         bigGridStep = (int)currentBuildingSize.width;
     }
 
@@ -90,8 +94,10 @@ void GridMap::showWholeGrid(bool visible, const cocos2d::Size& currentBuildingSi
     int maxX = _gridWidth;
     int maxY = _gridHeight;
 
-    for (int x = 0; x < maxX; x++) {
-        for (int y = 0; y < maxY; y++) {
+    for (int x = 0; x < maxX; x++)
+    {
+        for (int y = 0; y < maxY; y++)
+        {
             Vec2 center = getPositionFromGrid(Vec2(x, y));
 
             Vec2 p[4];
@@ -105,13 +111,15 @@ void GridMap::showWholeGrid(bool visible, const cocos2d::Size& currentBuildingSi
         }
     }
 
-    for (int x = 0; x < maxX; x += bigGridStep) {
-        for (int y = 0; y < maxY; y += bigGridStep) {
-
+    for (int x = 0; x < maxX; x += bigGridStep)
+    {
+        for (int y = 0; y < maxY; y += bigGridStep)
+        {
             int currentW = (x + bigGridStep > maxX) ? (maxX - x) : bigGridStep;
             int currentH = (y + bigGridStep > maxY) ? (maxY - y) : bigGridStep;
 
-            if (currentW <= 0 || currentH <= 0) continue;
+            if (currentW <= 0 || currentH <= 0)
+                continue;
 
             Vec2 topGridCenter = getPositionFromGrid(Vec2(x, y));
             Vec2 rightGridCenter = getPositionFromGrid(Vec2(x + currentW - 1, y));
@@ -139,18 +147,22 @@ void GridMap::updateBuildingBase(Vec2 gridPos, Size size, bool isValid)
     Color4F color;
     Color4F borderColor;
 
-    if (isValid) {
+    if (isValid)
+    {
         color = Color4F(0.0f, 1.0f, 0.0f, 0.3f);
         borderColor = Color4F(0.0f, 1.0f, 0.0f, 0.8f);
     }
-    else {
+    else
+    {
         color = Color4F(1.0f, 0.0f, 0.0f, 0.3f);
         borderColor = Color4F(1.0f, 0.0f, 0.0f, 0.8f);
     }
 
     // 修改：循环绘制建筑底下的每一个网格，实现"只显示建筑脚下的网格"
-    for (int i = 0; i < size.width; i++) {
-        for (int j = 0; j < size.height; j++) {
+    for (int i = 0; i < size.width; i++)
+    {
+        for (int j = 0; j < size.height; j++)
+        {
             Vec2 currentGridPos = gridPos + Vec2(i, j);
             Vec2 center = getPositionFromGrid(currentGridPos);
 
@@ -178,13 +190,17 @@ bool GridMap::checkArea(Vec2 startGridPos, Size size)
     int w = (int)size.width;
     int h = (int)size.height;
 
-    if (startX < 0 || startY < 0 || startX + w > _gridWidth || startY + h > _gridHeight) {
+    if (startX < 0 || startY < 0 || startX + w > _gridWidth || startY + h > _gridHeight)
+    {
         return false;
     }
 
-    for (int x = startX; x < startX + w; x++) {
-        for (int y = startY; y < startY + h; y++) {
-            if (_collisionMap[x][y]) {
+    for (int x = startX; x < startX + w; x++)
+    {
+        for (int y = startY; y < startY + h; y++)
+        {
+            if (_collisionMap[x][y])
+            {
                 return false;
             }
         }
@@ -199,10 +215,13 @@ void GridMap::markArea(Vec2 startGridPos, Size size, bool occupied)
     int w = (int)size.width;
     int h = (int)size.height;
 
-    if (startX < 0 || startY < 0 || startX + w > _gridWidth || startY + h > _gridHeight) return;
+    if (startX < 0 || startY < 0 || startX + w > _gridWidth || startY + h > _gridHeight)
+        return;
 
-    for (int x = startX; x < startX + w; x++) {
-        for (int y = startY; y < startY + h; y++) {
+    for (int x = startX; x < startX + w; x++)
+    {
+        for (int y = startY; y < startY + h; y++)
+        {
             _collisionMap[x][y] = occupied;
         }
     }
@@ -211,7 +230,8 @@ void GridMap::markArea(Vec2 startGridPos, Size size, bool occupied)
 void GridMap::setStartPixel(const Vec2& pixel)
 {
     _startPixel = pixel;
-    if (_gridVisible) showWholeGrid(true);
+    if (_gridVisible)
+        showWholeGrid(true);
 }
 
 Vec2 GridMap::getStartPixel() const
@@ -222,26 +242,34 @@ Vec2 GridMap::getStartPixel() const
 void GridMap::setStartCorner(GridMap::Corner corner)
 {
     Vec2 p;
-    switch (corner) {
-    case TOP_LEFT:
-        p = Vec2(0 + _tileSize / 2.0f, _mapSize.height - _tileSize / 2.0f);
-        break;
-    case TOP_RIGHT:
-        p = Vec2(_mapSize.width - _tileSize / 2.0f, _mapSize.height - _tileSize / 2.0f);
-        break;
-    case BOTTOM_LEFT:
-        p = Vec2(0 + _tileSize / 2.0f, 0 + _tileSize / 2.0f);
-        break;
-    case BOTTOM_RIGHT:
-        p = Vec2(_mapSize.width - _tileSize / 2.0f, 0 + _tileSize / 2.0f);
-        break;
-    case CENTER:
-    default:
-        p = Vec2(_mapSize.width / 2.0f, _mapSize.height / 2.0f);
-        break;
+    switch (corner)
+    {
+        case TOP_LEFT:
+            p = Vec2(0 + _tileSize / 2.0f, _mapSize.height - _tileSize / 2.0f);
+            break;
+        case TOP_RIGHT:
+            p = Vec2(_mapSize.width - _tileSize / 2.0f, _mapSize.height - _tileSize / 2.0f);
+            break;
+        case BOTTOM_LEFT:
+            p = Vec2(0 + _tileSize / 2.0f, 0 + _tileSize / 2.0f);
+            break;
+        case BOTTOM_RIGHT:
+            p = Vec2(_mapSize.width - _tileSize / 2.0f, 0 + _tileSize / 2.0f);
+            break;
+        case CENTER:
+        default:
+            p = Vec2(_mapSize.width / 2.0f, _mapSize.height / 2.0f);
+            break;
     }
 
     p.y += _tileSize * 0.5f;
 
     setStartPixel(p);
+}
+
+bool GridMap::isBlocked(int x, int y) const
+{
+    if (x < 0 || y < 0 || x >= _gridWidth || y >= _gridHeight)
+        return true;
+    return _collisionMap[x][y];
 }

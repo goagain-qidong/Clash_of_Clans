@@ -1,41 +1,81 @@
-#pragma once
+ï»¿#pragma once
+
 #include "cocos2d.h"
+
 #include <vector>
 
+
+
 class GridMap : public cocos2d::Node
+
 {
+
 private:
+
     cocos2d::Size _mapSize;
-    float _tileSize; // ÏÖÔÚÕâ´ú±í¡¾Ğ¡·½¸ñ¡¿µÄ³ß´ç
+
+    float _tileSize; // ç°åœ¨è¿™ä»£è¡¨ã€å°æ–¹æ ¼ã€‘çš„å°ºå¯¸
+
     cocos2d::DrawNode* _gridNode;
+
     cocos2d::DrawNode* _baseNode;
 
-    // ³åÍ»¼ì²âµØÍ¼£ºtrue = ÓĞ½¨Öş/ÕÏ°­£¬false = ¿ÕµØ
+
+
+    // å†²çªæ£€æµ‹åœ°å›¾ï¼štrue = æœ‰å»ºç­‘/éšœç¢ï¼Œfalse = ç©ºåœ°
+
     std::vector<std::vector<bool>> _collisionMap;
-    int _gridWidth;  // Íø¸ñºáÏòÊıÁ¿
-    int _gridHeight; // Íø¸ñ×İÏòÊıÁ¿
+
+    int _gridWidth;  // ç½‘æ ¼æ¨ªå‘æ•°é‡
+
+    int _gridHeight; // ç½‘æ ¼çºµå‘æ•°é‡
+
+
 
 public:
+
     static GridMap* create(const cocos2d::Size& mapSize, float tileSize);
+
     virtual bool init(const cocos2d::Size& mapSize, float tileSize);
+
+
 
     void showWholeGrid(bool visible);
 
-    // ºËĞÄ×ø±ê×ª»»£¨»ùÓÚ ISO 45¶È£©
+
+
+    // æ ¸å¿ƒåæ ‡è½¬æ¢ï¼ˆåŸºäº ISO 45åº¦ï¼‰
+
     cocos2d::Vec2 getGridPosition(cocos2d::Vec2 worldPosition);
+
     cocos2d::Vec2 getPositionFromGrid(cocos2d::Vec2 gridPos);
 
-    // ¡¾Éı¼¶¡¿Ö§³Ö´«Èë½¨Öş³ß´ç (width x height)
-    // gridPos: ½¨Öş×óÉÏ½Ç£¨ÆäÊµÊÇISOµÄTop½Ç£©ËùÔÚµÄ¸ñ×Ó
-    // size: ½¨ÖşÕ¼¾İ¶àÉÙ¸öĞ¡¸ñ×Ó£¬ÀıÈç Size(3, 3)
+
+
+    // ã€å‡çº§ã€‘æ”¯æŒä¼ å…¥å»ºç­‘å°ºå¯¸ (width x height)
+
+    // gridPos: å»ºç­‘å·¦ä¸Šè§’ï¼ˆå…¶å®æ˜¯ISOçš„Topè§’ï¼‰æ‰€åœ¨çš„æ ¼å­
+
+    // size: å»ºç­‘å æ®å¤šå°‘ä¸ªå°æ ¼å­ï¼Œä¾‹å¦‚ Size(3, 3)
+
     void updateBuildingBase(cocos2d::Vec2 gridPos, cocos2d::Size size, bool isValid);
+
+
 
     void hideBuildingBase();
 
-    // ¡¾ĞÂÔö¡¿³åÍ»¼ì²â API
-    // ¼ì²éÕâ¸öÇøÓòÊÇ·ñ¿ÉÒÔ½¨Ôì
+
+
+    // ã€æ–°å¢ã€‘å†²çªæ£€æµ‹ API
+
+    // æ£€æŸ¥è¿™ä¸ªåŒºåŸŸæ˜¯å¦å¯ä»¥å»ºé€ 
+
     bool checkArea(cocos2d::Vec2 startGridPos, cocos2d::Size size);
 
-    // ±ê¼ÇÕâ¸öÇøÓò±»Õ¼ÓÃ
+
+
+    // æ ‡è®°è¿™ä¸ªåŒºåŸŸè¢«å ç”¨
+
     void markArea(cocos2d::Vec2 startGridPos, cocos2d::Size size, bool occupied);
+
 };

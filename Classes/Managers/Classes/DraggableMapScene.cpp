@@ -1,709 +1,1417 @@
-#include "DraggableMapScene.h"
+ï»¿#include "DraggableMapScene.h"
+
 #include "cocos2d.h"
+
 #include "ui/CocosGUI.h"
 
+
+
 USING_NS_CC;
+
 using namespace ui;
 
+
+
 Scene* DraggableMapScene::createScene()
+
 {
+
     return DraggableMapScene::create();
+
 }
 
+
+
 bool DraggableMapScene::init()
+
 {
+
     if (!Scene::init())
+
     {
+
         return false;
+
     }
 
+
+
     _isBuildingMode = false;
+
     _ghostSprite = nullptr;
+
+
 
     _visibleSize = Director::getInstance()->getVisibleSize();
 
-    // ³õÊ¼»¯Ëõ·Å²ÎÊı
+
+
+    // åˆå§‹åŒ–ç¼©æ”¾å‚æ•°
+
     _currentScale = 1.3f;
+
     _minScale = 1.0f;
+
     _maxScale = 2.5f;
 
-    // ³õÊ¼»¯µØÍ¼ÁĞ±í
+
+
+    // åˆå§‹åŒ–åœ°å›¾åˆ—è¡¨
+
     _mapNames = { "202501.png", "202502.png", "202503.png", "202504.png",
+
                  "202505.png", "202506.png", "202507.png", "202508.png" };
-    _currentMapName = "202507.png"; // Ä¬ÈÏµØÍ¼
+
+    _currentMapName = "202507.png"; // é»˜è®¤åœ°å›¾
+
+
 
     _isMapListVisible = false;
 
-    // ´´½¨Ó¢ĞÛ¹ÜÀíÆ÷
+
+
+    // åˆ›å»ºè‹±é›„ç®¡ç†å™¨
+
     _heroManager = HeroManager::create();
+
     this->addChild(_heroManager);
 
+
+
     setupMap();
+
     setupUI();
+
     setupTouchListener();
+
     setupMouseListener();
 
+
+
     return true;
+
 }
 
-// Ìí¼ÓÈ±Ê§µÄ setupMap ·½·¨
+
+
+// æ·»åŠ ç¼ºå¤±çš„ setupMap æ–¹æ³•
+
 void DraggableMapScene::setupMap()
+
 {
+
     _mapSprite = Sprite::create(_currentMapName);
+
     if (_mapSprite) {
+
         auto mapSize = _mapSprite->getContentSize();
+
         _mapSprite->setPosition(_visibleSize.width / 2, _visibleSize.height / 2);
+
         this->addChild(_mapSprite, 0);
 
+
+
         // --------------------------------------------------------
-        // ¡¾ĞŞ¸Ä¡¿ÕâÀï´«ÈëĞ¡¸ñ×ÓµÄ³ß´ç£¡
-        // ¼ÙÉèÔ­±¾ 100 ÊÇ´ó¸ñ×Ó£¬ÏÖÔÚÎÒÃÇ°Ñ´ó¸ñ×ÓÇĞ³É 3x3
-        // ÄÇÃ´Ğ¡¸ñ×Ó´óÔ¼ÊÇ 33.3f
+
+        // ã€ä¿®æ”¹ã€‘è¿™é‡Œä¼ å…¥å°æ ¼å­çš„å°ºå¯¸ï¼
+
+        // å‡è®¾åŸæœ¬ 100 æ˜¯å¤§æ ¼å­ï¼Œç°åœ¨æˆ‘ä»¬æŠŠå¤§æ ¼å­åˆ‡æˆ 3x3
+
+        // é‚£ä¹ˆå°æ ¼å­å¤§çº¦æ˜¯ 33.3f
+
         // --------------------------------------------------------
+
         _gridMap = GridMap::create(mapSize, 33.3f);
+
         _mapSprite->addChild(_gridMap, 999);
 
+
+
         updateBoundary();
+
         createSampleMapElements();
+
     }
+
     else {
+
         CCLOG("Error: Failed to load map image %s", _currentMapName.c_str());
 
+
+
         auto errorLabel = Label::createWithSystemFont(
+
             "Failed to load " + _currentMapName, "Arial", 32);
+
         errorLabel->setPosition(_visibleSize.width / 2, _visibleSize.height / 2);
+
         errorLabel->setTextColor(Color4B::RED);
+
         this->addChild(errorLabel);
+
     }
 
-    // Ìí¼Ó±³¾°É«
+
+
+    // æ·»åŠ èƒŒæ™¯è‰²
+
     auto background = LayerColor::create(Color4B(50, 50, 50, 255));
+
     this->addChild(background, -1);
+
 }
+
+
 
 void DraggableMapScene::setupUI()
+
 {
-    auto buildBtn = Button::create();
-    buildBtn->setTitleText("Build");
-    buildBtn->setTitleFontSize(40);
-    buildBtn->setContentSize(Size(80, 40));
-    // ·ÅÔÚ×óÏÂ½Ç
-    buildBtn->setPosition(Vec2(1000, 1000));
-    buildBtn->addClickEventListener([this](Ref* sender) {
-        if (_isBuildingMode) {
-            this->cancelPlacing();
-        }
-        else {
-            this->startPlacingBuilding();
-        }
-        });
-    this->addChild(buildBtn, 10);
-
-    // µØÍ¼ÇĞ»»°´Å¥
-    auto buildBtn = Button::create();
-    buildBtn->setTitleText("Build");
-    buildBtn->setTitleFontSize(40);
-    buildBtn->setContentSize(Size(80, 40));
-    // ·ÅÔÚ×óÏÂ½Ç
-    buildBtn->setPosition(Vec2(1000, 1000));
-    buildBtn->addClickEventListener([this](Ref* sender) {
-        if (_isBuildingMode) {
-            this->cancelPlacing();
-        }
-        else {
-            this->startPlacingBuilding();
-        }
-        });
-    this->addChild(buildBtn, 10);
-
 
     auto buildBtn = Button::create();
+
     buildBtn->setTitleText("Build");
+
     buildBtn->setTitleFontSize(40);
+
     buildBtn->setContentSize(Size(80, 40));
-    // ·ÅÔÚ×óÏÂ½Ç
+
+    // æ”¾åœ¨å·¦ä¸‹è§’
+
     buildBtn->setPosition(Vec2(1000, 1000));
+
     buildBtn->addClickEventListener([this](Ref* sender) {
+
         if (_isBuildingMode) {
+
             this->cancelPlacing();
+
         }
+
         else {
+
             this->startPlacingBuilding();
+
         }
+
         });
+
     this->addChild(buildBtn, 10);
 
-    // µØÍ¼ÇĞ»»°´Å¥
+
+
+    // åœ°å›¾åˆ‡æ¢æŒ‰é’®
+
+    auto buildBtn = Button::create();
+
+    buildBtn->setTitleText("Build");
+
+    buildBtn->setTitleFontSize(40);
+
+    buildBtn->setContentSize(Size(80, 40));
+
+    // æ”¾åœ¨å·¦ä¸‹è§’
+
+    buildBtn->setPosition(Vec2(1000, 1000));
+
+    buildBtn->addClickEventListener([this](Ref* sender) {
+
+        if (_isBuildingMode) {
+
+            this->cancelPlacing();
+
+        }
+
+        else {
+
+            this->startPlacingBuilding();
+
+        }
+
+        });
+
+    this->addChild(buildBtn, 10);
+
+
+
+
+
+    auto buildBtn = Button::create();
+
+    buildBtn->setTitleText("Build");
+
+    buildBtn->setTitleFontSize(40);
+
+    buildBtn->setContentSize(Size(80, 40));
+
+    // æ”¾åœ¨å·¦ä¸‹è§’
+
+    buildBtn->setPosition(Vec2(1000, 1000));
+
+    buildBtn->addClickEventListener([this](Ref* sender) {
+
+        if (_isBuildingMode) {
+
+            this->cancelPlacing();
+
+        }
+
+        else {
+
+            this->startPlacingBuilding();
+
+        }
+
+        });
+
+    this->addChild(buildBtn, 10);
+
+
+
+    // åœ°å›¾åˆ‡æ¢æŒ‰é’®
+
     _mapButton = Button::create();
+
     _mapButton->setTitleText("Map");
+
     _mapButton->setTitleFontSize(24);
-    _mapButton->setContentSize(Size(120, 60));  // ÕâÀïÓ¦¸ÃÊÇ _mapButton£¬²»ÊÇ _heroButton
+
+    _mapButton->setContentSize(Size(120, 60));  // è¿™é‡Œåº”è¯¥æ˜¯ _mapButtonï¼Œä¸æ˜¯ _heroButton
+
     _mapButton->setPosition(Vec2(_visibleSize.width - 80, _visibleSize.height - 50));
+
     _mapButton->addClickEventListener(CC_CALLBACK_1(DraggableMapScene::onMapButtonClicked, this));
+
     this->addChild(_mapButton, 10);
 
-    // ÉèÖÃÓ¢ĞÛUI
+
+
+    // è®¾ç½®è‹±é›„UI
+
     _heroManager->setupHeroUI(this, _visibleSize);
 
-    // ´´½¨µØÍ¼ÁĞ±í£¨³õÊ¼Òş²Ø£©
+
+
+    // åˆ›å»ºåœ°å›¾åˆ—è¡¨ï¼ˆåˆå§‹éšè—ï¼‰
+
     createMapList();
 
-    // ²Ù×÷ÌáÊ¾
+
+
+    // æ“ä½œæç¤º
+
     auto tipLabel = Label::createWithSystemFont(
+
         "Drag: Move Map  Scroll: Zoom  Buttons: Switch Map/Hero\nClick Hero to Select, Click Ground to Move",
+
         "Arial", 14);
+
     tipLabel->setPosition(Vec2(_visibleSize.width / 2, 40));
+
     tipLabel->setTextColor(Color4B::YELLOW);
+
     tipLabel->setAlignment(TextHAlignment::CENTER);
+
     this->addChild(tipLabel, 10);
 
-    // µ±Ç°µØÍ¼Ãû³ÆÏÔÊ¾
+
+
+    // å½“å‰åœ°å›¾åç§°æ˜¾ç¤º
+
     auto mapNameLabel = Label::createWithSystemFont("Current: " + _currentMapName, "Arial", 18);
+
     mapNameLabel->setPosition(Vec2(_visibleSize.width / 2, _visibleSize.height - 30));
+
     mapNameLabel->setTextColor(Color4B::GREEN);
+
     mapNameLabel->setName("mapNameLabel");
+
     this->addChild(mapNameLabel, 10);
+
 }
+
+
 
 void DraggableMapScene::createMapList()
+
 {
+
     _mapList = ListView::create();
+
     _mapList->setContentSize(Size(150, 200));
+
     _mapList->setPosition(Vec2(_visibleSize.width - 160, _visibleSize.height - 240));
+
     _mapList->setBackGroundColor(Color3B(80, 80, 80));
+
     _mapList->setBackGroundColorType(ui::Layout::BackGroundColorType::SOLID);
+
     _mapList->setOpacity(200);
+
     _mapList->setVisible(false);
+
     _mapList->setScrollBarEnabled(true);
 
+
+
     for (const auto& mapName : _mapNames) {
+
         auto item = Layout::create();
+
         item->setContentSize(Size(140, 40));
+
         item->setTouchEnabled(true);
 
+
+
         auto label = Label::createWithSystemFont(mapName, "Arial", 16);
+
         label->setPosition(Vec2(70, 20));
+
         label->setTextColor(Color4B::WHITE);
+
         label->setName("label");
+
         item->addChild(label);
 
-        // Ìí¼Óµã»÷ÊÂ¼ş
+
+
+        // æ·»åŠ ç‚¹å‡»äº‹ä»¶
+
         item->addClickEventListener([this, mapName](Ref* sender) {
+
             this->onMapItemClicked(sender);
+
             });
 
+
+
         _mapList->pushBackCustomItem(item);
+
     }
+
+
 
     this->addChild(_mapList, 20);
+
 }
+
+
 
 void DraggableMapScene::onMapButtonClicked(cocos2d::Ref* sender)
+
 {
+
     toggleMapList();
+
 }
+
+
 
 void DraggableMapScene::toggleMapList()
+
 {
+
     _isMapListVisible = !_isMapListVisible;
+
     _mapList->setVisible(_isMapListVisible);
 
-    // Èç¹û´ò¿ªµØÍ¼ÁĞ±í£¬¹Ø±ÕÓ¢ĞÛÁĞ±í
+
+
+    // å¦‚æœæ‰“å¼€åœ°å›¾åˆ—è¡¨ï¼Œå…³é—­è‹±é›„åˆ—è¡¨
+
     if (_isMapListVisible && _heroManager->isHeroListVisible()) {
+
         _heroManager->hideHeroList();
+
     }
+
 }
 
+
+
 void DraggableMapScene::onMapItemClicked(cocos2d::Ref* sender)
+
 {
+
     auto item = static_cast<Layout*>(sender);
+
     auto label = static_cast<Label*>(item->getChildByName("label"));
+
     std::string selectedMapName = label->getString();
+
+
 
     CCLOG("Selected map: %s", selectedMapName.c_str());
 
-    // ÇĞ»»µØÍ¼
+
+
+    // åˆ‡æ¢åœ°å›¾
+
     switchMap(selectedMapName);
 
-    // Òş²ØµØÍ¼ÁĞ±í
+
+
+    // éšè—åœ°å›¾åˆ—è¡¨
+
     toggleMapList();
+
 }
+
+
 
 void DraggableMapScene::switchMap(const std::string& mapName)
+
 {
+
     if (mapName == _currentMapName) return;
 
-    // ... (±£´æ×´Ì¬¡¢ÒÆ³ı¾ÉµØÍ¼´úÂë±£³Ö²»±ä) ...
+
+
+    // ... (ä¿å­˜çŠ¶æ€ã€ç§»é™¤æ—§åœ°å›¾ä»£ç ä¿æŒä¸å˜) ...
+
     saveMapElementsState();
 
+
+
     if (_mapSprite) {
+
         this->removeChild(_mapSprite);
+
         _mapSprite = nullptr;
-        _gridMap = nullptr; // Ö¸ÕëÖÃ¿Õ
+
+        _gridMap = nullptr; // æŒ‡é’ˆç½®ç©º
+
     }
 
-    // 3. ´´½¨ĞÂµØÍ¼
+
+
+    // 3. åˆ›å»ºæ–°åœ°å›¾
+
     _currentMapName = mapName;
+
     _mapSprite = Sprite::create(_currentMapName);
 
+
+
     if (_mapSprite) {
-        // ÉèÖÃÎ»ÖÃºÍËõ·Å
+
+        // è®¾ç½®ä½ç½®å’Œç¼©æ”¾
+
         _mapSprite->setPosition(_visibleSize.width / 2, _visibleSize.height / 2);
+
         _mapSprite->setScale(_currentScale);
+
         this->addChild(_mapSprite, 0);
 
-        // --------------------------------------------------------
-        // ¡¾ĞÂÔö´úÂë¡¿¸øĞÂµØÍ¼Ìí¼ÓÍø¸ñ
-        // --------------------------------------------------------
-        auto mapSize = _mapSprite->getContentSize();
-        _gridMap = GridMap::create(mapSize, 100.0f);
-        _mapSprite->addChild(_gridMap, 999);
+
+
         // --------------------------------------------------------
 
-        // ¸üĞÂ±ß½ç
+        // ã€æ–°å¢ä»£ç ã€‘ç»™æ–°åœ°å›¾æ·»åŠ ç½‘æ ¼
+
+        // --------------------------------------------------------
+
+        auto mapSize = _mapSprite->getContentSize();
+
+        _gridMap = GridMap::create(mapSize, 100.0f);
+
+        _mapSprite->addChild(_gridMap, 999);
+
+        // --------------------------------------------------------
+
+
+
+        // æ›´æ–°è¾¹ç•Œ
+
         updateBoundary();
 
-        // »Ö¸´µØÍ¼ÔªËØ
+
+
+        // æ¢å¤åœ°å›¾å…ƒç´ 
+
         restoreMapElementsState();
 
-        // 5. Í¨ÖªÓ¢ĞÛ¹ÜÀíÆ÷µØÍ¼ÒÑÇĞ»»
-        _heroManager->onMapSwitched(_mapSprite);
-        _heroManager->updateHeroesScale(_currentScale);  // Á¢¼´¸üĞÂÓ¢ĞÛËõ·Å
 
-        // 6. ¸üĞÂUIÏÔÊ¾
+
+        // 5. é€šçŸ¥è‹±é›„ç®¡ç†å™¨åœ°å›¾å·²åˆ‡æ¢
+
+        _heroManager->onMapSwitched(_mapSprite);
+
+        _heroManager->updateHeroesScale(_currentScale);  // ç«‹å³æ›´æ–°è‹±é›„ç¼©æ”¾
+
+
+
+        // 6. æ›´æ–°UIæ˜¾ç¤º
+
         auto mapNameLabel = static_cast<Label*>(this->getChildByName("mapNameLabel"));
+
         if (mapNameLabel) {
+
             mapNameLabel->setString("Current: " + _currentMapName);
+
         }
+
+
 
         CCLOG("Map switched successfully to %s", mapName.c_str());
+
     }
+
     else {
+
         CCLOG("Error: Failed to load new map %s", mapName.c_str());
 
-        // »Ö¸´¾ÉµØÍ¼Ãû³Æ
-        _currentMapName = "202507.png"; // »ØÍËµ½Ä¬ÈÏµØÍ¼
+
+
+        // æ¢å¤æ—§åœ°å›¾åç§°
+
+        _currentMapName = "202507.png"; // å›é€€åˆ°é»˜è®¤åœ°å›¾
+
         _mapSprite = Sprite::create(_currentMapName);
+
         if (_mapSprite) {
+
             _mapSprite->setPosition(_visibleSize.width / 2, _visibleSize.height / 2);
+
             _mapSprite->setScale(_currentScale);
+
             this->addChild(_mapSprite, 0);
+
             updateBoundary();
+
             restoreMapElementsState();
+
         }
+
     }
+
 }
+
+
 
 void DraggableMapScene::saveMapElementsState()
+
 {
-    // ±£´æÔªËØµÄ±¾µØ×ø±ê
+
+    // ä¿å­˜å…ƒç´ çš„æœ¬åœ°åæ ‡
+
     for (auto& element : _mapElements) {
+
         if (element.node) {
+
             element.localPosition = element.node->getPosition();
-            element.node->retain(); // ±£³ÖÒıÓÃ£¬·ÀÖ¹±»×Ô¶¯ÊÍ·Å
+
+            element.node->retain(); // ä¿æŒå¼•ç”¨ï¼Œé˜²æ­¢è¢«è‡ªåŠ¨é‡Šæ”¾
+
         }
+
     }
+
 }
+
+
 
 void DraggableMapScene::restoreMapElementsState()
+
 {
-    // »Ö¸´µØÍ¼ÔªËØµ½ĞÂµØÍ¼ÉÏ
+
+    // æ¢å¤åœ°å›¾å…ƒç´ åˆ°æ–°åœ°å›¾ä¸Š
+
     for (auto& element : _mapElements) {
+
         if (element.node && element.node->getParent() == nullptr) {
-            _mapSprite->addChild(element.node, 1); // Ìí¼Óµ½ĞÂµØÍ¼ÉÏ
+
+            _mapSprite->addChild(element.node, 1); // æ·»åŠ åˆ°æ–°åœ°å›¾ä¸Š
+
             element.node->setPosition(element.localPosition);
+
         }
-        element.node->release(); // ÊÍ·ÅÖ®Ç°±£ÁôµÄÒıÓÃ
+
+        element.node->release(); // é‡Šæ”¾ä¹‹å‰ä¿ç•™çš„å¼•ç”¨
+
     }
+
 }
+
+
 
 void DraggableMapScene::createSampleMapElements()
+
 {
-    // Çå³ı¾ÉÔªËØ
+
+    // æ¸…é™¤æ—§å…ƒç´ 
+
     _mapElements.clear();
 
+
+
     if (!_mapSprite) return;
 
-    // ´´½¨Ò»Ğ©Ê¾ÀıÔªËØ£¨±ê¼ÇµãµÈ£©
+
+
+    // åˆ›å»ºä¸€äº›ç¤ºä¾‹å…ƒç´ ï¼ˆæ ‡è®°ç‚¹ç­‰ï¼‰
+
     auto createMarker = [this](const Vec2& worldPosition, const Color4B& color, const std::string& text) {
-        // ½«ÊÀ½ç×ø±ê×ª»»ÎªµØÍ¼±¾µØ×ø±ê
+
+        // å°†ä¸–ç•Œåæ ‡è½¬æ¢ä¸ºåœ°å›¾æœ¬åœ°åæ ‡
+
         Vec2 localPos = _mapSprite->convertToNodeSpace(worldPosition);
 
-        // ±ê¼Çµã
+
+
+        // æ ‡è®°ç‚¹
+
         auto marker = DrawNode::create();
+
         marker->drawDot(Vec2::ZERO, 10, Color4F(color));
+
         marker->setPosition(localPos);
-        _mapSprite->addChild(marker, 1);  // Ìí¼Óµ½µØÍ¼ÉÏ£¬¶ø²»ÊÇ³¡¾°ÉÏ
 
-        // ÎÄ×Ö±êÇ©
+        _mapSprite->addChild(marker, 1);  // æ·»åŠ åˆ°åœ°å›¾ä¸Šï¼Œè€Œä¸æ˜¯åœºæ™¯ä¸Š
+
+
+
+        // æ–‡å­—æ ‡ç­¾
+
         auto label = Label::createWithSystemFont(text, "Arial", 16);
-        label->setPosition(localPos + Vec2(0, 20));
-        label->setTextColor(Color4B::WHITE);
-        _mapSprite->addChild(label, 1);  // Ìí¼Óµ½µØÍ¼ÉÏ
 
-        // ±£´æÔªËØĞÅÏ¢
+        label->setPosition(localPos + Vec2(0, 20));
+
+        label->setTextColor(Color4B::WHITE);
+
+        _mapSprite->addChild(label, 1);  // æ·»åŠ åˆ°åœ°å›¾ä¸Š
+
+
+
+        // ä¿å­˜å…ƒç´ ä¿¡æ¯
+
         MapElement markerElement = { marker, localPos };
+
         MapElement labelElement = { label, localPos + Vec2(0, 20) };
+
         _mapElements.push_back(markerElement);
+
         _mapElements.push_back(labelElement);
+
         };
 
-    // ÔÚÊÀ½ç×ø±êÖĞ´´½¨¼¸¸öÊ¾Àı±ê¼Ç
+
+
+    // åœ¨ä¸–ç•Œåæ ‡ä¸­åˆ›å»ºå‡ ä¸ªç¤ºä¾‹æ ‡è®°
+
     createMarker(Vec2(_visibleSize.width * 0.3f, _visibleSize.height * 0.7f), Color4B::RED, "Point A");
+
     createMarker(Vec2(_visibleSize.width * 0.7f, _visibleSize.height * 0.5f), Color4B::GREEN, "Point B");
+
     createMarker(Vec2(_visibleSize.width * 0.5f, _visibleSize.height * 0.3f), Color4B::BLUE, "Point C");
 
+
+
     CCLOG("Created %zd map elements", _mapElements.size());
+
 }
+
+
 
 void DraggableMapScene::updateMapElementsPosition()
+
 {
+
     if (!_mapSprite) return;
+
+
 
     for (auto& element : _mapElements) {
+
         if (element.node && element.node->getParent() == _mapSprite) {
-            // ±£³ÖÏà¶ÔÓÚµØÍ¼µÄ±¾µØÎ»ÖÃ²»±ä
+
+            // ä¿æŒç›¸å¯¹äºåœ°å›¾çš„æœ¬åœ°ä½ç½®ä¸å˜
+
             element.node->setPosition(element.localPosition);
+
         }
+
     }
+
 }
+
+
 
 void DraggableMapScene::setupTouchListener()
+
 {
+
     auto touchListener = EventListenerTouchOneByOne::create();
+
     touchListener->setSwallowTouches(true);
 
-    // Ê¹ÓÃ´«Í³·½·¨°ó¶¨
+
+
+    // ä½¿ç”¨ä¼ ç»Ÿæ–¹æ³•ç»‘å®š
+
     touchListener->onTouchBegan = CC_CALLBACK_2(DraggableMapScene::onTouchBegan, this);
+
     touchListener->onTouchMoved = CC_CALLBACK_2(DraggableMapScene::onTouchMoved, this);
+
     touchListener->onTouchEnded = CC_CALLBACK_2(DraggableMapScene::onTouchEnded, this);
+
     touchListener->onTouchCancelled = CC_CALLBACK_2(DraggableMapScene::onTouchCancelled, this);
 
+
+
     _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
+
 }
+
+
 
 void DraggableMapScene::setupMouseListener()
+
 {
+
     auto mouseListener = EventListenerMouse::create();
 
+
+
     mouseListener->onMouseScroll = [this](Event* event) {
+
         if (!_mapSprite) return;
 
+
+
         EventMouse* mouseEvent = dynamic_cast<EventMouse*>(event);
+
         if (mouseEvent) {
-            float scrollY = mouseEvent->getScrollY();  // »ñÈ¡¹öÂÖÔöÁ¿
 
-        // ¼ÆËãËõ·ÅÒò×Ó£¨¹öÂÖÏòÏÂÎªÕı£¬ÏòÉÏÎª¸º£©
+            float scrollY = mouseEvent->getScrollY();  // è·å–æ»šè½®å¢é‡
+
+
+
+        // è®¡ç®—ç¼©æ”¾å› å­ï¼ˆæ»šè½®å‘ä¸‹ä¸ºæ­£ï¼Œå‘ä¸Šä¸ºè´Ÿï¼‰
+
         float zoomFactor = 1.0f;
+
         if (scrollY < 0) {
+
             zoomFactor = 1.1f;
-        }
-        else if (scrollY > 0) {
-            zoomFactor = 0.9f;
-        }
-        else {
-            return;  // Ã»ÓĞ¹ö¶¯
+
         }
 
-            // »ñÈ¡Êó±êµ±Ç°Î»ÖÃ×÷ÎªËõ·ÅÖĞĞÄµã
+        else if (scrollY > 0) {
+
+            zoomFactor = 0.9f;
+
+        }
+
+        else {
+
+            return;  // æ²¡æœ‰æ»šåŠ¨
+
+        }
+
+
+
+            // è·å–é¼ æ ‡å½“å‰ä½ç½®ä½œä¸ºç¼©æ”¾ä¸­å¿ƒç‚¹
+
             Vec2 mousePos = Vec2(mouseEvent->getCursorX(), mouseEvent->getCursorY());
 
-            // Ö´ĞĞËõ·Å
+
+
+            // æ‰§è¡Œç¼©æ”¾
+
             zoomMap(zoomFactor, mousePos);
 
+
+
             CCLOG("Mouse scroll: %.1f, Scale: %.2f", scrollY, _currentScale);
+
         }
+
         };
 
+
+
     _eventDispatcher->addEventListenerWithSceneGraphPriority(mouseListener, this);
+
 }
+
+
 
 void DraggableMapScene::zoomMap(float scaleFactor, const cocos2d::Vec2& pivotPoint)
+
 {
+
     if (!_mapSprite) return;
 
-    // ¼ÆËãĞÂËõ·Å±ÈÀı
+
+
+    // è®¡ç®—æ–°ç¼©æ”¾æ¯”ä¾‹
+
     float newScale = _currentScale * scaleFactor;
 
-    // ÏŞÖÆËõ·Å·¶Î§
+
+
+    // é™åˆ¶ç¼©æ”¾èŒƒå›´
+
     newScale = MAX(_minScale, MIN(_maxScale, newScale));
 
+
+
     if (newScale == _currentScale) {
-        return;  // Ëõ·Å±ÈÀıÃ»ÓĞ±ä»¯
+
+        return;  // ç¼©æ”¾æ¯”ä¾‹æ²¡æœ‰å˜åŒ–
+
     }
 
-    // ±£´æËõ·ÅÇ°µÄ×´Ì¬
+
+
+    // ä¿å­˜ç¼©æ”¾å‰çš„çŠ¶æ€
+
     Vec2 oldPosition = _mapSprite->getPosition();
+
     Vec2 oldAnchor = _mapSprite->getAnchorPoint();
 
-    // Èç¹ûÖ¸¶¨ÁËÖĞĞÄµã£¬¼ÆËã»ùÓÚ¸ÃµãµÄËõ·Å
+
+
+    // å¦‚æœæŒ‡å®šäº†ä¸­å¿ƒç‚¹ï¼Œè®¡ç®—åŸºäºè¯¥ç‚¹çš„ç¼©æ”¾
+
     if (pivotPoint != Vec2::ZERO) {
-        // ½«ÖĞĞÄµã×ª»»µ½µØÍ¼µÄ±¾µØ×ø±êÏµ
+
+        // å°†ä¸­å¿ƒç‚¹è½¬æ¢åˆ°åœ°å›¾çš„æœ¬åœ°åæ ‡ç³»
+
         Vec2 worldPos = pivotPoint;
+
         Vec2 localPos = _mapSprite->convertToNodeSpace(worldPos);
 
-        // ¼ÆËãËõ·ÅÇ°ºóµÄÎ»ÖÃ±ä»¯
+
+
+        // è®¡ç®—ç¼©æ”¾å‰åçš„ä½ç½®å˜åŒ–
+
         Vec2 offsetBefore = localPos * _currentScale;
+
         Vec2 offsetAfter = localPos * newScale;
+
         Vec2 positionDelta = offsetAfter - offsetBefore;
 
-        // Ó¦ÓÃËõ·ÅºÍÎ»ÖÃµ÷Õû
+
+
+        // åº”ç”¨ç¼©æ”¾å’Œä½ç½®è°ƒæ•´
+
         _mapSprite->setScale(newScale);
+
         _mapSprite->setPosition(oldPosition - positionDelta);
-    }
-    else {
-        // Ã»ÓĞÖ¸¶¨ÖĞĞÄµã£¬¼òµ¥Ëõ·Å
-        _mapSprite->setScale(newScale);
+
     }
 
-    // ¸üĞÂµ±Ç°Ëõ·Å±ÈÀı
+    else {
+
+        // æ²¡æœ‰æŒ‡å®šä¸­å¿ƒç‚¹ï¼Œç®€å•ç¼©æ”¾
+
+        _mapSprite->setScale(newScale);
+
+    }
+
+
+
+    // æ›´æ–°å½“å‰ç¼©æ”¾æ¯”ä¾‹
+
     _currentScale = newScale;
 
-    // ¸üĞÂ±ß½ç£¨Ëõ·Åºó±ß½ç»á±ä»¯£©
+
+
+    // æ›´æ–°è¾¹ç•Œï¼ˆç¼©æ”¾åè¾¹ç•Œä¼šå˜åŒ–ï¼‰
+
     updateBoundary();
 
-    // ¸üĞÂµØÍ¼ÔªËØÎ»ÖÃ
+
+
+    // æ›´æ–°åœ°å›¾å…ƒç´ ä½ç½®
+
     updateMapElementsPosition();
 
-    // ¸üĞÂÓ¢ĞÛËõ·Å
+
+
+    // æ›´æ–°è‹±é›„ç¼©æ”¾
+
     _heroManager->updateHeroesScale(_currentScale);
 
-    // È·±£µØÍ¼ÔÚ±ß½çÄÚ
+
+
+    // ç¡®ä¿åœ°å›¾åœ¨è¾¹ç•Œå†…
+
     ensureMapInBoundary();
+
 }
 
+
+
 void DraggableMapScene::updateBoundary()
+
 {
+
     if (!_mapSprite) return;
+
+
 
     auto mapSize = _mapSprite->getContentSize() * _currentScale;
 
-    // ¼ÆËãÍÏ¶¯±ß½ç
+
+
+    // è®¡ç®—æ‹–åŠ¨è¾¹ç•Œ
+
     float minX = _visibleSize.width - mapSize.width / 2;
+
     float maxX = mapSize.width / 2;
+
     float minY = _visibleSize.height - mapSize.height / 2;
+
     float maxY = mapSize.height / 2;
 
-    // Èç¹ûµØÍ¼±ÈÆÁÄ»Ğ¡£¬ÔòÓ¦¸Ã¾ÓÖĞ²»ÄÜÍÏ¶¯
+
+
+    // å¦‚æœåœ°å›¾æ¯”å±å¹•å°ï¼Œåˆ™åº”è¯¥å±…ä¸­ä¸èƒ½æ‹–åŠ¨
+
     if (mapSize.width <= _visibleSize.width) {
+
         minX = maxX = _visibleSize.width / 2;
+
     }
+
     if (mapSize.height <= _visibleSize.height) {
+
         minY = maxY = _visibleSize.height / 2;
+
     }
+
+
 
     _mapBoundary = Rect(minX, minY, maxX - minX, maxY - minY);
 
+
+
     CCLOG("Boundary updated - Scale: %.2f, Boundary: minX=%.1f, maxX=%.1f",
+
         _currentScale, minX, maxX);
+
 }
+
+
 
 bool DraggableMapScene::onTouchBegan(Touch* touch, Event* event)
+
 {
+
     _lastTouchPos = touch->getLocation();
 
+
+
     if (_isBuildingMode) {
-        // ½¨ÔìÄ£Ê½ÏÂ£¬µã»÷ÆÁÄ» = ³¢ÊÔ·ÅÖÃ
-        // 1. ½«ÆÁÄ»×ø±ê×ªÎªµØÍ¼ÄÚ²¿×ø±ê (¹Ø¼üÒ»²½£¡)
+
+        // å»ºé€ æ¨¡å¼ä¸‹ï¼Œç‚¹å‡»å±å¹• = å°è¯•æ”¾ç½®
+
+        // 1. å°†å±å¹•åæ ‡è½¬ä¸ºåœ°å›¾å†…éƒ¨åæ ‡ (å…³é”®ä¸€æ­¥ï¼)
+
         Vec2 mapPos = _mapSprite->convertToNodeSpace(touch->getLocation());
-        // 2. »ñÈ¡¸ñ×Ó×ø±ê
+
+        // 2. è·å–æ ¼å­åæ ‡
+
         Vec2 gridPos = _gridMap->getGridPosition(mapPos);
 
-        // 3. Ö´ĞĞ·ÅÖÃ
+
+
+        // 3. æ‰§è¡Œæ”¾ç½®
+
         placeBuilding(gridPos);
 
-        return true; // ÍÌÊÉ´¥Ãş£¬²»ÈÃËü´©Í¸µ½µ×ÏÂµÄÂß¼­
+
+
+        return true; // åå™¬è§¦æ‘¸ï¼Œä¸è®©å®ƒç©¿é€åˆ°åº•ä¸‹çš„é€»è¾‘
+
     }
 
+
+
     return true;
+
 }
 
+
+
 void DraggableMapScene::onTouchMoved(Touch* touch, Event* event)
+
 {
+
     Vec2 currentTouchPos = touch->getLocation();
 
+
+
     if (_isBuildingMode && _ghostSprite) {
-        // 1. »ñÈ¡Ğ¡¸ñ×Ó×ø±ê
+
+        // 1. è·å–å°æ ¼å­åæ ‡
+
         Vec2 gridPos = _gridMap->getGridPosition(currentTouchPos);
 
-        // 2. ¼ÙÉèÕâ¸öËşÊÇ 3x3 µÄ´ó½¨Öş
+
+
+        // 2. å‡è®¾è¿™ä¸ªå¡”æ˜¯ 3x3 çš„å¤§å»ºç­‘
+
         Size buildingSize = Size(3, 3);
 
-        // 3. ³åÍ»¼ì²â
+
+
+        // 3. å†²çªæ£€æµ‹
+
         bool canBuild = _gridMap->checkArea(gridPos, buildingSize);
 
-        // 4. ¸üĞÂµ××ù£¨ÏÖÔÚ»á»­Ò»¸ö¸²¸Ç 3x3 ÇøÓòµÄ´óÁâĞÎ£©
+
+
+        // 4. æ›´æ–°åº•åº§ï¼ˆç°åœ¨ä¼šç”»ä¸€ä¸ªè¦†ç›– 3x3 åŒºåŸŸçš„å¤§è±å½¢ï¼‰
+
         _gridMap->updateBuildingBase(gridPos, buildingSize, canBuild);
 
-        // 5. ¸üĞÂ»ÃÓ°Î»ÖÃ
-        // ×¢Òâ£ºBuildingBase ÊÇ»­ÔÚ¸ñ×ÓµÄÕıÖĞ¼ä£¬
-        // µ«Èç¹ûÎÒÃÇµÄÃªµãÊÇ (0.5, 0.5)£¬sprite Ó¦¸ÃÎ»ÓÚÕâ¸ö 3x3 ÇøÓòµÄÖĞĞÄ¡£
-        // getPositionFromGrid ·µ»ØµÄÊÇ (x,y) Õâ¸öµ¥Ò»Ğ¡¸ñ×ÓµÄÖĞĞÄ¡£
-        // ÕâÀïµÄÖĞĞÄµã¼ÆËãÉÔÎ¢¸´ÔÓÒ»µã£º
 
-        Vec2 centerGridPos = gridPos + Vec2(1.0f, 1.0f); // 3x3 µÄÖĞĞÄÊÇÆ«ÒÆ 1,1 (0,1,2 ÖĞ¼äÊÇ 1)
-        // »òÕß¸ü¾«È·µØ£¬¼ÆËã¼¸ºÎÖĞĞÄ£º
+
+        // 5. æ›´æ–°å¹»å½±ä½ç½®
+
+        // æ³¨æ„ï¼šBuildingBase æ˜¯ç”»åœ¨æ ¼å­çš„æ­£ä¸­é—´ï¼Œ
+
+        // ä½†å¦‚æœæˆ‘ä»¬çš„é”šç‚¹æ˜¯ (0.5, 0.5)ï¼Œsprite åº”è¯¥ä½äºè¿™ä¸ª 3x3 åŒºåŸŸçš„ä¸­å¿ƒã€‚
+
+        // getPositionFromGrid è¿”å›çš„æ˜¯ (x,y) è¿™ä¸ªå•ä¸€å°æ ¼å­çš„ä¸­å¿ƒã€‚
+
+        // è¿™é‡Œçš„ä¸­å¿ƒç‚¹è®¡ç®—ç¨å¾®å¤æ‚ä¸€ç‚¹ï¼š
+
+
+
+        Vec2 centerGridPos = gridPos + Vec2(1.0f, 1.0f); // 3x3 çš„ä¸­å¿ƒæ˜¯åç§» 1,1 (0,1,2 ä¸­é—´æ˜¯ 1)
+
+        // æˆ–è€…æ›´ç²¾ç¡®åœ°ï¼Œè®¡ç®—å‡ ä½•ä¸­å¿ƒï¼š
+
         // Vec2 p1 = getPositionFromGrid(gridPos);
+
         // Vec2 p2 = getPositionFromGrid(gridPos + Vec2(2,2));
+
         // Vec2 visualCenter = (p1 + p2) / 2; 
 
-        // ¼òµ¥Æğ¼û£¬ÎÒÃÇ¶ÔÆëµ½ gridPos Õâ¸öĞ¡¸ñ×ÓµÄÎ»ÖÃ£¬
-        // µ«ÒòÎªËşºÜ´ó£¬¿´ÆğÀ´¿ÉÄÜ»áÆ«¡£
-        // ÍêÃÀµÄ×ö·¨ÊÇ¼ÆËã 3x3 ÇøÓòµÄÏñËØÖĞĞÄ£º
+
+
+        // ç®€å•èµ·è§ï¼Œæˆ‘ä»¬å¯¹é½åˆ° gridPos è¿™ä¸ªå°æ ¼å­çš„ä½ç½®ï¼Œ
+
+        // ä½†å› ä¸ºå¡”å¾ˆå¤§ï¼Œçœ‹èµ·æ¥å¯èƒ½ä¼šåã€‚
+
+        // å®Œç¾çš„åšæ³•æ˜¯è®¡ç®— 3x3 åŒºåŸŸçš„åƒç´ ä¸­å¿ƒï¼š
+
         Vec2 posStart = _gridMap->getPositionFromGrid(gridPos);
+
         Vec2 posEnd = _gridMap->getPositionFromGrid(gridPos + Vec2(2, 2));
+
         Vec2 centerPos = (posStart + posEnd) / 2.0f;
+
+
 
         _ghostSprite->setPosition(centerPos);
 
-        // ±£´æ×´Ì¬¹© Ended Ê¹ÓÃ
-        _ghostSprite->setUserData((void*)(canBuild ? 1 : 0)); // ¼òµ¥hack´æ×´Ì¬
+
+
+        // ä¿å­˜çŠ¶æ€ä¾› Ended ä½¿ç”¨
+
+        _ghostSprite->setUserData((void*)(canBuild ? 1 : 0)); // ç®€å•hackå­˜çŠ¶æ€
+
+
 
         return;
+
     }
 
-    // ÆÕÍ¨ÍÏ×§µØÍ¼Âß¼­
+
+
+    // æ™®é€šæ‹–æ‹½åœ°å›¾é€»è¾‘
+
     Vec2 delta = currentTouchPos - _lastTouchPos;
+
     moveMap(delta);
+
     _lastTouchPos = currentTouchPos;
+
 }
+
+
 
 void DraggableMapScene::onTouchEnded(Touch* touch, Event* event)
-{
-    if (_isBuildingMode) {
-        Vec2 touchPos = touch->getLocation();
-        Vec2 gridPos = _gridMap->getGridPosition(touchPos);
-        Size buildingSize = Size(3, 3); // ¶¨Òå½¨Öş´óĞ¡
 
-        // ÔÙ´Î¼ì²é£¨·ÀÖ¹¶àµã´¥¿Ø»òÆäËû±ßÔµÇé¿ö£©
+{
+
+    if (_isBuildingMode) {
+
+        Vec2 touchPos = touch->getLocation();
+
+        Vec2 gridPos = _gridMap->getGridPosition(touchPos);
+
+        Size buildingSize = Size(3, 3); // å®šä¹‰å»ºç­‘å¤§å°
+
+
+
+        // å†æ¬¡æ£€æŸ¥ï¼ˆé˜²æ­¢å¤šç‚¹è§¦æ§æˆ–å…¶ä»–è¾¹ç¼˜æƒ…å†µï¼‰
+
         if (_gridMap->checkArea(gridPos, buildingSize)) {
+
             placeBuilding(gridPos);
+
         }
+
         else {
-            // ²¥·ÅÒ»¸ö´íÎóÒôĞ§»òºìÉ«ÉÁË¸
+
+            // æ’­æ”¾ä¸€ä¸ªé”™è¯¯éŸ³æ•ˆæˆ–çº¢è‰²é—ªçƒ
+
             CCLOG("Cannot build here!");
+
         }
+
     }
+
 }
+
+
 
 void DraggableMapScene::onTouchCancelled(cocos2d::Touch* touch, cocos2d::Event* event)
+
 {
-    // ´¥ÃşÈ¡Ïû´¦Àí
+
+    // è§¦æ‘¸å–æ¶ˆå¤„ç†
+
     this->onTouchEnded(touch, event);
+
 }
+
+
 
 void DraggableMapScene::moveMap(const cocos2d::Vec2& delta)
+
 {
+
     if (!_mapSprite) return;
+
+
 
     _mapSprite->setPosition(_mapSprite->getPosition() + delta);
+
     ensureMapInBoundary();
+
 }
+
+
 
 void DraggableMapScene::ensureMapInBoundary()
+
 {
+
     if (!_mapSprite) return;
 
+
+
     cocos2d::Vec2 currentPos = _mapSprite->getPosition();
+
     cocos2d::Vec2 newPos = currentPos;
 
+
+
     if (currentPos.x < _mapBoundary.getMinX()) {
+
         newPos.x = _mapBoundary.getMinX();
+
     }
+
     else if (currentPos.x > _mapBoundary.getMaxX()) {
+
         newPos.x = _mapBoundary.getMaxX();
+
     }
+
+
 
     if (currentPos.y < _mapBoundary.getMinY()) {
+
         newPos.y = _mapBoundary.getMinY();
+
     }
+
     else if (currentPos.y > _mapBoundary.getMaxY()) {
+
         newPos.y = _mapBoundary.getMaxY();
+
     }
+
+
 
     if (newPos != currentPos) {
+
         _mapSprite->setPosition(newPos);
+
     }
+
 }
 
+
+
 void DraggableMapScene::startPlacingBuilding()
+
 {
+
     if (!_mapSprite || !_gridMap) return;
+
+
 
     _isBuildingMode = true;
 
-    // 1. ¡¾ĞÂÔö¡¿¿ªÆôÈ«ÆÁÍø¸ñÏÔÊ¾
+
+
+    // 1. ã€æ–°å¢ã€‘å¼€å¯å…¨å±ç½‘æ ¼æ˜¾ç¤º
+
     _gridMap->showWholeGrid(true);
 
-    // 1. ´´½¨»ÃÓ° (Tower.png)
-    _ghostSprite = Sprite::create("Tower.png");
-    if (_ghostSprite) {
-        _ghostSprite->setOpacity(150); // °ëÍ¸Ã÷
 
-        // ¡¾¹Ø¼ü¡¿ÉèÖÃÃªµã (0.5, 0.2) ÈÃ½Åµ×¶ÔÆëÍø¸ñÖĞĞÄ
+
+    // 1. åˆ›å»ºå¹»å½± (Tower.png)
+
+    _ghostSprite = Sprite::create("Tower.png");
+
+    if (_ghostSprite) {
+
+        _ghostSprite->setOpacity(150); // åŠé€æ˜
+
+
+
+        // ã€å…³é”®ã€‘è®¾ç½®é”šç‚¹ (0.5, 0.2) è®©è„šåº•å¯¹é½ç½‘æ ¼ä¸­å¿ƒ
+
         _ghostSprite->setAnchorPoint(Vec2(0.5f, 0.15f));
 
-        // ¼Óµ½µØÍ¼ÉÏ£¡ÕâÑùËõ·ÅµØÍ¼Ê±£¬»ÃÓ°´óĞ¡Ò²»á¸ú×Å±ä
+
+
+        // åŠ åˆ°åœ°å›¾ä¸Šï¼è¿™æ ·ç¼©æ”¾åœ°å›¾æ—¶ï¼Œå¹»å½±å¤§å°ä¹Ÿä¼šè·Ÿç€å˜
+
         _mapSprite->addChild(_ghostSprite, 2000);
 
-        // 2. Ìí¼Ó¹¥»÷·¶Î§È¦ (»­ÔÚ»ÃÓ°ÄÚ²¿)
+
+
+        // 2. æ·»åŠ æ”»å‡»èŒƒå›´åœˆ (ç”»åœ¨å¹»å½±å†…éƒ¨)
+
         auto rangeCircle = DrawNode::create();
+
         rangeCircle->drawDot(Vec2(_ghostSprite->getContentSize().width / 2,
-            _ghostSprite->getContentSize().height * 0.2f), // Ô²ĞÄÔÚ½Åµ×
-            300, Color4F(1, 1, 1, 0.2f)); // °ë¾¶300
+
+            _ghostSprite->getContentSize().height * 0.2f), // åœ†å¿ƒåœ¨è„šåº•
+
+            300, Color4F(1, 1, 1, 0.2f)); // åŠå¾„300
+
         _ghostSprite->addChild(rangeCircle, -1);
+
     }
+
 }
 
+
+
 void DraggableMapScene::placeBuilding(Vec2 gridPos)
+
 {
+
     if (!_ghostSprite && !_isBuildingMode) return;
+
+
 
     Size buildingSize = Size(3, 3);
 
-    // 1. ±ê¼ÇÕ¼ÓÃ
+
+
+    // 1. æ ‡è®°å ç”¨
+
     _gridMap->markArea(gridPos, buildingSize, true);
 
+
+
     auto building = Sprite::create("Tower.png");
+
     building->setAnchorPoint(Vec2(0.5f, 0.2f));
 
-    // ¼ÆËã 3x3 ÇøÓòÖĞĞÄ
+
+
+    // è®¡ç®— 3x3 åŒºåŸŸä¸­å¿ƒ
+
     Vec2 posStart = _gridMap->getPositionFromGrid(gridPos);
+
     Vec2 posEnd = _gridMap->getPositionFromGrid(gridPos + Vec2(2, 2));
+
     Vec2 centerPos = (posStart + posEnd) / 2.0f;
+
+
 
     building->setPosition(centerPos);
 
-    // Z-Order: »ùÓÚ ISO Y ÖáÅÅĞò¡£Í¨³£Ê¹ÓÃ×îÏÂ·½µÄµãµÄ Y
+
+
+    // Z-Order: åŸºäº ISO Y è½´æ’åºã€‚é€šå¸¸ä½¿ç”¨æœ€ä¸‹æ–¹çš„ç‚¹çš„ Y
+
     building->setLocalZOrder(10000 - centerPos.y);
+
+
 
     _mapSprite->addChild(building);
 
-    // ¶¯»­
+
+
+    // åŠ¨ç”»
+
     building->setScale(0.0f);
+
     building->runAction(EaseBackOut::create(ScaleTo::create(0.4f, 1.0f)));
 
+
+
     endPlacing();
+
 }
+
+
 
 void DraggableMapScene::cancelPlacing()
+
 {
-    // Ö±½ÓÍ³Ò»ÍË³ö½¨ÔìÄ£Ê½
+
+    // ç›´æ¥ç»Ÿä¸€é€€å‡ºå»ºé€ æ¨¡å¼
+
     endPlacing();
+
 }
 
-// Í³Ò»½áÊø½¨Ôì£¬È·±£ËùÓĞÇåÀí¶¼ÔÚÍ¬Ò»´¦Ö´ĞĞ
+
+
+// ç»Ÿä¸€ç»“æŸå»ºé€ ï¼Œç¡®ä¿æ‰€æœ‰æ¸…ç†éƒ½åœ¨åŒä¸€å¤„æ‰§è¡Œ
+
 void DraggableMapScene::endPlacing()
+
 {
+
     _isBuildingMode = false;
 
+
+
     if (_gridMap) {
+
         _gridMap->showWholeGrid(false);
+
         _gridMap->hideBuildingBase();
+
     }
 
+
+
     if (_ghostSprite) {
+
         _ghostSprite->removeFromParent();
+
         _ghostSprite = nullptr;
+
     }
+
 }

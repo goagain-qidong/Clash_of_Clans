@@ -62,9 +62,13 @@ list(APPEND GAME_SOURCE
      Classes/Building.cpp
      Classes/GridMap.cpp
      Classes/Managers/ResourceManager.cpp
+     Classes/Managers/AccountManager.cpp
+     Classes/Managers/StorageManager.cpp
+     Classes/Managers/NetworkManager.cpp
      Classes/HeroManager.cpp
      Classes/Hero.cpp
-     CLasses/MapConfigManager.cpp
+     Classes/MapConfigManager.cpp
+     Classes/AccountSelectScene.cpp
      )
 list(APPEND GAME_HEADER
      Classes/AppDelegate.h
@@ -73,10 +77,14 @@ list(APPEND GAME_HEADER
      Classes/Building.h
      Classes/GridMap.h
      Classes/Managers/ResourceManager.h
+     Classes/Managers/AccountManager.h
+     Classes/Managers/StorageManager.h
+     Classes/Managers/NetworkManager.h
      Classes/HeroManager.h
      Classes/Hero.h
      Classes/BuildingData.h
-     CLasses/MapConfigManager.h
+     Classes/MapConfigManager.h
+     Classes/AccountSelectScene.h
      )
 
 if(ANDROID)

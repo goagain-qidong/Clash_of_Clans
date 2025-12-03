@@ -1,127 +1,253 @@
-// 2453619 Ñ¦Ø¹ÕÜ
+ï»¿// 2453619 è–›æ¯“å“²
+
+
+
 
 
 #include "ResourceManager.h"
 
-// ¾²Ì¬±äÁ¿³õÊ¼»¯
+
+
+// é™æ€å˜é‡åˆå§‹åŒ–
+
 static ResourceManager* s_instance = nullptr;
 
+
+
 ResourceManager* ResourceManager::GetInstance() 
+
 {
-    if (s_instance == nullptr) //³õÊ¼ÊÇnullptr£¬ÄÇÃ´ÎÒÃÇĞÂ½¨Ò»¸öÊµÀıÈ¥·ÃÎÊ×ÊÔ´Êı¾İ£¬´Ëºó¸ü¸ÄÒ²½«ÔÚÕâ¸öÊµÀıÉÏ
+
+    if (s_instance == nullptr) //åˆå§‹æ˜¯nullptrï¼Œé‚£ä¹ˆæˆ‘ä»¬æ–°å»ºä¸€ä¸ªå®ä¾‹å»è®¿é—®èµ„æºæ•°æ®ï¼Œæ­¤åæ›´æ”¹ä¹Ÿå°†åœ¨è¿™ä¸ªå®ä¾‹ä¸Š
+
     {
+
         s_instance = new ResourceManager();
+
         s_instance->Init();
+
     }
+
     return s_instance;
+
 }
 
+
+
 ResourceManager::ResourceManager() : on_resource_change_(nullptr) {
-    // ¹¹Ôìº¯Êı
+
+    // æ„é€ å‡½æ•°
+
 }
+
+
+
 
 
 bool ResourceManager::Init() {
-    // ³õÊ¼»¯Ä¬ÈÏÖµ
-    resources_[ResourceType::kGold] = 1000;    // ³õÊ¼½ğ±Ò
-    resources_[ResourceType::kElixir] = 1000;  // ³õÊ¼Ê¥Ë®
-    resources_[ResourceType::kGem] = 500;      // ³õÊ¼±¦Ê¯
-    resources_[ResourceType::kBuilder] = 2;    // ³õÊ¼2¸ö½¨Öş¹¤
 
-    // ³õÊ¼»¯ÈİÁ¿ (Ä¬ÈÏÈİÁ¿£¬ºóĞøÓ¦ÓÉ´ó±¾Óª/´æ´¢¹Ş¾ö¶¨)
+    // åˆå§‹åŒ–é»˜è®¤å€¼
+
+    resources_[ResourceType::kGold] = 1000;    // åˆå§‹é‡‘å¸
+
+    resources_[ResourceType::kElixir] = 1000;  // åˆå§‹åœ£æ°´
+
+    resources_[ResourceType::kGem] = 500;      // åˆå§‹å®çŸ³
+
+    resources_[ResourceType::kBuilder] = 2;    // åˆå§‹2ä¸ªå»ºç­‘å·¥
+
+
+
+    // åˆå§‹åŒ–å®¹é‡ (é»˜è®¤å®¹é‡ï¼Œåç»­åº”ç”±å¤§æœ¬è¥/å­˜å‚¨ç½å†³å®š)
+
     capacities_[ResourceType::kGold] = 10000;
+
     capacities_[ResourceType::kElixir] = 10000;
-    capacities_[ResourceType::kGem] = 999999;     // ±¦Ê¯Í¨³£ÎŞÉÏÏŞ
-    capacities_[ResourceType::kBuilder] = 5;      // ½¨Öş¹¤ÉÏÏŞ
+
+    capacities_[ResourceType::kGem] = 999999;     // å®çŸ³é€šå¸¸æ— ä¸Šé™
+
+    capacities_[ResourceType::kBuilder] = 5;      // å»ºç­‘å·¥ä¸Šé™
+
+
 
     return true;
+
 }
+
+
+
 
 
 int ResourceManager::AddResource(ResourceType type, int amount) {
+
     if (amount <= 0) 
+
         return 0;
 
+
+
     int current = resources_[type];
+
     int capacity = capacities_[type];
 
-    // ¼ÆËãÊµ¼ÊÄÜ¼Ó¶àÉÙ (²»ÄÜ³¬¹ıÉÏÏŞ)
+
+
+    // è®¡ç®—å®é™…èƒ½åŠ å¤šå°‘ (ä¸èƒ½è¶…è¿‡ä¸Šé™)
+
     int actual_add = amount;
+
     if (current + amount > capacity) 
+
     {
+
         actual_add = capacity - current;
+
     }
+
+
 
     resources_[type] += actual_add;
 
-    // Í¨Öª UI ¸üĞÂ
+
+
+    // é€šçŸ¥ UI æ›´æ–°
+
     if (on_resource_change_) 
+
     {
+
         on_resource_change_(type, resources_[type]);
+
     }
 
-    // ¿ÉÒÔÔÚ¿ØÖÆÌ¨´òÓ¡ÈÕÖ¾·½±ãµ÷ÊÔ
+
+
+    // å¯ä»¥åœ¨æ§åˆ¶å°æ‰“å°æ—¥å¿—æ–¹ä¾¿è°ƒè¯•
+
     cocos2d::log("Resource Added: Type %d, Amount %d, Current %d",static_cast<int>(type), actual_add, resources_[type]);
 
+
+
     return actual_add;
+
 }
 
+
+
 bool ResourceManager::ConsumeResource(ResourceType type, int amount) {
+
     if (amount <= 0) 
-        return true; // ÏûºÄ0×ÜÊÇ³É¹¦µÄ
+
+        return true; // æ¶ˆè€—0æ€»æ˜¯æˆåŠŸçš„
+
+
 
     if (resources_[type] >= amount) 
+
     {
+
         resources_[type] -= amount;
 
-        // Í¨Öª UI ¸üĞÂ
+
+
+        // é€šçŸ¥ UI æ›´æ–°
+
         if (on_resource_change_) 
+
         {
+
             on_resource_change_(type, resources_[type]);
+
         }
 
+
+
         cocos2d::log("Resource Consumed: Type %d, Amount %d, Remaining %d",static_cast<int>(type), amount, resources_[type]);
+
         return true;
+
     }
+
+
 
     cocos2d::log("Not enough resource! Type %d, Need %d, Have %d",static_cast<int>(type), amount, resources_[type]);
 
+
+
     return false;
+
 }
+
+
 
 bool ResourceManager::HasEnough(ResourceType type, int amount) const {
 
-    // map µÄ find ·½·¨²éÕÒ key£¬±ÜÃâ²åÈëĞÂ¼ü
+
+
+    // map çš„ find æ–¹æ³•æŸ¥æ‰¾ keyï¼Œé¿å…æ’å…¥æ–°é”®
+
     auto it = resources_.find(type);
+
     if (it != resources_.end()) 
+
     {
+
         return it->second >= amount;
+
     }
+
     return false;
+
 }
+
+
 
 int ResourceManager::GetResourceCount(ResourceType type) const {
+
     auto it = resources_.find(type);
+
     return (it != resources_.end()) ? it->second : 0;
+
 }
+
+
 
 int ResourceManager::GetResourceCapacity(ResourceType type) const {
+
     auto it = capacities_.find(type);
+
     return (it != resources_.end()) ? it->second : 0;
+
 }
+
+
 
 void ResourceManager::SetResourceCapacity(ResourceType type, int capacity) {
+
     capacities_[type] = capacity;
-    // Èç¹ûµ±Ç°×ÊÔ´³¬¹ıÁËĞÂÉÏÏŞ£¨±ÈÈç²ğ³ıÁË´¢½ğ¹Ş£©£¬ĞèÒª½Ø¶ÏÂğ£¿
-    // Í¨³£ÓÎÏ·Âß¼­ÊÇÔİÊ±±£ÁôÒç³ö²¿·Ö£¬µ«ÎŞ·¨ĞÂÔö¡£ÕâÀï¼òµ¥´¦ÀíÎª½Ø¶Ï¡£
+
+    // å¦‚æœå½“å‰èµ„æºè¶…è¿‡äº†æ–°ä¸Šé™ï¼ˆæ¯”å¦‚æ‹†é™¤äº†å‚¨é‡‘ç½ï¼‰ï¼Œéœ€è¦æˆªæ–­å—ï¼Ÿ
+
+    // é€šå¸¸æ¸¸æˆé€»è¾‘æ˜¯æš‚æ—¶ä¿ç•™æº¢å‡ºéƒ¨åˆ†ï¼Œä½†æ— æ³•æ–°å¢ã€‚è¿™é‡Œç®€å•å¤„ç†ä¸ºæˆªæ–­ã€‚
+
     if (resources_[type] > capacity) {
+
         resources_[type] = capacity;
+
         if (on_resource_change_) {
+
             on_resource_change_(type, resources_[type]);
+
         }
+
     }
+
 }
 
+
+
 void ResourceManager::SetOnResourceChangeCallback(ResourceChangeCallback callback) {
+
     on_resource_change_ = callback;
+
 }

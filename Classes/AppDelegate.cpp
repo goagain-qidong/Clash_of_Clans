@@ -25,6 +25,8 @@
 #include "AppDelegate.h"
 #include "HelloWorldScene.h"
 #include "DraggableMapScene.h"
+#include "Managers/AccountManager.h"
+#include "AccountSelectScene.h"
 
 // #define USE_AUDIO_ENGINE 1
 
@@ -90,18 +92,15 @@ bool AppDelegate::applicationDidFinishLaunching() {
     // Set the design resolution
     glview->setDesignResolutionSize(designResolutionSize.width, designResolutionSize.height, ResolutionPolicy::NO_BORDER);
     auto frameSize = glview->getFrameSize();
-    // if the frame's height is larger than the height of medium size.
 #if 0
     if (frameSize.height > mediumResolutionSize.height)
     {        
         director->setContentScaleFactor(MIN(largeResolutionSize.height/designResolutionSize.height, largeResolutionSize.width/designResolutionSize.width));
     }
-    // if the frame's height is larger than the height of small size.
     else if (frameSize.height > smallResolutionSize.height)
     {        
         director->setContentScaleFactor(MIN(mediumResolutionSize.height/designResolutionSize.height, mediumResolutionSize.width/designResolutionSize.width));
     }
-    // if the frame's height is smaller than the height of medium size.
     else
     {        
         director->setContentScaleFactor(MIN(smallResolutionSize.height/designResolutionSize.height, smallResolutionSize.width/designResolutionSize.width));
@@ -109,10 +108,11 @@ bool AppDelegate::applicationDidFinishLaunching() {
 #endif
     register_all_packages();
 
-    // create a scene. it's an autorelease object
-    //auto scene = HelloWorld::createScene();
-    auto scene = DraggableMapScene::createScene();
-    // run
+    // Initialize account system (load from storage)
+    AccountManager::getInstance().initialize();
+
+    // Always go to account selection first
+    Scene* scene = AccountSelectScene::createScene();
     director->runWithScene(scene);
 
     return true;

@@ -1,42 +1,83 @@
-#ifndef __HERO_H__
+ï»¿#ifndef __HERO_H__
+
 #define __HERO_H__
+
+
 
 #include "cocos2d.h"
 
+
+
 class Hero : public cocos2d::Sprite
+
 {
+
 public:
+
     static Hero* create(const std::string& frameName);
+
     virtual bool init(const std::string& frameName);
 
-    // ÒÆ¶¯µ½Ö¸¶¨Î»ÖÃ£¨ÊÀ½ç×ø±ê£©
+
+
+    // ç§»åŠ¨åˆ°æŒ‡å®šä½ç½®ï¼ˆä¸–ç•Œåæ ‡ï¼‰
+
     void moveTo(const cocos2d::Vec2& worldPosition, cocos2d::Node* mapNode);
 
-    // ¸üĞÂËõ·Å£¨¸ù¾İµØÍ¼Ëõ·Åµ÷Õû£©
+
+
+    // æ›´æ–°ç¼©æ”¾ï¼ˆæ ¹æ®åœ°å›¾ç¼©æ”¾è°ƒæ•´ï¼‰
+
     void updateScale(float mapScale);
 
-    // »ñÈ¡Ó¢ĞÛÃû³Æ
+
+
+    // è·å–è‹±é›„åç§°
+
     std::string getHeroName() const { return _heroName; }
 
-    // ÉèÖÃ/»ñÈ¡ÊÇ·ñ±»Ñ¡ÖĞ
+
+
+    // è®¾ç½®/è·å–æ˜¯å¦è¢«é€‰ä¸­
+
     void setSelected(bool selected);
+
     bool isSelected() const { return _isSelected; }
 
-    // ²¥·ÅĞĞ×ß¶¯»­
+
+
+    // æ’­æ”¾è¡Œèµ°åŠ¨ç”»
+
     void playWalkAnimation();
+
     void stopWalkAnimation();
 
-    // ¼ì²éµã»÷
+
+
+    // æ£€æŸ¥ç‚¹å‡»
+
     bool containsTouch(const cocos2d::Vec2& worldPosition, cocos2d::Node* mapNode);
 
-private:
-    std::string _heroName;
-    bool _isSelected;
-    float _baseScale; // »ù´¡Ëõ·Å±ÈÀı
-    bool _isMoving; // ÊÇ·ñÕıÔÚÒÆ¶¯
 
-    // ´´½¨ĞĞ×ß¶¯»­Ö¡ĞòÁĞ
+
+private:
+
+    std::string _heroName;
+
+    bool _isSelected;
+
+    float _baseScale; // åŸºç¡€ç¼©æ”¾æ¯”ä¾‹
+
+    bool _isMoving; // æ˜¯å¦æ­£åœ¨ç§»åŠ¨
+
+
+
+    // åˆ›å»ºè¡Œèµ°åŠ¨ç”»å¸§åºåˆ—
+
     void createWalkAnimationFrames();
+
 };
+
+
 
 #endif // __HERO_H__

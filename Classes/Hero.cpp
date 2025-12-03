@@ -8,6 +8,7 @@
  ****************************************************************/
 #include "Hero.h"
 #include "cocos2d.h"
+#include "GridMap.h"
 
 USING_NS_CC;
 
@@ -48,31 +49,54 @@ void Hero::moveTo(const cocos2d::Vec2& worldPosition, cocos2d::Node* mapNode)
 {
     if (!mapNode || !_isSelected) return; // 只有选中的英雄才能移动
 
-    // 将世界坐标转换为地图本地坐标
     Vec2 localPos = mapNode->convertToNodeSpace(worldPosition);
 
-    // 停止所有动作
     this->stopAllActions();
 
-    // 计算移动距离和时间
     float distance = this->getPosition().getDistance(localPos);
     float duration = distance / 100.0f;
 
-    // 播放行走动画
     playWalkAnimation();
     _isMoving = true;
 
-    // 移动动作
     auto moveTo = MoveTo::create(duration, localPos);
     auto callback = CallFunc::create([this]() {
         this->stopWalkAnimation();
         _isMoving = false;
-        });
+    });
 
     auto sequence = Sequence::create(moveTo, callback, nullptr);
     this->runAction(sequence);
 
     CCLOG("Hero %s moving to: %.1f, %.1f, duration: %.2f", _heroName.c_str(), localPos.x, localPos.y, duration);
+}
+
+void Hero::moveAlongPath(const std::vector<cocos2d::Vec2>& gridPath, cocos2d::Node* mapNode, GridMap* grid)
+{
+    if (!mapNode || !grid || gridPath.empty()) return;
+
+    this->stopAllActions();
+    playWalkAnimation();
+    _isMoving = true;
+
+    Vector<FiniteTimeAction*> moves;
+    Vec2 prev = this->getPosition();
+    for (auto gp : gridPath) {
+        Vec2 p = grid->getPositionFromGrid(gp);
+        Vec2 local = p; // grid returns local position to grid parent; grid is child of mapSprite
+        float distance = prev.getDistance(local);
+        float duration = distance / 120.0f; // slightly faster for path following
+        moves.pushBack(MoveTo::create(duration, local));
+        prev = local;
+    }
+
+    auto finish = CallFunc::create([this]() {
+        this->stopWalkAnimation();
+        _isMoving = false;
+    });
+
+    auto seq = Sequence::create(moves);
+    this->runAction(Sequence::create(seq, finish, nullptr));
 }
 
 void Hero::updateScale(float mapScale)

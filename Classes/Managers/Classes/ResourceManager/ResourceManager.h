@@ -1,79 +1,157 @@
-//2453619 Ñ¦Ø¹ÕÜ
+ï»¿//2453619 è–›æ¯“å“²
+
+
 
 #ifndef RESOURCE_MANAGER_H_
+
 #define RESOURCE_MANAGER_H_
 
+
+
 #include "cocos2d.h"
+
 #include <functional>
+
 #include <map>
 
-// ¶¨Òå×ÊÔ´ÀàĞÍ£¬Ê¹ÓÃ enum class (C++11)
+
+
+// å®šä¹‰èµ„æºç±»å‹ï¼Œä½¿ç”¨ enum class (C++11)
+
 enum class ResourceType {
-    kGold,      // ½ğ±Ò
-    kElixir,    // Ê¥Ë®
-    kGem,       // ±¦Ê¯(¾ÍÊÇ³äÇ®ÂòµÄÄÇ¸ö£¬½«À´¿Ï¶¨²»Éè¼Æ³äÇ®¹¦ÄÜ£¬Èç¹ûÕâ¿éÒª×ö¾ÍÖ±½Óµã»÷¼´ËÍ¾ÍĞĞ£©
-    kBuilder    // ½¨Öş¹¤(¿ÕÏĞ¹¤ÈËÊı)
+
+    kGold,      // é‡‘å¸
+
+    kElixir,    // åœ£æ°´
+
+    kGem,       // å®çŸ³(å°±æ˜¯å……é’±ä¹°çš„é‚£ä¸ªï¼Œå°†æ¥è‚¯å®šä¸è®¾è®¡å……é’±åŠŸèƒ½ï¼Œå¦‚æœè¿™å—è¦åšå°±ç›´æ¥ç‚¹å‡»å³é€å°±è¡Œï¼‰
+
+    kBuilder    // å»ºç­‘å·¥(ç©ºé—²å·¥äººæ•°)
+
 };
+
+
 
 class ResourceManager {
+
 public:
-    // »ñÈ¡µ¥ÀıÊµÀı
+
+    // è·å–å•ä¾‹å®ä¾‹
+
     static ResourceManager* GetInstance();
 
-    // ³õÊ¼»¯
+
+
+    // åˆå§‹åŒ–
+
     bool Init();
 
-    // --- ºËĞÄ²Ù×÷ ---
+
+
+    // --- æ ¸å¿ƒæ“ä½œ ---
+
+
 
     /**
-     * Ôö¼Ó×ÊÔ´
-     * @param type ×ÊÔ´ÀàĞÍ
-     * @param amount Ôö¼ÓµÄÊıÁ¿
-     * @return Êµ¼ÊÔö¼ÓµÄÊıÁ¿ (ÒòÎª¿ÉÄÜ»á´ïµ½´æ´¢ÉÏÏŞ)
+
+     * å¢åŠ èµ„æº
+
+     * @param type èµ„æºç±»å‹
+
+     * @param amount å¢åŠ çš„æ•°é‡
+
+     * @return å®é™…å¢åŠ çš„æ•°é‡ (å› ä¸ºå¯èƒ½ä¼šè¾¾åˆ°å­˜å‚¨ä¸Šé™)
+
      */
+
     int AddResource(ResourceType type, int amount);
 
+
+
     /**
-     * ÏûºÄ×ÊÔ´
-     * @param type ×ÊÔ´ÀàĞÍ
-     * @param amount ÏûºÄµÄÊıÁ¿
-     * @return Èç¹û³É¹¦¿Û³ı·µ»Ø true£¬Óà¶î²»×ã·µ»Ø false
+
+     * æ¶ˆè€—èµ„æº
+
+     * @param type èµ„æºç±»å‹
+
+     * @param amount æ¶ˆè€—çš„æ•°é‡
+
+     * @return å¦‚æœæˆåŠŸæ‰£é™¤è¿”å› trueï¼Œä½™é¢ä¸è¶³è¿”å› false
+
      */
+
     bool ConsumeResource(ResourceType type, int amount);
 
-    // ¼ì²é×ÊÔ´ÊÇ·ñ×ã¹»
+
+
+    // æ£€æŸ¥èµ„æºæ˜¯å¦è¶³å¤Ÿ
+
     bool HasEnough(ResourceType type, int amount) const;
 
-    // »ñÈ¡µ±Ç°×ÊÔ´ÊıÁ¿
+
+
+    // è·å–å½“å‰èµ„æºæ•°é‡
+
     int GetResourceCount(ResourceType type) const;
 
-    // »ñÈ¡×ÊÔ´ÉÏÏŞ (ÀıÈç½ğ¿âÈİÁ¿)
+
+
+    // è·å–èµ„æºä¸Šé™ (ä¾‹å¦‚é‡‘åº“å®¹é‡)
+
     int GetResourceCapacity(ResourceType type) const;
 
-    // ÉèÖÃ×ÊÔ´ÉÏÏŞ (µ±½¨ÔìĞÂµÄ´æ´¢½¨ÖşÊ±µ÷ÓÃ)
+
+
+    // è®¾ç½®èµ„æºä¸Šé™ (å½“å»ºé€ æ–°çš„å­˜å‚¨å»ºç­‘æ—¶è°ƒç”¨)
+
     void SetResourceCapacity(ResourceType type, int capacity);
 
-    // --- ÊÂ¼ş¼àÌıÏµÍ³ (¹Û²ìÕßÄ£Ê½) ---
-    // µ±×ÊÔ´±ä»¯Ê±£¬UIĞèÒªÖªµÀ¡£ÎÒÃÇÊ¹ÓÃ»Øµ÷º¯Êı¡£
+
+
+    // --- äº‹ä»¶ç›‘å¬ç³»ç»Ÿ (è§‚å¯Ÿè€…æ¨¡å¼) ---
+
+    // å½“èµ„æºå˜åŒ–æ—¶ï¼ŒUIéœ€è¦çŸ¥é“ã€‚æˆ‘ä»¬ä½¿ç”¨å›è°ƒå‡½æ•°ã€‚
+
     using ResourceChangeCallback = std::function<void(ResourceType, int)>;
+
     void SetOnResourceChangeCallback(ResourceChangeCallback callback);
 
+
+
 private:
-    // Ë½ÓĞ¹¹Ôìº¯Êı£¬È·±£µ¥Àı
+
+    // ç§æœ‰æ„é€ å‡½æ•°ï¼Œç¡®ä¿å•ä¾‹
+
     ResourceManager();
 
-    // ½ûÖ¹¿½±´ºÍ¸³Öµ
+
+
+    // ç¦æ­¢æ‹·è´å’Œèµ‹å€¼
+
     ResourceManager(const ResourceManager&) = delete;
+
     ResourceManager& operator=(const ResourceManager&) = delete;
 
-    // ´æ´¢µ±Ç°×ÊÔ´ÊıÁ¿
+
+
+    // å­˜å‚¨å½“å‰èµ„æºæ•°é‡
+
     std::map<ResourceType, int> resources_;
 
-    // ´æ´¢×ÊÔ´ÉÏÏŞ
+
+
+    // å­˜å‚¨èµ„æºä¸Šé™
+
     std::map<ResourceType, int> capacities_;
 
-    // ×ÊÔ´±ä»¯µÄ»Øµ÷º¯Êı
+
+
+    // èµ„æºå˜åŒ–çš„å›è°ƒå‡½æ•°
+
     ResourceChangeCallback on_resource_change_;
+
 };
+
+
 
 #endif // RESOURCE_MANAGER_H_

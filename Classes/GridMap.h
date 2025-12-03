@@ -37,4 +37,10 @@ public:
     bool checkArea(cocos2d::Vec2 startGridPos, cocos2d::Size size);
     void showWholeGrid(bool visible, const cocos2d::Size& currentBuildingSize = cocos2d::Size::ZERO);
     void markArea(cocos2d::Vec2 startGridPos, cocos2d::Size size, bool occupied);
+
+    // --- Pathfinding helpers ---
+    inline int getGridWidth() const { return _gridWidth; }
+    inline int getGridHeight() const { return _gridHeight; }
+    inline float getTileSize() const { return _tileSize; }
+    bool isBlocked(int x, int y) const;
 };

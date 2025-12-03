@@ -1,237 +1,473 @@
-#include "GridMap.h"
+ï»¿#include "GridMap.h"
+
+
 
 USING_NS_CC;
 
+
+
 GridMap* GridMap::create(const Size& mapSize, float tileSize)
+
 {
+
     GridMap* ret = new (std::nothrow) GridMap();
+
     if (ret && ret->init(mapSize, tileSize)) {
+
         ret->autorelease();
+
         return ret;
+
     }
+
     delete ret;
+
     return nullptr;
+
 }
+
+
 
 bool GridMap::init(const Size& mapSize, float tileSize)
+
 {
+
     if (!Node::init()) return false;
+
     _mapSize = mapSize;
+
     _tileSize = tileSize;
 
+
+
     _gridNode = DrawNode::create();
+
     this->addChild(_gridNode, 1);
 
+
+
     _baseNode = DrawNode::create();
+
     this->addChild(_baseNode, 2);
 
-    // ³õÊ¼»¯³åÍ»µØÍ¼
-    _gridWidth = mapSize.width / tileSize; // Êµ¼ÊÉÏÓ¦¸Ã¸ù¾İµØÍ¼ĞÎ×´Ï¸Ëã£¬ÕâÀï¼ò»¯´¦Àí
-    _gridHeight = mapSize.height / tileSize * 2; // ISOµØÍ¼YÖá±È½ÏÌØÊâ£¬Ô¤Áô¶àÒ»µã¿Õ¼ä·ÀÖ¹Ô½½ç
 
-    // ³õÊ¼»¯¶şÎ¬Êı×é£¬È«²¿Îª false (¿Õ)
+
+    // åˆå§‹åŒ–å†²çªåœ°å›¾
+
+    _gridWidth = mapSize.width / tileSize; // å®é™…ä¸Šåº”è¯¥æ ¹æ®åœ°å›¾å½¢çŠ¶ç»†ç®—ï¼Œè¿™é‡Œç®€åŒ–å¤„ç†
+
+    _gridHeight = mapSize.height / tileSize * 2; // ISOåœ°å›¾Yè½´æ¯”è¾ƒç‰¹æ®Šï¼Œé¢„ç•™å¤šä¸€ç‚¹ç©ºé—´é˜²æ­¢è¶Šç•Œ
+
+
+
+    // åˆå§‹åŒ–äºŒç»´æ•°ç»„ï¼Œå…¨éƒ¨ä¸º false (ç©º)
+
     _collisionMap.resize(_gridWidth, std::vector<bool>(_gridHeight, false));
 
+
+
     return true;
+
 }
+
+
 
 Vec2 GridMap::getPositionFromGrid(Vec2 gridPos)
+
 {
+
     float halfW = _tileSize / 2.0f;
+
     float halfH = halfW * 0.7f;
 
-    // ±ê×¼ ISO ¹«Ê½ (ÉÏ¸ö»Ø´ğĞŞÕıºóµÄ°æ±¾)
-    // ¼ÓÉÏÆ«ÒÆÁ¿ÈÃ (0,0) ÔÚµØÍ¼ÉÏ·½ÖĞĞÄ
+
+
+    // æ ‡å‡† ISO å…¬å¼ (ä¸Šä¸ªå›ç­”ä¿®æ­£åçš„ç‰ˆæœ¬)
+
+    // åŠ ä¸Šåç§»é‡è®© (0,0) åœ¨åœ°å›¾ä¸Šæ–¹ä¸­å¿ƒ
+
     float x = (gridPos.x - gridPos.y) * halfW + _mapSize.width / 2.0f;
-    float y = _mapSize.height - (gridPos.x + gridPos.y) * halfH - halfH; // ÕâÀïµÄÎ¢µ÷ÊÓ¾ßÌåÌùÍ¼¶ø¶¨
+
+    float y = _mapSize.height - (gridPos.x + gridPos.y) * halfH - halfH; // è¿™é‡Œçš„å¾®è°ƒè§†å…·ä½“è´´å›¾è€Œå®š
+
+
 
     return Vec2(x, y);
+
 }
+
+
 
 Vec2 GridMap::getGridPosition(Vec2 worldPosition)
+
 {
+
     Vec2 localPos = this->convertToNodeSpace(worldPosition);
 
+
+
     float halfW = _tileSize / 2.0f;
+
     float halfH = halfW * 0.7f;
+
+
 
     float dx = localPos.x - _mapSize.width / 2.0f;
-    float dy = _mapSize.height - localPos.y - halfH; // ¶ÔÓ¦ÉÏÃæµÄYÖá·´×ªÂß¼­
+
+    float dy = _mapSize.height - localPos.y - halfH; // å¯¹åº”ä¸Šé¢çš„Yè½´åè½¬é€»è¾‘
+
+
 
     float x = (dy / halfH + dx / halfW) / 2.0f;
+
     float y = (dy / halfH - dx / halfW) / 2.0f;
 
+
+
     return Vec2(round(x), round(y));
+
 }
 
+
+
 void GridMap::showWholeGrid(bool visible)
+
 {
+
     _gridNode->clear();
+
     if (!visible) return;
 
-    // --- ÅäÖÃ²ÎÊı ---
-    int bigGridStep = 3; // Ã¿ 3x3 ËãÒ»¸ö´ó¸ñ
 
-    // ÑÕÉ«ÅäÖÃ
-    Color4F smallGridColor = Color4F(1.0f, 1.0f, 1.0f, 0.05f); // Ğ¡¸ñ×Óµ×É«£º¼«µ­£¬¼¸ºõ¿´²»¼û£¬Ö»×÷Îªµ×ÎÆ
-    Color4F smallGridLineColor = Color4F(1.0f, 1.0f, 1.0f, 0.15f); // Ğ¡¸ñ×ÓÏß£º»ÒÉ«£¬°ëÍ¸Ã÷
-    Color4F bigGridLineColor = Color4F(1.0f, 1.0f, 1.0f, 0.35f); // ´ó¸ñ×ÓÏß£ºÁÁ°×É«£¬°ëÍ¸Ã÷
 
-    // »ù´¡³ß´ç¼ÆËã
+    // --- é…ç½®å‚æ•° ---
+
+    int bigGridStep = 3; // æ¯ 3x3 ç®—ä¸€ä¸ªå¤§æ ¼
+
+
+
+    // é¢œè‰²é…ç½®
+
+    Color4F smallGridColor = Color4F(1.0f, 1.0f, 1.0f, 0.05f); // å°æ ¼å­åº•è‰²ï¼šææ·¡ï¼Œå‡ ä¹çœ‹ä¸è§ï¼Œåªä½œä¸ºåº•çº¹
+
+    Color4F smallGridLineColor = Color4F(1.0f, 1.0f, 1.0f, 0.15f); // å°æ ¼å­çº¿ï¼šç°è‰²ï¼ŒåŠé€æ˜
+
+    Color4F bigGridLineColor = Color4F(1.0f, 1.0f, 1.0f, 0.35f); // å¤§æ ¼å­çº¿ï¼šäº®ç™½è‰²ï¼ŒåŠé€æ˜
+
+
+
+    // åŸºç¡€å°ºå¯¸è®¡ç®—
+
     float halfW = _tileSize / 2.0f;
+
     float halfH = halfW * 0.7f;
 
-    // ¼ÙÉèµØÍ¼×î´óÍø¸ñÊı (Äã¿ÉÒÔ´æÎª³ÉÔ±±äÁ¿ _maxGridX, _maxGridY)
-    // ÕâÀïÔİÊ±ÓÃ¹ÀËãÖµ£¬»òÕßÊ¹ÓÃ init ÀïËãµÄ _gridWidth/_gridHeight
+
+
+    // å‡è®¾åœ°å›¾æœ€å¤§ç½‘æ ¼æ•° (ä½ å¯ä»¥å­˜ä¸ºæˆå‘˜å˜é‡ _maxGridX, _maxGridY)
+
+    // è¿™é‡Œæš‚æ—¶ç”¨ä¼°ç®—å€¼ï¼Œæˆ–è€…ä½¿ç”¨ init é‡Œç®—çš„ _gridWidth/_gridHeight
+
     int maxX = _gridWidth;
+
     int maxY = _gridHeight;
 
+
+
     // ===========================================================
-    // µÚÒ»²½£º»­ËùÓĞĞ¡Íø¸ñ (×÷Îªµ×É«Ìî³ä)
+
+    // ç¬¬ä¸€æ­¥ï¼šç”»æ‰€æœ‰å°ç½‘æ ¼ (ä½œä¸ºåº•è‰²å¡«å……)
+
     // ===========================================================
+
     for (int x = 0; x < maxX; x++) {
+
         for (int y = 0; y < maxY; y++) {
+
             Vec2 center = getPositionFromGrid(Vec2(x, y));
 
+
+
             Vec2 p[4];
+
             p[0] = Vec2(center.x, center.y + halfH);
+
             p[1] = Vec2(center.x + halfW, center.y);
+
             p[2] = Vec2(center.x, center.y - halfH);
+
             p[3] = Vec2(center.x - halfW, center.y);
 
-            // Ê¹ÓÃ drawSolidPoly Ìî³äµ­É«£¬ÈÃµØÃæ¿´ÆğÀ´ÓĞÖÊ¸Ğ
+
+
+            // ä½¿ç”¨ drawSolidPoly å¡«å……æ·¡è‰²ï¼Œè®©åœ°é¢çœ‹èµ·æ¥æœ‰è´¨æ„Ÿ
+
             _gridNode->drawSolidPoly(p, 4, smallGridColor);
-            // »­Ğ¡Íø¸ñµÄ¡°±ß½çÏß¡±
+
+            // ç”»å°ç½‘æ ¼çš„â€œè¾¹ç•Œçº¿â€
+
             _gridNode->drawPoly(p, 4, true, smallGridLineColor);
+
         }
+
     }
 
+
+
     // ===========================================================
-    // µÚ¶ş²½£ºµ¥¶À»­´óÍø¸ñµÄ¡°±ß½çÏß¡±
+
+    // ç¬¬äºŒæ­¥ï¼šå•ç‹¬ç”»å¤§ç½‘æ ¼çš„â€œè¾¹ç•Œçº¿â€
+
     // ===========================================================
-    // ×¢Òâ²½³¤ÊÇ bigGridStep (3)
+
+    // æ³¨æ„æ­¥é•¿æ˜¯ bigGridStep (3)
+
     for (int x = 0; x < maxX; x += bigGridStep) {
+
         for (int y = 0; y < maxY; y += bigGridStep) {
 
-            // ÎÒÃÇÒª»­Ò»¸öÄÒÀ¨ÁË 3x3 ÇøÓòµÄ´óÁâĞÎ¿ò
-            // Âß¼­ºÍ updateBuildingBase Ò»Ä£Ò»Ñù
 
-            // 1. È·¶¨Õâ¸ö´ó¿éµÄÓĞĞ§¿í/¸ß (´¦Àí±ßÔµ²»×ã 3 ¸ñµÄÇé¿ö)
+
+            // æˆ‘ä»¬è¦ç”»ä¸€ä¸ªå›Šæ‹¬äº† 3x3 åŒºåŸŸçš„å¤§è±å½¢æ¡†
+
+            // é€»è¾‘å’Œ updateBuildingBase ä¸€æ¨¡ä¸€æ ·
+
+
+
+            // 1. ç¡®å®šè¿™ä¸ªå¤§å—çš„æœ‰æ•ˆå®½/é«˜ (å¤„ç†è¾¹ç¼˜ä¸è¶³ 3 æ ¼çš„æƒ…å†µ)
+
             int currentW = (x + bigGridStep > maxX) ? (maxX - x) : bigGridStep;
+
             int currentH = (y + bigGridStep > maxY) ? (maxY - y) : bigGridStep;
+
+
 
             if (currentW <= 0 || currentH <= 0) continue;
 
-            // 2. ¼ÆËãËÄ¸ö¹Ø¼ü¶¥µã£¨°ü¹ü×¡Õâ¿éÇøÓò£©
-            // Top:    (x, y) µÄÉÏ¶¥µã
-            // Right:  (x + w - 1, y) µÄÓÒ¶¥µã
-            // Bottom: (x + w - 1, y + h - 1) µÄÏÂ¶¥µã
-            // Left:   (x, y + h - 1) µÄ×ó¶¥µã
+
+
+            // 2. è®¡ç®—å››ä¸ªå…³é”®é¡¶ç‚¹ï¼ˆåŒ…è£¹ä½è¿™å—åŒºåŸŸï¼‰
+
+            // Top:    (x, y) çš„ä¸Šé¡¶ç‚¹
+
+            // Right:  (x + w - 1, y) çš„å³é¡¶ç‚¹
+
+            // Bottom: (x + w - 1, y + h - 1) çš„ä¸‹é¡¶ç‚¹
+
+            // Left:   (x, y + h - 1) çš„å·¦é¡¶ç‚¹
+
+
 
             Vec2 topGridCenter = getPositionFromGrid(Vec2(x, y));
+
             Vec2 rightGridCenter = getPositionFromGrid(Vec2(x + currentW - 1, y));
+
             Vec2 bottomGridCenter = getPositionFromGrid(Vec2(x + currentW - 1, y + currentH - 1));
+
             Vec2 leftGridCenter = getPositionFromGrid(Vec2(x, y + currentH - 1));
 
-            Vec2 p[4];
-            p[0] = Vec2(topGridCenter.x, topGridCenter.y + halfH);       // ¶¥¼â
-            p[1] = Vec2(rightGridCenter.x + halfW, rightGridCenter.y);   // ÓÒ¼â
-            p[2] = Vec2(bottomGridCenter.x, bottomGridCenter.y - halfH); // µ×¼â
-            p[3] = Vec2(leftGridCenter.x - halfW, leftGridCenter.y);     // ×ó¼â
 
-            // 3. »­¿ÕĞÄÏß¿ò
+
+            Vec2 p[4];
+
+            p[0] = Vec2(topGridCenter.x, topGridCenter.y + halfH);       // é¡¶å°–
+
+            p[1] = Vec2(rightGridCenter.x + halfW, rightGridCenter.y);   // å³å°–
+
+            p[2] = Vec2(bottomGridCenter.x, bottomGridCenter.y - halfH); // åº•å°–
+
+            p[3] = Vec2(leftGridCenter.x - halfW, leftGridCenter.y);     // å·¦å°–
+
+
+
+            // 3. ç”»ç©ºå¿ƒçº¿æ¡†
+
             _gridNode->drawPoly(p, 4, true, bigGridLineColor);
 
-            // ¿ÉÑ¡£ºÈç¹ûÄãÏëÈÃ´óÍø¸ñµÄËÄ¸ö½ÇÓĞ¸öĞ¡Ô²µã×°ÊÎ£¨¸üÓĞ¿Æ¼¼¸Ğ£©
+
+
+            // å¯é€‰ï¼šå¦‚æœä½ æƒ³è®©å¤§ç½‘æ ¼çš„å››ä¸ªè§’æœ‰ä¸ªå°åœ†ç‚¹è£…é¥°ï¼ˆæ›´æœ‰ç§‘æŠ€æ„Ÿï¼‰
+
             // _gridNode->drawDot(p[0], 2, bigGridLineColor); 
+
         }
+
     }
+
 }
+
+
 
 void GridMap::updateBuildingBase(Vec2 gridPos, Size size, bool isValid)
+
 {
+
     _baseNode->clear();
 
-    // 1. ¼ÆËã 3x3 (»ò NxM) ÇøÓòĞÎ³ÉµÄ´óÁâĞÎµÄËÄ¸ö¶¥µã
-    // ISO ×ø±êÏµÏÂ£¬Ò»¸ö¾ØĞÎÇøÓòÒÀÈ»³ÊÏÖÎªÁâĞÎ
 
-    // Top ¶¥µã£º¶ÔÓ¦ gridPos (¼ÙÉè gridPos ÊÇ×îÉÏÃæµÄ½Ç/»òÕß×óÉÏË÷Òı)
-    // ÈÃÎÒÃÇ¶¨Òå gridPos Îª¸ÃÇøÓò X×îĞ¡¡¢Y×îĞ¡ µÄ¸ñ×Ó (ISOµÄ Top-Left Âß¼­)
 
-    // ÎÒÃÇĞèÒªËÄ¸ö¹Ø¼üµãµÄ¡°ÆÁÄ»×ø±ê¡±£º
-    // A: (x, y) µÄ Top µã
-    // B: (x + w, y) µÄ Right µã
-    // C: (x + w, y + h) µÄ Bottom µã
-    // D: (x, y + h) µÄ Left µã
+    // 1. è®¡ç®— 3x3 (æˆ– NxM) åŒºåŸŸå½¢æˆçš„å¤§è±å½¢çš„å››ä¸ªé¡¶ç‚¹
 
-    // ×¢Òâ£ºgetPositionFromGrid ·µ»ØµÄÊÇ¸ñ×ÓµÄ¡°ÖĞĞÄµã¡±
-    // ÎªÁË»­°üÎ§ºĞ£¬ÎÒÃÇĞèÒª¾«Ï¸¿ØÖÆµ½¸ñ×ÓµÄ±ßÔµ
+    // ISO åæ ‡ç³»ä¸‹ï¼Œä¸€ä¸ªçŸ©å½¢åŒºåŸŸä¾ç„¶å‘ˆç°ä¸ºè±å½¢
+
+
+
+    // Top é¡¶ç‚¹ï¼šå¯¹åº” gridPos (å‡è®¾ gridPos æ˜¯æœ€ä¸Šé¢çš„è§’/æˆ–è€…å·¦ä¸Šç´¢å¼•)
+
+    // è®©æˆ‘ä»¬å®šä¹‰ gridPos ä¸ºè¯¥åŒºåŸŸ Xæœ€å°ã€Yæœ€å° çš„æ ¼å­ (ISOçš„ Top-Left é€»è¾‘)
+
+
+
+    // æˆ‘ä»¬éœ€è¦å››ä¸ªå…³é”®ç‚¹çš„â€œå±å¹•åæ ‡â€ï¼š
+
+    // A: (x, y) çš„ Top ç‚¹
+
+    // B: (x + w, y) çš„ Right ç‚¹
+
+    // C: (x + w, y + h) çš„ Bottom ç‚¹
+
+    // D: (x, y + h) çš„ Left ç‚¹
+
+
+
+    // æ³¨æ„ï¼šgetPositionFromGrid è¿”å›çš„æ˜¯æ ¼å­çš„â€œä¸­å¿ƒç‚¹â€
+
+    // ä¸ºäº†ç”»åŒ…å›´ç›’ï¼Œæˆ‘ä»¬éœ€è¦ç²¾ç»†æ§åˆ¶åˆ°æ ¼å­çš„è¾¹ç¼˜
+
+
 
     float halfW = _tileSize / 2.0f;
+
     float halfH = halfW * 0.7f;
 
-    // »ñÈ¡ËÄ¸ö½Ç¸ñ×ÓµÄÖĞĞÄµã
+
+
+    // è·å–å››ä¸ªè§’æ ¼å­çš„ä¸­å¿ƒç‚¹
+
     Vec2 topGridCenter = getPositionFromGrid(gridPos); // (x, y)
+
     Vec2 rightGridCenter = getPositionFromGrid(gridPos + Vec2(size.width - 1, 0)); // (x + w -1, y)
+
     Vec2 bottomGridCenter = getPositionFromGrid(gridPos + Vec2(size.width - 1, size.height - 1)); // (x+w-1, y+h-1)
+
     Vec2 leftGridCenter = getPositionFromGrid(gridPos + Vec2(0, size.height - 1)); // (x, y+h-1)
 
-    // ÏòÍâÑÓÉì°ë¸ö¸ñ×ÓµÄ¾àÀëÒÔ°ü¹ü±ßÔµ
-    Vec2 p[4];
-    p[0] = Vec2(topGridCenter.x, topGridCenter.y + halfH);     // ¶¥¶Ë
-    p[1] = Vec2(rightGridCenter.x + halfW, rightGridCenter.y); // ÓÒ¶Ë
-    p[2] = Vec2(bottomGridCenter.x, bottomGridCenter.y - halfH); // µ×¶Ë
-    p[3] = Vec2(leftGridCenter.x - halfW, leftGridCenter.y);   // ×ó¶Ë
 
-    // ÑÕÉ«ÅäÖÃ
+
+    // å‘å¤–å»¶ä¼¸åŠä¸ªæ ¼å­çš„è·ç¦»ä»¥åŒ…è£¹è¾¹ç¼˜
+
+    Vec2 p[4];
+
+    p[0] = Vec2(topGridCenter.x, topGridCenter.y + halfH);     // é¡¶ç«¯
+
+    p[1] = Vec2(rightGridCenter.x + halfW, rightGridCenter.y); // å³ç«¯
+
+    p[2] = Vec2(bottomGridCenter.x, bottomGridCenter.y - halfH); // åº•ç«¯
+
+    p[3] = Vec2(leftGridCenter.x - halfW, leftGridCenter.y);   // å·¦ç«¯
+
+
+
+    // é¢œè‰²é…ç½®
+
     Color4F color = isValid ? Color4F(0.0f, 1.0f, 0.0f, 0.5f) : Color4F(1.0f, 0.0f, 0.0f, 0.5f);
+
     Color4F borderColor = isValid ? Color4F::GREEN : Color4F::RED;
 
+
+
     _baseNode->drawSolidPoly(p, 4, color);
+
     _baseNode->drawPoly(p, 4, true, borderColor);
+
 }
+
+
 
 void GridMap::hideBuildingBase()
+
 {
+
     _baseNode->clear();
+
 }
+
+
 
 bool GridMap::checkArea(Vec2 startGridPos, Size size)
+
 {
+
     int startX = (int)startGridPos.x;
+
     int startY = (int)startGridPos.y;
+
     int w = (int)size.width;
+
     int h = (int)size.height;
 
-    // Ô½½ç¼ì²é
+
+
+    // è¶Šç•Œæ£€æŸ¥
+
     if (startX < 0 || startY < 0 || startX + w > _gridWidth || startY + h > _gridHeight) {
+
         return false;
+
     }
 
-    // ±éÀúÇøÓòÄÚËùÓĞĞ¡·½¸ñ
+
+
+    // éå†åŒºåŸŸå†…æ‰€æœ‰å°æ–¹æ ¼
+
     for (int x = startX; x < startX + w; x++) {
+
         for (int y = startY; y < startY + h; y++) {
-            // Èç¹ûÈÎºÎÒ»¸ö¸ñ×ÓÊÇ true (±»Õ¼ÓÃ)£¬Ôò·µ»Ø false (²»¿ÉÔì)
+
+            // å¦‚æœä»»ä½•ä¸€ä¸ªæ ¼å­æ˜¯ true (è¢«å ç”¨)ï¼Œåˆ™è¿”å› false (ä¸å¯é€ )
+
             if (_collisionMap[x][y]) {
+
                 return false;
+
             }
+
         }
+
     }
-    return true; // ËùÓĞ¸ñ×Ó¶¼¿ÕÏĞ
+
+    return true; // æ‰€æœ‰æ ¼å­éƒ½ç©ºé—²
+
 }
 
+
+
 void GridMap::markArea(Vec2 startGridPos, Size size, bool occupied)
+
 {
+
     int startX = (int)startGridPos.x;
+
     int startY = (int)startGridPos.y;
+
     int w = (int)size.width;
+
     int h = (int)size.height;
+
+
 
     if (startX < 0 || startY < 0 || startX + w > _gridWidth || startY + h > _gridHeight) return;
 
+
+
     for (int x = startX; x < startX + w; x++) {
+
         for (int y = startY; y < startY + h; y++) {
+
             _collisionMap[x][y] = occupied;
+
         }
+
     }
+
 }

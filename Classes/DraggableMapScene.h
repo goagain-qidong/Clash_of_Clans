@@ -65,6 +65,14 @@ private:
     };
     std::vector<MapElement> _mapElements;
 
+    // --- Combat/Pathing ---
+    struct PlacedBuildingInfo {
+        cocos2d::Size size;       // grid size
+        cocos2d::Vec2 gridPos;    // top-left grid
+        cocos2d::Node* node;      // visual node
+    };
+    std::vector<PlacedBuildingInfo> _placedBuildings;
+
     void showBuildingHint(const std::string& hint);
     cocos2d::Vec2 calculateBuildingPosition(const cocos2d::Vec2& gridPos);
 
@@ -102,6 +110,12 @@ private:
     void restoreMapElementsState();
     void createSampleMapElements();
     void updateMapElementsPosition();
+
+    // Compute the closest walkable grid cell adjacent to a placed building
+    bool getClosestAdjacentFreeCell(const PlacedBuildingInfo& bld, const cocos2d::Vec2& fromGrid, cocos2d::Vec2& outTargetGrid) const;
+
+    // Order the selected hero to attack nearest building by pathfinding
+    void commandSelectedHeroAttackNearest();
 };
 
 #endif

@@ -1,175 +1,349 @@
-#include "Hero.h"
+ï»¿#include "Hero.h"
+
 #include "cocos2d.h"
+
+
 
 USING_NS_CC;
 
+
+
 Hero* Hero::create(const std::string& frameName)
+
 {
+
     Hero* hero = new (std::nothrow) Hero();
+
     if (hero && hero->init(frameName))
+
     {
+
         hero->autorelease();
+
         return hero;
+
     }
+
     CC_SAFE_DELETE(hero);
+
     return nullptr;
+
 }
+
+
 
 bool Hero::init(const std::string& frameName)
+
 {
+
     if (!Sprite::initWithSpriteFrameName(frameName))
+
     {
+
         return false;
+
     }
 
-    _heroName = "archer"; // Í³Ò»Ó¢ĞÛÃû³Æ
+
+
+    _heroName = "archer"; // ç»Ÿä¸€è‹±é›„åç§°
+
     _isSelected = false;
-    _baseScale = 0.5f; // Ôö´ó»ù´¡³ß´ç
+
+    _baseScale = 0.5f; // å¢å¤§åŸºç¡€å°ºå¯¸
+
     _isMoving = false;
 
-    // ÉèÖÃÃû³Æ
+
+
+    // è®¾ç½®åç§°
+
     this->setName("Hero");
 
-    // ÉèÖÃ³õÊ¼Ëõ·Å
+
+
+    // è®¾ç½®åˆå§‹ç¼©æ”¾
+
     this->setScale(_baseScale);
 
+
+
     return true;
+
 }
+
+
 
 void Hero::moveTo(const cocos2d::Vec2& worldPosition, cocos2d::Node* mapNode)
-{
-    if (!mapNode || !_isSelected) return; // Ö»ÓĞÑ¡ÖĞµÄÓ¢ĞÛ²ÅÄÜÒÆ¶¯
 
-    // ½«ÊÀ½ç×ø±ê×ª»»ÎªµØÍ¼±¾µØ×ø±ê
+{
+
+    if (!mapNode || !_isSelected) return; // åªæœ‰é€‰ä¸­çš„è‹±é›„æ‰èƒ½ç§»åŠ¨
+
+
+
+    // å°†ä¸–ç•Œåæ ‡è½¬æ¢ä¸ºåœ°å›¾æœ¬åœ°åæ ‡
+
     Vec2 localPos = mapNode->convertToNodeSpace(worldPosition);
 
-    // Í£Ö¹ËùÓĞ¶¯×÷
+
+
+    // åœæ­¢æ‰€æœ‰åŠ¨ä½œ
+
     this->stopAllActions();
 
-    // ¼ÆËãÒÆ¶¯¾àÀëºÍÊ±¼ä
+
+
+    // è®¡ç®—ç§»åŠ¨è·ç¦»å’Œæ—¶é—´
+
     float distance = this->getPosition().getDistance(localPos);
+
     float duration = distance / 100.0f;
 
-    // ²¥·ÅĞĞ×ß¶¯»­
+
+
+    // æ’­æ”¾è¡Œèµ°åŠ¨ç”»
+
     playWalkAnimation();
+
     _isMoving = true;
 
-    // ÒÆ¶¯¶¯×÷
+
+
+    // ç§»åŠ¨åŠ¨ä½œ
+
     auto moveTo = MoveTo::create(duration, localPos);
+
     auto callback = CallFunc::create([this]() {
+
         this->stopWalkAnimation();
+
         _isMoving = false;
+
         });
 
+
+
     auto sequence = Sequence::create(moveTo, callback, nullptr);
+
     this->runAction(sequence);
 
+
+
     CCLOG("Hero %s moving to: %.1f, %.1f, duration: %.2f", _heroName.c_str(), localPos.x, localPos.y, duration);
+
 }
+
+
 
 void Hero::updateScale(float mapScale)
+
 {
+
     this->setScale(_baseScale * mapScale);
+
 }
 
+
+
 void Hero::setSelected(bool selected)
+
 {
+
     if (_isSelected == selected) return;
+
+
 
     _isSelected = selected;
 
+
+
     if (selected) {
-        // Ìí¼ÓÑ¡ÖĞĞ§¹û - »ÆÉ«Ô²È¦£¬Ôö´ó³ß´ç
+
+        // æ·»åŠ é€‰ä¸­æ•ˆæœ - é»„è‰²åœ†åœˆï¼Œå¢å¤§å°ºå¯¸
+
         auto glow = DrawNode::create();
+
         glow->drawCircle(Vec2::ZERO, 25, 0, 20, false, 1.0f, 1.0f, Color4F::YELLOW);
+
         glow->setName("selectionGlow");
+
         this->addChild(glow, -1);
 
-        // Ìí¼ÓÂö³å¶¯»­
+
+
+        // æ·»åŠ è„‰å†²åŠ¨ç”»
+
         float currentScale = this->getScale();
+
         auto scaleUp = ScaleTo::create(0.5f, currentScale * 1.2f);
+
         auto scaleDown = ScaleTo::create(0.5f, currentScale);
+
         auto pulse = RepeatForever::create(Sequence::create(scaleUp, scaleDown, nullptr));
+
         pulse->setTag(999);
+
         this->runAction(pulse);
+
+
 
         CCLOG("Hero selected");
 
+
+
     }
+
     else {
-        // ÒÆ³ıÑ¡ÖĞĞ§¹û
+
+        // ç§»é™¤é€‰ä¸­æ•ˆæœ
+
         float currentScale = this->getScale();
+
         this->removeChildByName("selectionGlow");
+
         this->stopActionByTag(999);
+
         this->setScale(currentScale);
 
+
+
         CCLOG("Hero deselected - keeping scale: %.2f", this->getScale());
+
     }
+
 }
+
+
 
 void Hero::playWalkAnimation()
+
 {
-    // Èç¹ûÒÑ¾­ÓĞ¶¯»­ÔÚÔËĞĞ£¬²»ÖØ¸´´´½¨
+
+    // å¦‚æœå·²ç»æœ‰åŠ¨ç”»åœ¨è¿è¡Œï¼Œä¸é‡å¤åˆ›å»º
+
     if (this->getActionByTag(666)) return;
 
-    // ´´½¨ĞĞ×ß¶¯»­Ö¡ĞòÁĞ
+
+
+    // åˆ›å»ºè¡Œèµ°åŠ¨ç”»å¸§åºåˆ—
+
     Vector<SpriteFrame*> frames;
+
     for (int i = 1; i <= 52; i++) {
+
         std::string frameName = StringUtils::format("archer%d.0.png", i);
+
         auto frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(frameName);
+
         if (frame) {
+
             frames.pushBack(frame);
+
         }
+
     }
+
+
 
     if (frames.size() > 0) {
-        auto animation = Animation::createWithSpriteFrames(frames, 0.05f); // Ã¿Ö¡0.05Ãë
+
+        auto animation = Animation::createWithSpriteFrames(frames, 0.05f); // æ¯å¸§0.05ç§’
+
         auto animate = Animate::create(animation);
+
         auto repeat = RepeatForever::create(animate);
-        repeat->setTag(666); // ÉèÖÃtagÒÔ±ãÍ£Ö¹
+
+        repeat->setTag(666); // è®¾ç½®tagä»¥ä¾¿åœæ­¢
+
         this->runAction(repeat);
+
     }
 
-    // Ìí¼ÓÉÏÏÂ¸¡¶¯Ğ§¹û
+
+
+    // æ·»åŠ ä¸Šä¸‹æµ®åŠ¨æ•ˆæœ
+
     auto floatUp = MoveBy::create(0.5f, Vec2(0, 5));
+
     auto floatDown = MoveBy::create(0.5f, Vec2(0, -5));
+
     auto floatSequence = Sequence::create(floatUp, floatDown, nullptr);
+
     auto floatRepeat = RepeatForever::create(floatSequence);
+
     floatRepeat->setTag(777);
+
     this->runAction(floatRepeat);
+
 }
+
+
 
 void Hero::stopWalkAnimation()
-{
-    this->stopActionByTag(666); // Í£Ö¹¶¯»­
-    this->stopActionByTag(777); // Í£Ö¹¸¡¶¯Ğ§¹û
-    this->setRotation(0); // »Ö¸´Ô­Ê¼½Ç¶È
 
-    // »Ö¸´µ½µÚÒ»Ö¡
+{
+
+    this->stopActionByTag(666); // åœæ­¢åŠ¨ç”»
+
+    this->stopActionByTag(777); // åœæ­¢æµ®åŠ¨æ•ˆæœ
+
+    this->setRotation(0); // æ¢å¤åŸå§‹è§’åº¦
+
+
+
+    // æ¢å¤åˆ°ç¬¬ä¸€å¸§
+
     this->setSpriteFrame("archer1.0.png");
+
 }
 
+
+
 bool Hero::containsTouch(const cocos2d::Vec2& worldPosition, cocos2d::Node* mapNode)
+
 {
+
     if (!mapNode) return false;
 
-    // ½«ÊÀ½ç×ø±ê×ª»»ÎªµØÍ¼±¾µØ×ø±ê
+
+
+    // å°†ä¸–ç•Œåæ ‡è½¬æ¢ä¸ºåœ°å›¾æœ¬åœ°åæ ‡
+
     Vec2 localPos = mapNode->convertToNodeSpace(worldPosition);
 
-    // »ñÈ¡Ó¢ĞÛÔÚµØÍ¼×ø±êÖĞµÄ±ß½ç¿ò
+
+
+    // è·å–è‹±é›„åœ¨åœ°å›¾åæ ‡ä¸­çš„è¾¹ç•Œæ¡†
+
     Rect heroRect = this->getBoundingBox();
+
     Vec2 heroPos = this->getPosition();
 
-    // ¼ÆËã´¥ÃşµãÏà¶ÔÓÚÓ¢ĞÛµÄÎ»ÖÃ
+
+
+    // è®¡ç®—è§¦æ‘¸ç‚¹ç›¸å¯¹äºè‹±é›„çš„ä½ç½®
+
     Vec2 touchInHero = localPos - heroPos;
 
-    // Ó¢ĞÛµÄÅö×²¼ì²â°ë¾¶£¬Ôö´ó¼ì²â·¶Î§
+
+
+    // è‹±é›„çš„ç¢°æ’æ£€æµ‹åŠå¾„ï¼Œå¢å¤§æ£€æµ‹èŒƒå›´
+
     float radius = 40.0f * this->getScale();
+
     bool contains = touchInHero.length() <= radius;
 
+
+
     if (contains) {
+
         CCLOG("Hero touch detected at distance: %.1f, radius: %.1f", touchInHero.length(), radius);
+
     }
 
+
+
     return contains;
+
 }

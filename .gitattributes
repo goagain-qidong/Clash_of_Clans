@@ -1,2 +1,15 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# 自动处理行尾，检出时转换为本地系统格式(Windows转CRLF)，提交时转换为LF
+
+# 强制 Visual Studio 的文件使用 Windows 格式
+*.sln       text eol=crlf
+*.vcxproj   text eol=crlf
+*.filters   text eol=crlf
+*.props     text eol=crlf
+
+# 强制 C++ 源代码文件在 Windows 上使用 CRLF
+*.cpp       text eol=crlf
+*.h         text eol=crlf
+*.c         text eol=crlf
+*.hpp       text eol=crlf

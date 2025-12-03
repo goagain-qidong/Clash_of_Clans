@@ -87,6 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\Shalom\Documents\GitHub\coc\Classes;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\cocos\audio\include;C:\Users\Shalom\Documents\GitHub\coc\cocos2d;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\cocos;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\extensions;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\cocos\platform;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\cocos\editor-support;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\cocos\base;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\cocos\platform\win32;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\recast\..;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\tinyxml2\.;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\xxhash\.;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\xxtea\.;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\clipper\.;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\edtaa3func\.;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\ConvertUTF\.;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\poly2tri\..;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\md5\..;C:\Users\Shalom\Documents\GitHub\coc\cocos2d\external\unzip\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/Box2D/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/chipmunk/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/freetype2/include/win32/freetype2" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/bullet/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/bullet/include/bullet" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/jpeg/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/openssl/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/uv/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/webp/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/websockets/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/curl/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/png/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/gles/include/OGLES" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/icon/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/MP3Decoder/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/OggDecoder/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/OpenalSoft/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/glfw3/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/zlib/../win32-specific/zlib/include" /utf-8</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -103,7 +104,6 @@
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;COCOS2D_DEBUG=1;_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CC_STATIC;LWS_WITH_LIBUV;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/Box2D/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/chipmunk/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/freetype2/include/win32/freetype2" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/bullet/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/bullet/include/bullet" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/jpeg/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/openssl/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/uv/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/webp/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/websockets/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/curl/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/png/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/gles/include/OGLES" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/icon/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/MP3Decoder/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/OggDecoder/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/win32-specific/OpenalSoft/include" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/glfw3/include/win32" /external:I "C:/Users/Shalom/Documents/GitHub/coc/cocos2d/external/zlib/../win32-specific/zlib/include" /utf-8</AdditionalOptions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;COCOS2D_DEBUG=1;_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CC_STATIC;LWS_WITH_LIBUV;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
@@ -819,10 +819,14 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Building.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\GridMap.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\ResourceManager.h" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\AccountManager.h" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\StorageManager.h" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\NetworkManager.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\HeroManager.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Hero.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\BuildingData.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\MapConfigManager.h" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\AccountSelectScene.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\resource.h" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\AppDelegate.cpp" />
@@ -831,9 +835,13 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Building.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\GridMap.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\ResourceManager.cpp" />
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\AccountManager.cpp" />
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\StorageManager.cpp" />
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\NetworkManager.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\HeroManager.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Hero.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\MapConfigManager.cpp" />
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\AccountSelectScene.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.cpp" />
     <ResourceCompile Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\game.rc" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\Barracks.png" />
@@ -972,6 +980,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\map\Map2.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\map\Map3.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\res\.gitkeep" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\sound\bgm\Battle_Going.mp3" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\sound\bgm\Battle_Lose.mp3" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\sound\bgm\Battle_Preparing.mp3" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\sound\bgm\Battle_Win.mp3" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\town-hall-8.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\town-hall-9.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-1.png" />

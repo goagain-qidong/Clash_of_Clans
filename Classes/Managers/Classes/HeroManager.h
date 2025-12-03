@@ -1,57 +1,113 @@
-#pragma once
+ï»¿#pragma once
+
 #ifndef __HERO_MANAGER_H__
+
 #define __HERO_MANAGER_H__
 
+
+
 #include "cocos2d.h"
+
 #include "ui/CocosGUI.h"
+
 #include "Hero.h"
 
+
+
 class HeroManager : public cocos2d::Node
+
 {
+
 public:
+
     static HeroManager* create();
+
     virtual bool init() override;
 
-    // UI ÉèÖÃ
+
+
+    // UI è®¾ç½®
+
     void setupHeroUI(cocos2d::Node* parent, const cocos2d::Size& visibleSize);
+
     void showHeroList();
+
     void hideHeroList();
+
     bool isHeroListVisible() const { return _isHeroListVisible; }
 
-    // Ó¢ĞÛ²Ù×÷
+
+
+    // è‹±é›„æ“ä½œ
+
     void selectHero(const std::string& heroName);
+
     void placeHero(const cocos2d::Vec2& worldPosition, cocos2d::Node* mapNode);
+
     void moveSelectedHero(const cocos2d::Vec2& worldPosition, cocos2d::Node* mapNode);
+
     void updateHeroesScale(float mapScale);
 
-    // »ñÈ¡Ñ¡ÖĞµÄÓ¢ĞÛ
+
+
+    // è·å–é€‰ä¸­çš„è‹±é›„
+
     Hero* getSelectedHero() const { return _selectedHero; }
+
     const std::string& getSelectedHeroName() const { return _selectedHeroName; }
 
-    // µØÍ¼ÇĞ»»Ê±´¦Àí
+
+
+    // åœ°å›¾åˆ‡æ¢æ—¶å¤„ç†
+
     void onMapSwitched(cocos2d::Node* newMapNode);
 
-    // ĞÂÔö£º´¦ÀíÓ¢ĞÛµã»÷
-    // ÔÚ HeroManager.h µÄ public ²¿·ÖĞŞ¸Ä·½·¨ÉùÃ÷
+
+
+    // æ–°å¢ï¼šå¤„ç†è‹±é›„ç‚¹å‡»
+
+    // åœ¨ HeroManager.h çš„ public éƒ¨åˆ†ä¿®æ”¹æ–¹æ³•å£°æ˜
+
     void handleHeroTouch(const cocos2d::Vec2& worldPosition, cocos2d::Node* mapNode, bool isPlacingNewHero = false);
+
     void deselectAllHeroes();
 
+
+
 private:
+
     void createHeroList();
+
     void onHeroButtonClicked(cocos2d::Ref* sender);
+
     void onHeroItemClicked(cocos2d::Ref* sender);
+
     void loadHeroData();
 
+
+
     cocos2d::ui::Button* _heroButton;
+
     cocos2d::ui::ListView* _heroList;
+
     bool _isHeroListVisible;
 
+
+
     std::string _selectedHeroName;
+
     Hero* _selectedHero;
+
     cocos2d::Vector<Hero*> _placedHeroes;
 
+
+
     std::vector<std::string> _availableHeroes;
+
     cocos2d::Size _visibleSize;
+
 };
+
+
 
 #endif // __HERO_MANAGER_H__

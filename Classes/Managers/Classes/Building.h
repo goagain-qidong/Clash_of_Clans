@@ -1,20 +1,39 @@
-/****************************************************************
+ï»¿/****************************************************************
+
  * Project Name:  Clash_of_Clans
+
  * File Name:     Building.h
+
  * File Function:
- * Author:        ÕÔ³çÖÎ
+
+ * Author:        èµµå´‡æ²»
+
  * Update Date:   2025/11/29
+
  * License:       MIT License
+
  ****************************************************************/
 
+
+
 #pragma once
+
 #include "cocos2d.h"
 
+
+
 class Building : public cocos2d::Sprite
+
 {
+
 public:
+
     static Building* create(const std::string& filename);
+
     virtual bool init(const std::string& filename);
 
-    // ÒÔºó¿ÉÒÔÔÚÕâÀï¼Ó£ºupgrade(), produceGold() µÈ
+
+
+    // ä»¥åå¯ä»¥åœ¨è¿™é‡ŒåŠ ï¼šupgrade(), produceGold() ç­‰
+
 };
