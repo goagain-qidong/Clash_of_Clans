@@ -80,6 +80,7 @@ private:
         cocos2d::Vec2 gridPos;
         cocos2d::Node* node;
     };
+
     std::vector<PlacedBuildingInfo> _placedBuildings;
 
     void showBuildingHint(const std::string& hint);
@@ -92,6 +93,7 @@ private:
     void initBuildingData();
     void createBuildingSelection();
     void createMapList();
+    void setupNetworkCallbacks();
 
     void setupResourceDisplay();
 
@@ -132,6 +134,15 @@ private:
 
     bool getClosestAdjacentFreeCell(const PlacedBuildingInfo& bld, const cocos2d::Vec2& fromGrid, cocos2d::Vec2& outTargetGrid) const;
     void commandSelectedHeroAttackNearest();
+
+    cocos2d::ui::Button* _battleButton;
+    cocos2d::ui::Button* _clanButton;
+
+    void update(float dt);
+
+    void onBattleButtonClicked(cocos2d::Ref* sender);
+    void onClanButtonClicked(cocos2d::Ref* sender);
+    void connectToServer();
 };
 
 #endif

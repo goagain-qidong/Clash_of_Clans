@@ -70,6 +70,8 @@ list(APPEND GAME_SOURCE
      Classes/Hero.cpp
      Classes/MapConfigManager.cpp
      Classes/AccountSelectScene.cpp
+     Classes/Managers/SocketClient.cpp
+     Classes/BattleScene.cpp
      Classes/TownHallSystem.cpp
      )
 list(APPEND GAME_HEADER
@@ -88,6 +90,8 @@ list(APPEND GAME_HEADER
      Classes/BuildingData.h
      Classes/MapConfigManager.h
      Classes/AccountSelectScene.h
+     Classes/Managers/SocketClient.h
+     Classes/BattleScene.h
      Classes/TownHallSystem.h
      )
 

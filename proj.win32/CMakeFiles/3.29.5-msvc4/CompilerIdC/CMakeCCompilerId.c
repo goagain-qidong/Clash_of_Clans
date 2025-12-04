@@ -1,4 +1,4 @@
-#ifdef __cplusplus
+﻿#ifdef __cplusplus
 # error "A C++ compiler has been selected for C."
 #endif
 

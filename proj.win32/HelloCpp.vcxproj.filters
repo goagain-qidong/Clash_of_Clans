@@ -43,6 +43,15 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\AccountSelectScene.cpp">
       <Filter>Source Files\Classes</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\SocketClient.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\BattleScene.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\TownHallSystem.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.cpp">
       <Filter>Source Files\proj.win32</Filter>
     </ClCompile>
@@ -96,6 +105,15 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\AccountSelectScene.h">
       <Filter>Source Files\Classes</Filter>
     </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\SocketClient.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\BattleScene.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\TownHallSystem.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.h">
       <Filter>Source Files\proj.win32</Filter>
     </ClInclude>
@@ -104,6 +122,57 @@
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\Barracks.png">
       <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-1.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-10.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-11.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-12.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-13.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-14.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-15.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-16.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-17.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-2.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-3.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-4.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-5.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-6.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-7.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-8.png">
+      <Filter>Resources\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\BaseCamp\town-hall-9.png">
+      <Filter>Resources\BaseCamp</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\Cannon.png">
       <Filter>Resources</Filter>
@@ -528,57 +597,6 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\town-hall-9.png">
       <Filter>Resources</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-1.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-10.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-11.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-12-3.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-13-2.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-14-2.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-15-2.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-16.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-17-3.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-2.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-3.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-4.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-5.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-6.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-7.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-8.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\大本营\town-hall-9.png">
-      <Filter>Resources\大本营</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\Shalom\Documents\GitHub\coc\CMakeLists.txt" />
@@ -591,6 +609,9 @@
   <ItemGroup>
     <Filter Include="Resources">
       <UniqueIdentifier>{593DB9D8-C329-3875-99CF-B4C04091120C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\BaseCamp">
+      <UniqueIdentifier>{619B7730-689A-38A0-81E6-08E603A31F3E}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\archer">
       <UniqueIdentifier>{6CED33F3-2A7B-30C8-98E6-2B88D4F9BAA6}</UniqueIdentifier>
@@ -627,9 +648,6 @@
     </Filter>
     <Filter Include="Resources\res">
       <UniqueIdentifier>{8DF75AC7-3876-3C12-AD3E-8990078AA7FF}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources\大本营">
-      <UniqueIdentifier>{1CE675FE-1DC3-3E66-AF97-AB178D078F7F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{3F0150E2-78CA-387A-B13B-A5AB4F07D025}</UniqueIdentifier>
