@@ -70,6 +70,8 @@ list(APPEND GAME_SOURCE
      Classes/Hero.cpp
      Classes/MapConfigManager.cpp
      Classes/AccountSelectScene.cpp
+     Classes/Managers/SocketClient.cpp
+     Classes/BattleScene.cpp
      )
 list(APPEND GAME_HEADER
      Classes/AppDelegate.h
@@ -87,6 +89,8 @@ list(APPEND GAME_HEADER
      Classes/BuildingData.h
      Classes/MapConfigManager.h
      Classes/AccountSelectScene.h
+     Classes/Managers/SocketClient.h
+     Classes/BattleScene.h
      )
 
 if(ANDROID)

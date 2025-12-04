@@ -903,6 +903,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\BuildingData.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\MapConfigManager.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\AccountSelectScene.h" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\SocketClient.h" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\BattleScene.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\resource.h" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\AppDelegate.cpp" />
@@ -919,6 +921,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Hero.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\MapConfigManager.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\AccountSelectScene.cpp" />
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\SocketClient.cpp" />
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\BattleScene.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.cpp" />
     <ResourceCompile Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\game.rc" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\Barracks.png" />

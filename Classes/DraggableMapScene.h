@@ -76,6 +76,7 @@ private:
         cocos2d::Vec2 gridPos;    // top-left grid
         cocos2d::Node* node;      // visual node
     };
+
     std::vector<PlacedBuildingInfo> _placedBuildings;
 
     void showBuildingHint(const std::string& hint);
@@ -88,6 +89,7 @@ private:
     void initBuildingData();
     void createBuildingSelection();
     void createMapList();
+    void setupNetworkCallbacks();
 
     bool onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event);
     void onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event);
@@ -126,6 +128,15 @@ private:
 
     // Order the selected hero to attack nearest building by pathfinding
     void commandSelectedHeroAttackNearest();
+
+    cocos2d::ui::Button* _battleButton;
+    cocos2d::ui::Button* _clanButton;
+
+    void update(float dt);
+
+    void onBattleButtonClicked(cocos2d::Ref* sender);
+    void onClanButtonClicked(cocos2d::Ref* sender);
+    void connectToServer();
 };
 
 #endif
