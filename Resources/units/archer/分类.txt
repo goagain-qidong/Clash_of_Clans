@@ -1,0 +1,20 @@
+1~8 downright run
+9~16 right run
+17~24 upright run
+
+25,26 downright stand
+27,28,29 right stand
+30,31 upright stand
+
+32~34 downright 从背后拿箭 
+41~44 downright 射箭
+
+35~37 right 从背后拿箭
+45~48 right 射箭
+
+38~40 upright 从背后拿箭
+49~52 upright 射箭
+
+
+53死亡光环
+54墓碑
