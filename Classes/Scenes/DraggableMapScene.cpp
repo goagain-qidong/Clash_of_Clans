@@ -75,7 +75,7 @@ bool DraggableMapScene::init()
     _confirmButton = nullptr;
     _cancelButton = nullptr;
 
-    _heroManager = nullptr;
+    //_heroManager = nullptr;
 
     // 初始化大本营系统
     _currentUpgradeUI = nullptr;
@@ -93,8 +93,8 @@ bool DraggableMapScene::init()
     _mapConfigs["map/Map2.png"] = {1.3f, Vec2(1402.0f, 2097.2f), 56.1f};
     _mapConfigs["map/Map3.png"] = {1.3f, Vec2(1403.0f, 2075.2f), 54.9f};
 
-    _heroManager = HeroManager::create();
-    this->addChild(_heroManager);
+    //_heroManager = HeroManager::create();
+    //this->addChild(_heroManager);
 
     setupMap();
     setupUI();
@@ -320,7 +320,7 @@ void DraggableMapScene::setupUI()
     this->addChild(_clanButton, 20);
 
     // ==================== 英雄UI ====================
-    _heroManager->setupHeroUI(this, _visibleSize);
+   // _heroManager->setupHeroUI(this, _visibleSize);
 
     // ==================== 初始化其他UI ====================
     createBuildingSelection();
@@ -410,6 +410,25 @@ void DraggableMapScene::setupUI()
     });
 
     CCLOG("UI setup complete");
+    CCLOG("UI setup complete. Build button at (%.1f, %.1f)", resourceXPos + 70, buildButtonY);
+
+
+    // ===========================================
+    // 【临时测试】在屏幕中间放一个野蛮人
+    // ===========================================
+    auto testUnit = Unit::create(UnitType::Barbarian);
+
+    // 放在屏幕正中间
+    testUnit->setPosition(Vec2(_visibleSize.width / 2, _visibleSize.height / 2));
+
+    // 让他播放“向右下待机”的动作
+    testUnit->PlayAnimation(UnitAction::Idle, UnitDirection::DownRight);
+
+    // 加到场景里 (Z轴设为 1000，确保它盖在地图和建筑上面，不会被遮住)
+    this->addChild(testUnit, 1000);
+    // ===========================================
+
+
 }
 
 void DraggableMapScene::toggleBuildingSelection()
@@ -423,10 +442,10 @@ void DraggableMapScene::toggleBuildingSelection()
         {
             toggleMapList();
         }
-        if (_heroManager->isHeroListVisible())
+        /* if (_heroManager->isHeroListVisible())
         {
             _heroManager->hideHeroList();
-        }
+        }*/
     }
 }
 
@@ -553,10 +572,10 @@ void DraggableMapScene::toggleMapList()
     _isMapListVisible = !_isMapListVisible;
     _mapList->setVisible(_isMapListVisible);
 
-    if (_isMapListVisible && _heroManager->isHeroListVisible())
+    /* if (_isMapListVisible && _heroManager->isHeroListVisible())
     {
         _heroManager->hideHeroList();
-    }
+    }*/
 }
 
 void DraggableMapScene::onMapItemClicked(cocos2d::Ref* sender)
@@ -652,8 +671,8 @@ void DraggableMapScene::switchMap(const std::string& mapName)
         updateBoundary();
         restoreMapElementsState();
 
-        _heroManager->onMapSwitched(_mapSprite);
-        _heroManager->updateHeroesScale(_currentScale);
+       // _heroManager->onMapSwitched(_mapSprite);
+       // _heroManager->updateHeroesScale(_currentScale);
 
         auto mapNameLabel = static_cast<Label*>(this->getChildByName("mapNameLabel"));
         if (mapNameLabel)
@@ -854,6 +873,8 @@ bool DraggableMapScene::onTouchBegan(Touch* touch, Event* event)
 
     // 【优先级3】英雄操作 - 英雄移动、选择
     if (!_buildingManager || !_buildingManager->isInBuildingMode())
+    // 3. 处理选中英雄时的逻辑
+    /* if (!_isBuildingMode && !_heroManager->getSelectedHeroName().empty())
     {
         if (!_heroManager->getSelectedHeroName().empty())
         {
@@ -869,7 +890,7 @@ bool DraggableMapScene::onTouchBegan(Touch* touch, Event* event)
                 break;
             }
         }
-    }
+    }*/
 
     // 【优先级4】地图操作 - 地图平移在 onTouchMoved 中处理
     return true;

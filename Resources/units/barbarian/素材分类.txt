@@ -1,0 +1,26 @@
+1~8 downright run
+9~16 right   run
+17~24 upright run
+
+
+
+25 downrgiht stand
+26 right stand
+27 upright stand
+
+28:?
+29:?
+30:?
+
+31~38 downright attack 1
+39~46 right attack 1
+47~54 upright attack 1
+
+
+55~65 downright attack 2
+66~76 right attack 2
+77~87 upright attack 2
+
+88~174似乎是吧前面一模一样的来了一遍
+175 死亡光环
+176 死亡墓碑
