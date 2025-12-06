@@ -42,7 +42,7 @@ public:
     bool consume(ResourceType type, int amount) { return ConsumeResource(type, amount); }
     // 设置资源变化回调
     void SetOnResourceChangeCallback(const std::function<void(ResourceType, int)>& callback);
-
+    void AddCapacity(ResourceType type, int amount);
 private:
     ResourceManager();
     static ResourceManager* _instance;

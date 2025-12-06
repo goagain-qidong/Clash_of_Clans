@@ -9,6 +9,7 @@
 #include "ResourceBuilding.h"
 #include "TownHallBuilding.h"
 #include "WallBuilding.h"
+#include "GameConfig.h"
 USING_NS_CC;
 bool BuildingManager::init()
 {
@@ -174,6 +175,7 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     // 1. 标记网格被占用
     _gridMap->markArea(gridPos, _selectedBuilding.gridSize, true);
     // 2. 创建建筑实体
+
     BaseBuilding* building = createBuildingEntity(_selectedBuilding);
     if (!building)
     {
@@ -203,6 +205,25 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     building->runAction(Spawn::create(scaleAction, fadeIn, nullptr));
     // 6. 保存到建筑列表
     _buildings.pushBack(building);
+    // ==================== 新增：更新资源上限 ====================
+    auto& config = GameConfig::getInstance();
+    const auto* cfgItem = config.getBuildingConfig(_selectedBuilding.name);
+    if (cfgItem && cfgItem->capacityIncrease > 0) {
+        // 假设金币仓库增加金币上限，圣水仓库增加圣水上限
+        // 这里通过名字简单判断，或者你在 BuildingConfigItem 里加一个 storageType 字段
+        if (_selectedBuilding.name == "金币仓库") {
+            ResourceManager::getInstance().AddCapacity(ResourceType::kGold, cfgItem->capacityIncrease);
+        }
+        else if (_selectedBuilding.name == "圣水仓库") {
+            ResourceManager::getInstance().AddCapacity(ResourceType::kElixir, cfgItem->capacityIncrease);
+        }
+    }
+
+    // 如果是工人小屋，增加工人数量 (这里看作资源)
+    if (_selectedBuilding.name == "建筑工人小屋") {
+        ResourceManager::getInstance().AddCapacity(ResourceType::kBuilder, 1);
+        ResourceManager::getInstance().AddResource(ResourceType::kBuilder, 1);
+    }
     showHint(StringUtils::format("%s 建造完成！", _selectedBuilding.name.c_str()));
     CCLOG("Building placed: %s at grid (%.0f, %.0f)", _selectedBuilding.name.c_str(), gridPos.x, gridPos.y);
     
@@ -218,50 +239,53 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     auto delay = DelayTime::create(1.0f);
     auto callback = CallFunc::create([this]() { endPlacing(); });
     this->runAction(Sequence::create(delay, callback, nullptr));
+
 }
 BaseBuilding* BuildingManager::createBuildingEntity(const BuildingData& buildingData)
 {
-    if (buildingData.name == "大本营")
+    if (buildingData.name == "Town Hall" || buildingData.name == "大本营")
     {
+        // 创建大本营实体
         return TownHallBuilding::create(1);
     }
-    else if (buildingData.name == "金矿")
+    // ============================================================
+    else if (buildingData.name == "Gold Mine" || buildingData.name == "金矿")
     {
         return ResourceBuilding::create(ResourceBuildingType::kGoldMine, 1);
     }
-    else if (buildingData.name == "圣水收集器")
+    else if (buildingData.name == "Elixir Collector" || buildingData.name == "圣水收集器")
     {
         return ResourceBuilding::create(ResourceBuildingType::kElixirCollector, 1);
     }
-    else if (buildingData.name == "金币仓库")
+    else if (buildingData.name == "Gold Storage" || buildingData.name == "金币仓库")
     {
         return ResourceBuilding::create(ResourceBuildingType::kGoldStorage, 1);
     }
-    else if (buildingData.name == "圣水仓库")
+    else if (buildingData.name == "Elixir Storage" || buildingData.name == "圣水仓库")
     {
         return ResourceBuilding::create(ResourceBuildingType::kElixirStorage, 1);
     }
-    else if (buildingData.name == "兵营")
+    else if (buildingData.name == "Barracks" || buildingData.name == "兵营")
     {
         return ArmyBuilding::create(1);
     }
-    else if (buildingData.name == "军营")
+    else if (buildingData.name == "Army Camp" || buildingData.name == "军营")
     {
         return ArmyCampBuilding::create(1);
     }
-    else if (buildingData.name == "城墙")
+    else if (buildingData.name == "Wall" || buildingData.name == "城墙")
     {
         return WallBuilding::create(1);
     }
-    else if (buildingData.name == "建筑工人小屋")
+    else if (buildingData.name == "Builder Hut" || buildingData.name == "建筑工人小屋")
     {
         return BuildersHutBuilding::create(1);
     }
-    else if (buildingData.name == "箭塔" || buildingData.name == "炮塔")
+    // 防御建筑统一处理
+    else if (buildingData.name == "Archer Tower" || buildingData.name == "箭塔" ||
+        buildingData.name == "Cannon" || buildingData.name == "炮塔")
     {
-        // 使用自定义图片路径创建防御建筑（临时使用 ArmyBuilding）
-        // TODO: 创建专门的 DefenseBuilding 类
-        CCLOG("Creating %s with image: %s", buildingData.name.c_str(), buildingData.imageFile.c_str());
+        // 传递图片路径，以便 ArmyBuilding 知道显示什么
         return ArmyBuilding::create(1, buildingData.imageFile);
     }
     else

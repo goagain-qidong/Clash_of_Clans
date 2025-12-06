@@ -38,7 +38,9 @@
 #include "TownHallBuilding.h"
 #include "ui/CocosGUI.h"
 #include "unit.h"
-
+#include "HUDLayer.h"
+#include "ShopLayer.h"
+#include "Managers/GameConfig.h"
 USING_NS_CC;
 using namespace ui;
 
@@ -263,28 +265,20 @@ void DraggableMapScene::setupMap()
 void DraggableMapScene::setupUI()
 {
     // 先创建资源显示
-    setupResourceDisplay();
-
+    //setupResourceDisplay();
+    auto hud = HUDLayer::create();
+    this->addChild(hud, 100);
     float resourceXPos = 30;
     float buildButtonY = _visibleSize.height - 230;
 
     // ==================== Build按钮 ====================
     _buildButton = Button::create();
-    _buildButton->setTitleText("Build");
+    _buildButton->setTitleText("Shop"); // 改名为 Shop
     _buildButton->setTitleFontSize(24);
     _buildButton->setContentSize(Size(100, 50));
     _buildButton->setPosition(Vec2(resourceXPos + 70, buildButtonY));
     _buildButton->addClickEventListener([this](Ref* sender) {
-        // 使用管理器判断是否在建造模式
-        if (_buildingManager && _buildingManager->isInBuildingMode())
-        {
-            _buildingManager->cancelPlacing();
-            hideConfirmButtons();
-        }
-        else
-        {
-            this->toggleBuildingSelection();
-        }
+        this->openShop();
     });
     this->addChild(_buildButton, 10);
 
@@ -299,7 +293,8 @@ void DraggableMapScene::setupUI()
 
     // ==================== 当前地图名称 ====================
     auto mapNameLabel = Label::createWithSystemFont("Current: " + _currentMapName, "Arial", 20);
-    mapNameLabel->setPosition(Vec2(_visibleSize.width / 2.0f, _visibleSize.height - 30));
+    mapNameLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+    mapNameLabel->setPosition(Vec2(20.0f, _visibleSize.height - 30.0f));
     mapNameLabel->setTextColor(Color4B(0, 255, 255, 255));
     mapNameLabel->setName("mapNameLabel");
     this->addChild(mapNameLabel, 10);
@@ -425,7 +420,65 @@ void DraggableMapScene::setupUI()
 
 
 }
+void DraggableMapScene::openShop() {
+    // 检查是否已经在建造模式
+    if (_buildingManager && _buildingManager->isInBuildingMode()) return;
 
+    auto shop = ShopLayer::create();
+    this->addChild(shop, 200); // ZOrder 高于 HUD
+    shop->show();
+}
+
+
+int DraggableMapScene::getTownHallLevel() const {
+    if (!_buildingManager) return 1;
+
+    // 遍历所有建筑寻找大本营
+    const auto& buildings = _buildingManager->getBuildings();
+    for (auto* b : buildings) {
+        // 使用类型枚举判断，这是最准确的
+        if (b->getBuildingType() == BuildingType::kTownHall) {
+            return b->getLevel();
+        }
+    }
+
+    // 如果地图上还没有大本营，默认返回 1 级，否则啥都买不了
+    return 1;
+}
+// DraggableMapScene.cpp
+
+int DraggableMapScene::getBuildingCount(const std::string& name) const {
+    if (!_buildingManager) return 0;
+    
+    int count = 0;
+    const auto& buildings = _buildingManager->getBuildings();
+    
+    for (auto* b : buildings) {
+        // ==================== 特殊处理大本营 ====================
+        // 如果查询的是 "Town Hall" 或 "大本营"，直接检查类型 ID
+        if (name == "Town Hall" || name == "大本营") {
+             if (b->getBuildingType() == BuildingType::kTownHall) {
+                 count++;
+             }
+             continue; // 既然是查大本营，就不用走下面的字符串匹配了
+        }
+        // ======================================================
+        
+        // 其他建筑通过名字匹配
+        // getDisplayName() 返回的是 "Cannon Lv.1"，我们查找 "Cannon"
+        std::string displayName = b->getDisplayName();
+        if (displayName.find(name) != std::string::npos) { 
+             count++;
+        }
+    }
+    return count;
+}
+
+void DraggableMapScene::startPlacingBuilding(const BuildingData& data) {
+    if (_buildingManager) {
+        _buildingManager->startPlacing(data);
+    }
+}
 void DraggableMapScene::toggleBuildingSelection()
 {
     _isBuildingListVisible = !_isBuildingListVisible;

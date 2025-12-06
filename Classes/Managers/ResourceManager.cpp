@@ -22,17 +22,25 @@ ResourceManager& ResourceManager::getInstance()
 ResourceManager::ResourceManager() {}
 void ResourceManager::Init()
 {
-    // 初始化资源容量
-    _capacities[kGold] = 999999999;
-    _capacities[kElixir] = 999999999;
-    _capacities[kGem] = 999999999;
-    _capacities[kBuilder] = 999999999;
+    // 初始容量 (1级大本营基础容量)
+    // 根据需求：金币3000，圣水3000，宝石无上限或很高，工人2个
+    _capacities[kGold] = 3000;
+    _capacities[kElixir] = 3000;
+    _capacities[kGem] = 9999999;
+    _capacities[kBuilder] = 5; // 总上限5个
 
-    // 初始资源（给玩家初始金币以便建造）
-    _resources[kGold] = 999999999;
-    _resources[kElixir] = 999999999;
-    _resources[kGem] = 999999999;
-    _resources[kBuilder] = 999999999;
+    // 初始资源
+    _resources[kGold] = 3000;
+    _resources[kElixir] = 3000;
+    _resources[kGem] = 1000;
+    _resources[kBuilder] = 2; // 初始2个工人
+}
+// 新增：增加容量的方法 (供 BuildingManager 在建造完成后调用)
+void ResourceManager::AddCapacity(ResourceType type, int amount)
+{
+    if (amount <= 0) return;
+    int currentCap = GetResourceCapacity(type);
+    SetResourceCapacity(type, currentCap + amount);
 }
 int ResourceManager::GetResourceCount(ResourceType type) const
 {

@@ -47,7 +47,11 @@ public:
     virtual void update(float dt) override;
 
     CREATE_FUNC(DraggableMapScene);
-
+    // 供商店调用
+    int getTownHallLevel() const;
+    int getBuildingCount(const std::string& name) const;
+    void startPlacingBuilding(const BuildingData& data); // 暴露建造接口
+    void openShop(); // 打开商店
 private:
     // ==================== 数据结构 ====================
     struct MapConfig

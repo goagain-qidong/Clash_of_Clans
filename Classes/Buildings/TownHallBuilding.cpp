@@ -70,17 +70,28 @@ TownHallBuilding* TownHallBuilding::create(int level)
 }
 bool TownHallBuilding::init(int level)
 {
+    // 1. 设置等级
     _level = std::max(1, std::min(level, getMaxLevel()));
-    _gridSize = cocos2d::Size(5, 5); // 大本营占用5x5网格
-    auto* levelConfig = TownHallConfig::getInstance()->getLevel(_level);
-    if (!levelConfig)
-        return false;
-    if (!Sprite::initWithFile(levelConfig->imageFile))
-        return false;
-    // 设置锚点和缩放
-    this->setAnchorPoint(Vec2(0.5f, 0.5f));
+
+    // 2. 设置网格大小 (大本营通常是 4x4 或 5x5)
+    _gridSize = cocos2d::Size(5, 5);
+
+    // 3. 初始化 Sprite (加载图片)
+    std::string imageFile = getImageForLevel(_level);
+    if (!Sprite::initWithFile(imageFile))
+    {
+        // 如果找不到对应等级的图，尝试加载 1 级的图作为保底
+        CCLOG("TownHallBuilding: Failed to load %s, trying fallback...", imageFile.c_str());
+        if (!Sprite::initWithFile("buildings/BaseCamp/town-hall-1.png")) {
+            return false;
+        }
+    }
+
+    // 4. 设置锚点 (适配 Isometric 视角)
+    this->setAnchorPoint(Vec2(0.5f, 0.35f));
     this->setScale(0.8f);
     this->setName(getDisplayName());
+
     return true;
 }
 int TownHallBuilding::getMaxLevel() const

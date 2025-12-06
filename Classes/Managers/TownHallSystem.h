@@ -1,4 +1,12 @@
 ﻿#pragma once
+/****************************************************************
+  * Project Name:  Clash_of_Clans
+  * File Name:     WallBuilding.cpp
+  * File Function: 大本营系统
+  * Author:        刘相成
+  * Update Date:   2025/12/06
+  * License:       MIT License
+  ****************************************************************/
 #include "cocos2d.h"
 #include "Managers/ResourceManager.h"
 #include "ui/CocosGUI.h"
