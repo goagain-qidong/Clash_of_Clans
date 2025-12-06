@@ -5,29 +5,45 @@
 #ifndef RESOURCE_BUILDING_H_
 #define RESOURCE_BUILDING_H_
 #include "BaseBuilding.h"
+
+/**
+ * @brief 资源建筑类型枚举
+ */
+enum class ResourceBuildingType
+{
+    kGoldMine,          // 金矿（生产金币）
+    kElixirCollector,   // 圣水收集器（生产圣水）
+    kGoldStorage,       // 金币仓库（存储金币）
+    kElixirStorage      // 圣水仓库（存储圣水）
+};
+
 /**
  * @class ResourceBuilding
- * @brief 资源生产建筑基类
+ * @brief 资源生产/存储建筑基类
  */
 class ResourceBuilding : public BaseBuilding
 {
 public:
-    static ResourceBuilding* create(ResourceType resourceType, int level = 1);
+    static ResourceBuilding* create(ResourceBuildingType buildingType, int level = 1);
     // ==================== BaseBuilding 接口实现 ====================
     virtual BuildingType getBuildingType() const override { return BuildingType::kResource; }
     virtual std::string getDisplayName() const override;
-    virtual int getMaxLevel() const override { return 15; }
+    virtual int getMaxLevel() const override;
     virtual int getUpgradeCost() const override;
     virtual ResourceType getUpgradeCostType() const override { return kGold; }
     virtual std::string getImageFile() const override;
     virtual bool upgrade() override;
     virtual void tick(float dt) override;
-    // ==================== 资源生产相关 ====================
+    // ==================== 资源建筑相关 ====================
+    ResourceBuildingType getBuildingSubType() const { return _buildingType; }
     ResourceType getResourceType() const { return _resourceType; }
-    int getProductionRate() const;
-    int getStorageCapacity() const;
+    bool isProducer() const; // 是否为生产型建筑（金矿/圣水收集器）
+    bool isStorage() const;  // 是否为存储型建筑（金币仓库/圣水仓库）
+    
+    int getProductionRate() const;      // 生产型建筑：每小时产量
+    int getStorageCapacity() const;     // 存储容量（生产型和存储型都有）
     int getCurrentStorage() const { return _currentStorage; }
-    int collect();
+    int collect();                      // 收集资源
     bool isStorageFull() const { return _currentStorage >= getStorageCapacity(); }
 
 protected:
@@ -39,6 +55,7 @@ protected:
     void hideCollectHint();
 
 private:
+    ResourceBuildingType _buildingType = ResourceBuildingType::kGoldMine;
     ResourceType _resourceType = kGold;
     int _currentStorage = 0;
     float _productionAccumulator = 0.0f;

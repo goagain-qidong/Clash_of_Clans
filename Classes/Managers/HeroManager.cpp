@@ -35,7 +35,7 @@ bool HeroManager::init()
     _selectedHero = nullptr;
 
     // 加载精灵帧缓存
-    SpriteFrameCache::getInstance()->addSpriteFramesWithFile("archer/archer.plist", "archer/archer.png");
+    SpriteFrameCache::getInstance()->addSpriteFramesWithFile("units/archer/archer.plist", "units/archer/archer.png");
 
     // 加载英雄数据
     loadHeroData();
@@ -52,7 +52,7 @@ void HeroManager::loadHeroData()
     };
 
     // 加载精灵帧缓存
-    SpriteFrameCache::getInstance()->addSpriteFramesWithFile("archer/archer.plist", "archer/archer.png");
+    SpriteFrameCache::getInstance()->addSpriteFramesWithFile("units/archer/archer.plist", "units/archer/archer.png");
 }
 
 void HeroManager::setupHeroUI(cocos2d::Node* parent, const cocos2d::Size& visibleSize)

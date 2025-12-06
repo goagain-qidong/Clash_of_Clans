@@ -53,32 +53,32 @@ void BuildingUpgradeUI::setupUI()
     float panelHeight = _panel->getContentSize().height;
 
     // 标题
-    _titleLabel = Label::createWithSystemFont("", "Arial", 20);
+    _titleLabel = Label::createWithSystemFont("", "Microsoft YaHei", 20);
     _titleLabel->setPosition(Vec2(panelWidth / 2, panelHeight - 25));
     _titleLabel->setTextColor(Color4B::YELLOW);
     _panel->addChild(_titleLabel);
 
     // 等级
-    _levelLabel = Label::createWithSystemFont("", "Arial", 16);
+    _levelLabel = Label::createWithSystemFont("", "Microsoft YaHei", 16);
     _levelLabel->setPosition(Vec2(panelWidth / 2, panelHeight - 50));
     _levelLabel->setTextColor(Color4B::WHITE);
     _panel->addChild(_levelLabel);
 
     // 描述
-    _descLabel = Label::createWithSystemFont("", "Arial", 14);
+    _descLabel = Label::createWithSystemFont("", "Microsoft YaHei", 14);
     _descLabel->setPosition(Vec2(panelWidth / 2, panelHeight - 85));
     _descLabel->setTextColor(Color4B(200, 200, 200, 255));
     _descLabel->setAlignment(TextHAlignment::CENTER);
     _panel->addChild(_descLabel);
 
     // 费用
-    _costLabel = Label::createWithSystemFont("", "Arial", 14);
+    _costLabel = Label::createWithSystemFont("", "Microsoft YaHei", 14);
     _costLabel->setPosition(Vec2(panelWidth / 2, panelHeight - 120));
     _costLabel->setTextColor(Color4B::GREEN);
     _panel->addChild(_costLabel);
 
     // 时间
-    _timeLabel = Label::createWithSystemFont("", "Arial", 14);
+    _timeLabel = Label::createWithSystemFont("", "Microsoft YaHei", 14);
     _timeLabel->setPosition(Vec2(panelWidth / 2, panelHeight - 145));
     _timeLabel->setTextColor(Color4B(150, 200, 255, 255));
     _panel->addChild(_timeLabel);

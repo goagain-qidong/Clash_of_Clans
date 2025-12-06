@@ -4,8 +4,11 @@
  */
 #include "BuildingManager.h"
 #include "ArmyBuilding.h"
+#include "ArmyCampBuilding.h"
+#include "BuildersHutBuilding.h"
 #include "ResourceBuilding.h"
 #include "TownHallBuilding.h"
+#include "WallBuilding.h"
 USING_NS_CC;
 bool BuildingManager::init()
 {
@@ -36,7 +39,7 @@ void BuildingManager::startPlacing(const BuildingData& buildingData)
     if (_ghostSprite)
     {
         _ghostSprite->setOpacity(150);
-        _ghostSprite->setAnchorPoint(Vec2(0.5f, 0.2f));
+        _ghostSprite->setAnchorPoint(Vec2(0.5f, 0.35f));
         _ghostSprite->setScale(buildingData.scaleFactor);
         _ghostSprite->setPosition(Vec2(-1000.0f, -1000.0f)); // 初始位置在屏幕外
         _mapSprite->addChild(_ghostSprite, 2000);
@@ -174,7 +177,8 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     BaseBuilding* building = createBuildingEntity(_selectedBuilding);
     if (!building)
     {
-        // 建造失败，退还资源
+        // 建造失败，清除网格占用并退还资源
+        _gridMap->markArea(gridPos, _selectedBuilding.gridSize, false);
         if (cost > 0)
         {
             resMgr.addResource(costType, cost);
@@ -185,7 +189,7 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     // 3. 设置建筑属性
     building->setGridPosition(gridPos);
     building->setGridSize(_selectedBuilding.gridSize);
-    building->setAnchorPoint(Vec2(0.5f, 0.2f));
+    building->setAnchorPoint(Vec2(0.5f, 0.35f));
     building->setScale(_selectedBuilding.scaleFactor);
     Vec2 buildingPos = calculateBuildingPosition(gridPos);
     building->setPosition(buildingPos);
@@ -223,15 +227,42 @@ BaseBuilding* BuildingManager::createBuildingEntity(const BuildingData& building
     }
     else if (buildingData.name == "金矿")
     {
-        return ResourceBuilding::create(ResourceType::kGold, 1);
+        return ResourceBuilding::create(ResourceBuildingType::kGoldMine, 1);
     }
     else if (buildingData.name == "圣水收集器")
     {
-        return ResourceBuilding::create(ResourceType::kElixir, 1);
+        return ResourceBuilding::create(ResourceBuildingType::kElixirCollector, 1);
+    }
+    else if (buildingData.name == "金币仓库")
+    {
+        return ResourceBuilding::create(ResourceBuildingType::kGoldStorage, 1);
+    }
+    else if (buildingData.name == "圣水仓库")
+    {
+        return ResourceBuilding::create(ResourceBuildingType::kElixirStorage, 1);
     }
     else if (buildingData.name == "兵营")
     {
         return ArmyBuilding::create(1);
+    }
+    else if (buildingData.name == "军营")
+    {
+        return ArmyCampBuilding::create(1);
+    }
+    else if (buildingData.name == "城墙")
+    {
+        return WallBuilding::create(1);
+    }
+    else if (buildingData.name == "建筑工人小屋")
+    {
+        return BuildersHutBuilding::create(1);
+    }
+    else if (buildingData.name == "箭塔" || buildingData.name == "炮塔")
+    {
+        // 使用自定义图片路径创建防御建筑（临时使用 ArmyBuilding）
+        // TODO: 创建专门的 DefenseBuilding 类
+        CCLOG("Creating %s with image: %s", buildingData.name.c_str(), buildingData.imageFile.c_str());
+        return ArmyBuilding::create(1, buildingData.imageFile);
     }
     else
     {

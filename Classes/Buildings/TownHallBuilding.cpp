@@ -17,25 +17,22 @@ TownHallConfig::TownHallConfig()
 }
 void TownHallConfig::initialize()
 {
-    // 大本营等级配置表
+    // 大本营等级配置表（统一限制为14级）
     // 格式: {等级, 图片路径, 升级费用, 升级时间(秒), 描述}
-    _levels = {{1, "BaseCamp/town-hall-1.png", 0, 0, "初始大本营"},
-               {2, "BaseCamp/town-hall-2.png", 1000, 3600, "二级大本营"},
-               {3, "BaseCamp/town-hall-3.png", 4000, 14400, "三级大本营"},
-               {4, "BaseCamp/town-hall-4.png", 25000, 43200, "四级大本营"},
-               {5, "BaseCamp/town-hall-5.png", 150000, 86400, "五级大本营"},
-               {6, "BaseCamp/town-hall-6.png", 500000, 172800, "六级大本营"},
-               {7, "BaseCamp/town-hall-7.png", 1200000, 259200, "七级大本营"},
-               {8, "BaseCamp/town-hall-8.png", 3000000, 345600, "八级大本营"},
-               {9, "BaseCamp/town-hall-9.png", 4000000, 432000, "九级大本营"},
-               {10, "BaseCamp/town-hall-10.png", 6000000, 518400, "十级大本营"},
-               {11, "BaseCamp/town-hall-11.png", 8000000, 604800, "十一级大本营"},
-               {12, "BaseCamp/town-hall-12.png", 10000000, 691200, "十二级大本营"},
-               {13, "BaseCamp/town-hall-13.png", 12000000, 777600, "十三级大本营"},
-               {14, "BaseCamp/town-hall-14.png", 16000000, 864000, "十四级大本营"},
-               {15, "BaseCamp/town-hall-15.png", 20000000, 950400, "十五级大本营"},
-               {16, "BaseCamp/town-hall-16.png", 30000000, 1036800, "十六级大本营"},
-               {17, "BaseCamp/town-hall-17.png", 0, 0, "满级大本营"}};
+    _levels = {{1, "buildings/BaseCamp/town-hall-1.png", 0, 0, "初始大本营"},
+               {2, "buildings/BaseCamp/town-hall-2.png", 1000, 3600, "二级大本营"},
+               {3, "buildings/BaseCamp/town-hall-3.png", 4000, 14400, "三级大本营"},
+               {4, "buildings/BaseCamp/town-hall-4.png", 25000, 43200, "四级大本营"},
+               {5, "buildings/BaseCamp/town-hall-5.png", 150000, 86400, "五级大本营"},
+               {6, "buildings/BaseCamp/town-hall-6.png", 500000, 172800, "六级大本营"},
+               {7, "buildings/BaseCamp/town-hall-7.png", 1200000, 259200, "七级大本营"},
+               {8, "buildings/BaseCamp/town-hall-8.png", 3000000, 345600, "八级大本营"},
+               {9, "buildings/BaseCamp/town-hall-9.png", 4000000, 432000, "九级大本营"},
+               {10, "buildings/BaseCamp/town-hall-10.png", 6000000, 518400, "十级大本营"},
+               {11, "buildings/BaseCamp/town-hall-11.png", 8000000, 604800, "十一级大本营"},
+               {12, "buildings/BaseCamp/town-hall-12.png", 10000000, 691200, "十二级大本营"},
+               {13, "buildings/BaseCamp/town-hall-13.png", 12000000, 777600, "十三级大本营"},
+               {14, "buildings/BaseCamp/town-hall-14.png", 0, 0, "满级大本营"}};
 }
 const TownHallConfig::LevelData* TownHallConfig::getLevel(int level) const
 {
@@ -81,8 +78,8 @@ bool TownHallBuilding::init(int level)
     if (!Sprite::initWithFile(levelConfig->imageFile))
         return false;
     // 设置锚点和缩放
-    this->setAnchorPoint(Vec2(0.5f, 0.2f));
-    this->setScale(0.6f);
+    this->setAnchorPoint(Vec2(0.5f, 0.5f));
+    this->setScale(0.8f);
     this->setName(getDisplayName());
     return true;
 }

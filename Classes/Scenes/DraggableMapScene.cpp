@@ -166,16 +166,25 @@ void DraggableMapScene::initBuildingData()
     _buildingList.clear();
     // 大本营（免费）
     _buildingList.push_back(
-        BuildingData("大本营", "BaseCamp/town-hall-1.png", Size(5, 5), 0.6f, 0, 0, ResourceType::kGold));
+        BuildingData("大本营", "buildings/BaseCamp/town-hall-1.png", Size(5, 5), 1.0f, 0, 0, ResourceType::kGold));
     // 防御建筑（消耗金币）
-    _buildingList.push_back(BuildingData("箭塔", "Tower.png", Size(3, 3), 0.8f, 1000, 60, ResourceType::kGold));
-    _buildingList.push_back(BuildingData("炮塔", "Cannon.png", Size(2, 2), 1.0f, 500, 30, ResourceType::kGold));
+    _buildingList.push_back(BuildingData("箭塔", "buildings/ArcherTower/Archer_Tower1.png", Size(3, 3), 0.8f, 1000, 60, ResourceType::kGold));
+    _buildingList.push_back(BuildingData("炮塔", "buildings/Cannon_Static/Cannon1.png", Size(3, 3), 0.8f, 500, 30, ResourceType::kGold));
+    _buildingList.push_back(BuildingData("城墙", "buildings/Wall/Wall1.png", Size(1, 1), 0.6f, 50, 0, ResourceType::kGold));
     // 军事建筑（消耗圣水）
-    _buildingList.push_back(BuildingData("兵营", "Barracks.png", Size(4, 4), 0.6f, 1500, 120, ResourceType::kElixir));
+    _buildingList.push_back(BuildingData("兵营", "buildings/Barracks/Barracks1.png", Size(4, 4), 0.6f, 1500, 120, ResourceType::kElixir));
+    _buildingList.push_back(BuildingData("军营", "buildings/ArmyCamp/Army_Camp1.png", Size(4, 4), 0.8f, 250, 0, ResourceType::kElixir));
     // 资源建筑（消耗金币）
-    _buildingList.push_back(BuildingData("金矿", "GoldMine.png", Size(3, 3), 0.8f, 800, 45, ResourceType::kGold));
+    _buildingList.push_back(BuildingData("金矿", "buildings/GoldMine/Gold_Mine1.png", Size(3, 3), 0.8f, 800, 45, ResourceType::kGold));
     _buildingList.push_back(
-        BuildingData("圣水收集器", "ElixirCollector.png", Size(3, 3), 0.8f, 750, 40, ResourceType::kGold));
+        BuildingData("圣水收集器", "buildings/ElixirCollector/Elixir_Collector1.png", Size(3, 3), 0.8f, 750, 40, ResourceType::kGold));
+    
+    // 存储建筑（消耗金币）
+    _buildingList.push_back(BuildingData("金币仓库", "buildings/GoldStorage/Gold_Storage1.png", Size(3, 3), 0.8f, 1000, 30, ResourceType::kGold));
+    _buildingList.push_back(BuildingData("圣水仓库", "buildings/ElixirStorage/Elixir_Storage1.png", Size(3, 3), 0.8f, 1000, 30, ResourceType::kGold));
+    
+    // 功能建筑（消耗金币/宝石）
+    _buildingList.push_back(BuildingData("建筑工人小屋", "buildings/BuildersHut/Builders_Hut1.png", Size(2, 2), 0.7f, 0, 0, ResourceType::kGold));
 }
 
 void DraggableMapScene::setupMap()
