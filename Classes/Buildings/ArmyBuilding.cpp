@@ -146,11 +146,9 @@ std::string ArmyBuilding::getImageForLevel(int level) const
         return _customImagePath + std::to_string(level) + ".png";
     }
     
-    // 否则使用默认的兵营图片
-    if (level <= 3)
-        return "buildings/Barracks/Barracks1.png";
-    else if (level <= 6)
-        return "buildings/Barracks/Barracks2.png";
-    else
-        return "buildings/Barracks/Barracks3.png";
+    // 否则使用默认的兵营图片（支持1-18级）
+    if (level < 1 || level > 18)
+        level = 1;
+    
+    return "buildings/Barracks/Barracks" + std::to_string(level) + ".png";
 }
