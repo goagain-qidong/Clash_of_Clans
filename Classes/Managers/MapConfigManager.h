@@ -34,6 +34,9 @@ public:
     // UI: create simple editor controls and attach to this node
     void createEditorUI();
 
+    // helpers
+    void refreshUIForMap(const std::string& mapName);
+
     // Callback when user edits and saves a config
     void setOnConfigChanged(const std::function<void(const std::string&, const MapConfig&)>& cb) { _onConfigChanged = cb; }
 
@@ -50,7 +53,4 @@ private:
     cocos2d::Label* _lblTile = nullptr;
 
     std::string _currentEditingMap;
-
-    // helpers
-    void refreshUIForMap(const std::string& mapName);
 };

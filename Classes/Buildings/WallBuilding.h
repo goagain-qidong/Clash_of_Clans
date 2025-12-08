@@ -1,8 +1,8 @@
-/****************************************************************
+ï»¿/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     WallBuilding.h
- * File Function: ³ÇÇ½½¨ÖşÀà
- * Author:        Ñ¦Ø¹ÕÜ
+ * File Function: åŸå¢™å»ºç­‘ç±»
+ * Author:        è–›æ¯“å“²
  * Update Date:   2025/01/09
  * License:       MIT License
  ****************************************************************/
@@ -11,14 +11,14 @@
 
 /**
  * @class WallBuilding
- * @brief ³ÇÇ½½¨ÖşÀà£¬1x1Íø¸ñµÄ·ÀÓù½¨Öş
+ * @brief åŸå¢™å»ºç­‘ç±»ï¼Œ1x1ç½‘æ ¼çš„é˜²å¾¡å»ºç­‘
  */
 class WallBuilding : public BaseBuilding
 {
 public:
     static WallBuilding* create(int level = 1);
     
-    // ==================== BaseBuilding ½Ó¿ÚÊµÏÖ ====================
+    // ==================== BaseBuilding æ¥å£å®ç° ====================
     virtual BuildingType getBuildingType() const override { return BuildingType::kWall; }
     virtual std::string getDisplayName() const override;
     virtual int getMaxLevel() const override { return 16; }
@@ -28,8 +28,8 @@ public:
     virtual std::string getBuildingDescription() const override;
     virtual std::string getImageFile() const override;
     
-    // ==================== ³ÇÇ½ÌØÓĞ¹¦ÄÜ ====================
-    /** @brief »ñÈ¡µ±Ç°µÈ¼¶µÄÉúÃüÖµ */
+    // ==================== åŸå¢™ç‰¹æœ‰åŠŸèƒ½ ====================
+    /** @brief è·å–å½“å‰ç­‰çº§çš„ç”Ÿå‘½å€¼ */
     int getHitPoints() const;
 
 protected:

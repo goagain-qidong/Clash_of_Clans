@@ -6,6 +6,78 @@
 
 #include <functional>
 
+#include "json/document.h"
+
+#include "json/writer.h"
+
+#include "json/stringbuffer.h"
+
+
+
+// Building data for serialization
+
+struct BuildingSerialData {
+
+    std::string name;
+
+    int level;
+
+    float gridX;
+
+    float gridY;
+
+    float gridWidth;
+
+    float gridHeight;
+
+
+
+    // Serialize to JSON
+
+    rapidjson::Value toJson(rapidjson::Document::AllocatorType& allocator) const;
+
+
+
+    // Deserialize from JSON
+
+    static BuildingSerialData fromJson(const rapidjson::Value& obj);
+
+};
+
+
+
+// Account game state data
+
+struct AccountGameData {
+
+    int gold = 1000;
+
+    int elixir = 1000;
+
+    int darkElixir = 0;
+
+    int gems = 0;
+
+    int trophies = 0;
+
+    int townHallLevel = 1;
+
+    std::vector<BuildingSerialData> buildings;
+
+
+
+    // Serialize to JSON
+
+    std::string toJson() const;
+
+
+
+    // Deserialize from JSON
+
+    static AccountGameData fromJson(const std::string& jsonStr);
+
+};
+
 
 
 // Simple account model
@@ -19,6 +91,10 @@ struct AccountInfo {
     std::string password; // account password (plaintext,建议加密存储)
 
     std::string token;    // auth token (optional)
+    
+    std::string assignedMapName = "map/Map1.png"; // 每个账号分配的地图（默认Map1）
+
+    AccountGameData gameData; // Game state data
 
 };
 
@@ -74,6 +150,52 @@ public:
 
 
 
+    // ==================== Game State Management ====================
+
+    
+
+    /** @brief Update current account's game data */
+
+    void updateGameData(const AccountGameData& gameData);
+
+    
+
+    /** @brief Get current account's game data */
+
+    AccountGameData getCurrentGameData() const;
+
+    
+
+    /** @brief Save current account's game state to JSON file */
+
+    bool saveGameStateToFile();
+
+    
+
+    /** @brief Load account's game state from JSON file */
+
+    bool loadGameStateFromFile(const std::string& userId);
+
+    
+
+    /** @brief Get another player's game data by userId (for attacking) */
+
+    AccountGameData getPlayerGameData(const std::string& userId) const;
+
+    
+
+    /** @brief Export current game state as JSON string (for server upload) */
+
+    std::string exportGameStateJson() const;
+
+    
+
+    /** @brief Import game state from JSON string (from server) */
+
+    bool importGameStateJson(const std::string& userId, const std::string& jsonData);
+
+
+
     // Persist current state to storage.
 
     void save();
@@ -99,6 +221,12 @@ private:
     // Internal helpers
 
     void loadFromStorage();
+
+    
+
+    /** @brief Get the file path for a user's game data */
+
+    std::string getGameDataFilePath(const std::string& userId) const;
 
 };
 

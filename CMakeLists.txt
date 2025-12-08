@@ -5,7 +5,6 @@ project(${APP_NAME})
 
 # --- 强制使用 UTF-8 编码 ---
 if(MSVC)
-    # /utf-8 相当于同时设置源码字符集和执行字符集为 UTF-8
     add_compile_options(/utf-8)
     add_compile_options(/wd4819)
 endif()
@@ -31,7 +30,7 @@ if(APPLE OR WINDOWS)
     cocos_mark_multi_resources(common_res_files RES_TO "Resources" FOLDERS ${GAME_RES_FOLDER})
 endif()
 
-# ---- 根据 Classes 目录组织自动收集文件 ----
+# ---- 按照 Classes 目录组织自动收集文件 ----
 file(GLOB_RECURSE APP_SRC        "${CMAKE_CURRENT_SOURCE_DIR}/Classes/App/*.cpp")
 file(GLOB_RECURSE APP_HDR        "${CMAKE_CURRENT_SOURCE_DIR}/Classes/App/*.h")
 
@@ -53,6 +52,9 @@ file(GLOB_RECURSE BUILDINGS_HDR  "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Buildings/
 file(GLOB_RECURSE UNIT_SRC       "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Unit/*.cpp")
 file(GLOB_RECURSE UNIT_HDR       "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Unit/*.h")
 
+file(GLOB_RECURSE UI_SRC         "${CMAKE_CURRENT_SOURCE_DIR}/Classes/UI/*.cpp")
+file(GLOB_RECURSE UI_HDR         "${CMAKE_CURRENT_SOURCE_DIR}/Classes/UI/*.h")
+
 list(APPEND GAME_SOURCE
     ${APP_SRC}
     ${SCENES_SRC}
@@ -61,6 +63,7 @@ list(APPEND GAME_SOURCE
     ${GRIDMAP_SRC}
     ${BUILDINGS_SRC}
     ${UNIT_SRC}
+    ${UI_SRC}
 )
 list(APPEND GAME_HEADER
     ${APP_HDR}
@@ -70,6 +73,7 @@ list(APPEND GAME_HEADER
     ${GRIDMAP_HDR}
     ${BUILDINGS_HDR}
     ${UNIT_HDR}
+    ${UI_HDR}
 )
 
 # ---- 平台特定 ----
@@ -127,6 +131,7 @@ target_include_directories(${APP_NAME}
     PRIVATE Classes/Models
     PRIVATE Classes/Scenes
     PRIVATE Classes/Unit
+    PRIVATE Classes/UI
     PRIVATE ${COCOS2DX_ROOT_PATH}/cocos/audio/include/
 )
 

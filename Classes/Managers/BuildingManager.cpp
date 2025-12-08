@@ -362,64 +362,20 @@ void BuildingManager::setupBuildingClickListener(BaseBuilding* building)
 {
     /**
      * 为建筑添加点击监听器
-     * 支持功能：
-     * 1. 单击 - 打开升级UI
-     * 2. 长按拖动 - 移动建筑位置
+     * 注意：不再在这里添加触摸监听器，改为由场景触摸事件转发处理
+     * 这样可以避免触摸事件优先级冲突
      */
     if (!building)
         return;
 
+    // 移除旧的监听器（如果有）
     Director::getInstance()->getEventDispatcher()->removeEventListenersForTarget(building);
-
-    auto listener = EventListenerTouchOneByOne::create();
-    listener->setSwallowTouches(true);
-
-    listener->onTouchBegan = [this, building](Touch* touch, Event* event) {
-        if (!building->isVisible())
-            return false;
-
-        Vec2 touchInNode = building->convertTouchToNodeSpace(touch);
-        Rect rect = Rect(Vec2::ZERO, building->getContentSize());
-
-        if (rect.containsPoint(touchInNode))
-        {
-            // 记录触摸起点，用于判断是否拖动
-            return true;
-        }
-        return false;
-    };
-
-    listener->onTouchMoved = [this, building](Touch* touch, Event* event) {
-        // 长按后拖动，进入移动模式
-        if (!_isMovingBuilding && !_isBuildingMode)
-        {
-            startMovingBuilding(building);
-        }
-        
-        // 如果正在移动建筑，更新幽灵精灵位置
-        if (_isMovingBuilding && _movingBuilding == building)
-        {
-            onBuildingTouchMoved(touch->getLocation());
-        }
-    };
-
-    listener->onTouchEnded = [this, building](Touch* touch, Event* event) {
-        if (_isMovingBuilding && _movingBuilding == building && building)
-        {
-            // 在移动模式下释放触摸，确认新位置或取消
-            onBuildingTouchEnded(touch->getLocation(), building);
-        }
-        else if (!_isBuildingMode && !_isMovingBuilding && building)
-        {
-            // 在正常状态下（不是建造也不是移动），打开升级UI
-            if (_onBuildingClicked)
-            {
-                _onBuildingClicked(building);
-            }
-        }
-    };
-
-    Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(listener, building);
+    
+    // 不再添加触摸监听器，改为由 BuildingManager 的 getBuildingAtPosition 和场景转发处理
+    // 触摸处理流程：
+    // 1. 场景 onTouchBegan -> 调用 BuildingManager::getBuildingAtPosition
+    // 2. 如果找到建筑 -> 触发 _onBuildingClicked 回调
+    // 3. 场景决定是否启动移动模式或打开升级UI
 }
 
 // ==================== 建筑移动相关实现 ====================
@@ -517,16 +473,7 @@ void BuildingManager::onBuildingTouchMoved(const cocos2d::Vec2& touchPos)
     bool canPlace = false;
     if (_gridMap->checkArea(centerAlignedGridPos, _movingBuilding->getGridSize()))
     {
-        // 如果新位置与原位置相同，则可以放置
-        if (centerAlignedGridPos == _buildingOriginalGridPos)
-        {
-            canPlace = true;
-        }
-        else
-        {
-            // 检查新位置是否为空（不被占用）
-            canPlace = _gridMap->checkArea(centerAlignedGridPos, _movingBuilding->getGridSize());
-        }
+        canPlace = true;
     }
 
     // 更新幽灵精灵位置
@@ -542,7 +489,6 @@ void BuildingManager::onBuildingTouchEnded(const cocos2d::Vec2& touchPos, BaseBu
 {
     /**
      * 处理建筑移动时的触摸结束事件
-     * 通过参数传递 building 指针而不是依赖全局 _movingBuilding，防止空指针异常
      */
     if (!_isMovingBuilding || !building || !_gridMap || _movingBuilding != building)
         return;
@@ -560,7 +506,6 @@ void BuildingManager::onBuildingTouchEnded(const cocos2d::Vec2& touchPos, BaseBu
     if (canPlace)
     {
         // 位置有效，确认移动
-        // 先更新建筑的网格位置
         building->setGridPosition(newGridPos);
         
         // 更新建筑的世界位置
@@ -581,7 +526,7 @@ void BuildingManager::onBuildingTouchEnded(const cocos2d::Vec2& touchPos, BaseBu
             _onBuildingMoved(building, newGridPos);
         }
 
-        // 最后清理移动模式状态
+        // 清理移动模式状态
         confirmBuildingMove();
     }
     else
@@ -596,7 +541,6 @@ void BuildingManager::confirmBuildingMove()
 {
     /**
      * 确认建筑移动完成
-     * 清理移动模式状态
      */
     if (!_isMovingBuilding || !_movingBuilding)
         return;
@@ -626,7 +570,6 @@ cocos2d::Vec2 BuildingManager::calculateBuildingPositionForMoving(const cocos2d:
 {
     /**
      * 计算移动建筑时的世界位置
-     * 基于当前被移动的建筑的网格大小
      */
     if (!_gridMap || !_movingBuilding)
         return Vec2::ZERO;
@@ -636,4 +579,269 @@ cocos2d::Vec2 BuildingManager::calculateBuildingPositionForMoving(const cocos2d:
         gridPos + Vec2(_movingBuilding->getGridSize().width - 1, _movingBuilding->getGridSize().height - 1));
     Vec2 centerPos = (posStart + posEnd) / 2.0f;
     return centerPos;
+}
+
+// ==================== Serialization / Multiplayer Support ====================
+
+#include "AccountManager.h"
+
+std::vector<BuildingSerialData> BuildingManager::serializeBuildings() const
+{
+    /**
+     * 将所有建筑序列化为数据列表
+     */
+    std::vector<BuildingSerialData> result;
+    
+    for (auto* building : _buildings)
+    {
+        if (!building)
+            continue;
+            
+        BuildingSerialData data;
+        data.name = building->getDisplayName();
+        data.level = building->getLevel();
+        data.gridX = building->getGridPosition().x;
+        data.gridY = building->getGridPosition().y;
+        data.gridWidth = building->getGridSize().width;
+        data.gridHeight = building->getGridSize().height;
+        
+        result.push_back(data);
+    }
+    
+    CCLOG("✅ Serialized %zu buildings", result.size());
+    return result;
+}
+
+void BuildingManager::loadBuildingsFromData(const std::vector<BuildingSerialData>& buildingsData, bool isReadOnly)
+{
+    /**
+     * 从序列化数据快速加载建筑
+     */
+    if (!_mapSprite || !_gridMap)
+    {
+        CCLOG("❌ BuildingManager: Map or grid not set, cannot load buildings");
+        return;
+    }
+    
+    // 先清空现有建筑
+    clearAllBuildings();
+    
+    _isReadOnlyMode = isReadOnly;
+    
+    CCLOG("🔄 Loading %zu buildings (ReadOnly=%d)...", buildingsData.size(), isReadOnly);
+    
+    for (const auto& data : buildingsData)
+    {
+        BaseBuilding* building = createBuildingFromSerialData(data);
+        
+        if (!building)
+        {
+            CCLOG("⚠️ Failed to create building: %s", data.name.c_str());
+            continue;
+        }
+        
+        // 设置建筑属性
+        Vec2 gridPos(data.gridX, data.gridY);
+        Size gridSize(data.gridWidth, data.gridHeight);
+        
+        building->setGridPosition(gridPos);
+        building->setGridSize(gridSize);
+        building->setAnchorPoint(Vec2(0.5f, 0.35f));
+        
+        // 计算并设置位置
+        Vec2 posStart = _gridMap->getPositionFromGrid(gridPos);
+        Vec2 posEnd = _gridMap->getPositionFromGrid(gridPos + Vec2(gridSize.width - 1, gridSize.height - 1));
+        Vec2 centerPos = (posStart + posEnd) / 2.0f;
+        building->setPosition(centerPos);
+        
+        // 设置 Z-Order
+        building->setLocalZOrder(10000 - static_cast<int>(centerPos.y));
+        
+        // 添加到地图
+        _mapSprite->addChild(building);
+        _buildings.pushBack(building);
+        
+        // 标记网格占用
+        _gridMap->markArea(gridPos, gridSize, true);
+        
+        // 只在非只读模式下添加点击监听器
+        if (!isReadOnly)
+        {
+            setupBuildingClickListener(building);
+        }
+    }
+    
+    CCLOG("✅ Loaded %zu buildings successfully (Mode: %s)", 
+          _buildings.size(), isReadOnly ? "Attack" : "Edit");
+}
+
+void BuildingManager::clearAllBuildings()
+{
+    /**
+     * 清空所有建筑
+     */
+    if (!_gridMap)
+        return;
+    
+    // 清除网格占用
+    for (auto* building : _buildings)
+    {
+        if (building)
+        {
+            _gridMap->markArea(building->getGridPosition(), building->getGridSize(), false);
+        }
+    }
+    
+    // 移除所有建筑节点
+    _buildings.clear();
+    
+    _isReadOnlyMode = false;
+    
+    CCLOG("🗑️ Cleared all buildings");
+}
+
+void BuildingManager::saveCurrentState()
+{
+    /**
+     * 保存当前建筑状态到当前账号
+     */
+    auto& accMgr = AccountManager::getInstance();
+    auto gameData = accMgr.getCurrentGameData();
+    
+    // 序列化建筑
+    gameData.buildings = serializeBuildings();
+    
+    // 同步资源数据
+    auto* resMgr = ResourceManager::GetInstance();
+    gameData.gold = resMgr->GetResourceCount(ResourceType::kGold);
+    gameData.elixir = resMgr->GetResourceCount(ResourceType::kElixir);
+    gameData.darkElixir = 0;
+    gameData.gems = resMgr->GetResourceCount(ResourceType::kGem);
+    
+    // 获取大本营等级
+    for (auto* building : _buildings)
+    {
+        if (building && building->getBuildingType() == BuildingType::kTownHall)
+        {
+            gameData.townHallLevel = building->getLevel();
+            break;
+        }
+    }
+    
+    // 更新并保存
+    accMgr.updateGameData(gameData);
+    
+    CCLOG("💾 Current state saved: %zu buildings, Gold=%d, Elixir=%d", 
+          gameData.buildings.size(), gameData.gold, gameData.elixir);
+}
+
+void BuildingManager::loadCurrentAccountState()
+{
+    /**
+     * 从当前账号加载建筑状态
+     */
+    auto& accMgr = AccountManager::getInstance();
+    auto gameData = accMgr.getCurrentGameData();
+    
+    // 同步资源到 ResourceManager
+    auto* resMgr = ResourceManager::GetInstance();
+    resMgr->SetResourceCount(ResourceType::kGold, gameData.gold);
+    resMgr->SetResourceCount(ResourceType::kElixir, gameData.elixir);
+    resMgr->SetResourceCount(ResourceType::kGem, gameData.gems);
+    
+    // 加载建筑
+    loadBuildingsFromData(gameData.buildings, false);
+    
+    CCLOG("📂 Loaded account state: %zu buildings, Gold=%d, Elixir=%d",
+          gameData.buildings.size(), gameData.gold, gameData.elixir);
+}
+
+bool BuildingManager::loadPlayerBase(const std::string& userId)
+{
+    /**
+     * 加载指定玩家的建筑布局（用于攻击）
+     */
+    auto& accMgr = AccountManager::getInstance();
+    auto gameData = accMgr.getPlayerGameData(userId);
+    
+    if (gameData.buildings.empty())
+    {
+        CCLOG("❌ Failed to load base for player: %s", userId.c_str());
+        return false;
+    }
+    
+    // 以只读模式加载建筑
+    loadBuildingsFromData(gameData.buildings, false);
+    
+    CCLOG("⚔️ Loaded player base: %s (%zu buildings, TH Level=%d)",
+          userId.c_str(), gameData.buildings.size(), gameData.townHallLevel);
+    
+    return true;
+}
+
+BaseBuilding* BuildingManager::createBuildingFromSerialData(const BuildingSerialData& data)
+{
+    /**
+     * 从序列化数据创建建筑实体
+     */
+    std::string name = data.name;
+    int level = data.level;
+    
+    // 移除等级后缀
+    size_t lvPos = name.find(" Lv.");
+    if (lvPos != std::string::npos)
+    {
+        name = name.substr(0, lvPos);
+    }
+    
+    // 根据名称创建建筑
+    if (name.find("Town Hall") != std::string::npos || name.find("大本营") != std::string::npos)
+    {
+        return TownHallBuilding::create(level);
+    }
+    else if (name.find("Gold Mine") != std::string::npos || name.find("金矿") != std::string::npos)
+    {
+        return ResourceBuilding::create(ResourceBuildingType::kGoldMine, level);
+    }
+    else if (name.find("Elixir Collector") != std::string::npos || name.find("圣水收集器") != std::string::npos)
+    {
+        return ResourceBuilding::create(ResourceBuildingType::kElixirCollector, level);
+    }
+    else if (name.find("Gold Storage") != std::string::npos || name.find("金币仓库") != std::string::npos)
+    {
+        return ResourceBuilding::create(ResourceBuildingType::kGoldStorage, level);
+    }
+    else if (name.find("Elixir Storage") != std::string::npos || name.find("圣水仓库") != std::string::npos)
+    {
+        return ResourceBuilding::create(ResourceBuildingType::kElixirStorage, level);
+    }
+    else if (name.find("Barracks") != std::string::npos || name.find("兵营") != std::string::npos)
+    {
+        return ArmyBuilding::create(level);
+    }
+    else if (name.find("Army Camp") != std::string::npos || name.find("军营") != std::string::npos)
+    {
+        return ArmyCampBuilding::create(level);
+    }
+    else if (name.find("Wall") != std::string::npos || name.find("城墙") != std::string::npos)
+    {
+        return WallBuilding::create(level);
+    }
+    else if (name.find("Builder") != std::string::npos || name.find("建筑工人") != std::string::npos)
+    {
+        return BuildersHutBuilding::create(level);
+    }
+    else if (name.find("Archer Tower") != std::string::npos || name.find("箭塔") != std::string::npos)
+    {
+        return ArmyBuilding::create(level);
+    }
+    else if (name.find("Cannon") != std::string::npos || name.find("炮塔") != std::string::npos)
+    {
+        return ArmyBuilding::create(level);
+    }
+    else
+    {
+        CCLOG("⚠️ Unknown building type: %s", name.c_str());
+        return nullptr;
+    }
 }

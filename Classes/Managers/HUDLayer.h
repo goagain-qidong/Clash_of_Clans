@@ -1,9 +1,9 @@
-#pragma once
+ï»¿#pragma once
 /****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     WallBuilding.cpp
- * File Function:  È«ĞÂ¶¥²¿×ÊÔ´À¸
- * Author:        ÁõÏà³É
+ * File Function:  å…¨æ–°é¡¶éƒ¨èµ„æºæ 
+ * Author:        åˆ˜ç›¸æˆ
  * Update Date:   2025/12/06
  * License:       MIT License
  ****************************************************************/
@@ -15,12 +15,12 @@ public:
     static HUDLayer* create();
     virtual bool init() override;
 
-    // Ç¿ÖÆË¢ĞÂÏÔÊ¾
+    // å¼ºåˆ¶åˆ·æ–°æ˜¾ç¤º
     void updateDisplay();
 
 private:
     void createResourceNode(ResourceType type, const std::string& iconFile, int orderIndex);
 
     std::map<ResourceType, cocos2d::Label*> _amountLabels;
-    std::map<ResourceType, cocos2d::Label*> _capacityLabels; // ½ö½ğ/Ë®ĞèÒª
+    std::map<ResourceType, cocos2d::Label*> _capacityLabels; // ä»…é‡‘/æ°´éœ€è¦
 };

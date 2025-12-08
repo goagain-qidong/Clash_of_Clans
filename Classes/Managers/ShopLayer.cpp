@@ -1,13 +1,13 @@
-#include "ShopLayer.h"
+ï»¿#include "ShopLayer.h"
 #include "Managers/ResourceManager.h"
 #include "Managers/BuildingManager.h"
 #include "Managers/GameConfig.h"
-#include "DraggableMapScene.h" // ÎªÁË»ñÈ¡BuildingManager£¬»òÕßÊ¹ÓÃµ¥Àı
+#include "DraggableMapScene.h" // ä¸ºäº†è·å–BuildingManagerï¼Œæˆ–è€…ä½¿ç”¨å•ä¾‹
 /****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     WallBuilding.cpp
- * File Function:  ÉÌµê½çÃæ
- * Author:        ÁõÏà³É
+ * File Function:  å•†åº—ç•Œé¢
+ * Author:        åˆ˜ç›¸æˆ
  * Update Date:   2025/12/06
  * License:       MIT License
  ****************************************************************/
@@ -27,11 +27,11 @@ ShopLayer* ShopLayer::create() {
 bool ShopLayer::init() {
     if (!Layer::init()) return false;
 
-    // °ëÍ¸Ã÷±³¾°ÆÁ±Îµã»÷
+    // åŠé€æ˜èƒŒæ™¯å±è”½ç‚¹å‡»
     auto bgMask = LayerColor::create(Color4B(0, 0, 0, 180));
     this->addChild(bgMask);
 
-    // ÍÌÊÉ´¥Ãş
+    // åå™¬è§¦æ‘¸
     auto listener = EventListenerTouchOneByOne::create();
     listener->setSwallowTouches(true);
     listener->onTouchBegan = [](Touch*, Event*) { return true; };
@@ -44,7 +44,7 @@ bool ShopLayer::init() {
 void ShopLayer::initUI() {
     auto visibleSize = Director::getInstance()->getVisibleSize();
 
-    // Ê¹ÓÃ ui::Layout ×÷ÎªÈİÆ÷
+    // ä½¿ç”¨ ui::Layout ä½œä¸ºå®¹å™¨
     auto bgLayout = ui::Layout::create();
     bgLayout->setContentSize(Size(visibleSize.width, 350));
     bgLayout->setBackGroundColorType(ui::Layout::BackGroundColorType::SOLID);
@@ -53,20 +53,20 @@ void ShopLayer::initUI() {
 
     _container = bgLayout;
 
-    // ÉèÖÃÃªµãºÍÎ»ÖÃ
+    // è®¾ç½®é”šç‚¹å’Œä½ç½®
     _container->setAnchorPoint(Vec2(0.5f, 0.0f));
     _container->setPosition(Vec2(visibleSize.width / 2.0f, 0.0f));
 
-    this->addChild(_container); // <--- ¼ì²éÕâÀïÊÇ·ñÓĞ·ÖºÅ
+    this->addChild(_container); // <--- æ£€æŸ¥è¿™é‡Œæ˜¯å¦æœ‰åˆ†å·
 
-    // ±êÌâ (×¢Òâ£ºÕâÀïÈ«ÊÇÓ¢ÎÄ·ûºÅ)
+    // æ ‡é¢˜ (æ³¨æ„ï¼šè¿™é‡Œå…¨æ˜¯è‹±æ–‡ç¬¦å·)
     auto title = Label::createWithSystemFont("Shop", "Arial", 28);
 
-    // ÉèÖÃ±êÌâÎ»ÖÃ
+    // è®¾ç½®æ ‡é¢˜ä½ç½®
     title->setPosition(Vec2(_container->getContentSize().width / 2.0f, _container->getContentSize().height - 30.0f));
     _container->addChild(title);
 
-    // ¹Ø±Õ°´Å¥
+    // å…³é—­æŒ‰é’®
     _closeBtn = Button::create();
     _closeBtn->setTitleText("X");
     _closeBtn->setTitleFontSize(30);
@@ -74,7 +74,7 @@ void ShopLayer::initUI() {
     _closeBtn->addClickEventListener([this](Ref*) { hide(); });
     _container->addChild(_closeBtn);
 
-    // ÉÌÆ·ÁĞ±í
+    // å•†å“åˆ—è¡¨
     _scrollView = ListView::create();
     _scrollView->setDirection(ui::ScrollView::Direction::HORIZONTAL);
     _scrollView->setContentSize(Size(visibleSize.width - 40.0f, 250.0f));
@@ -82,7 +82,7 @@ void ShopLayer::initUI() {
     _scrollView->setItemsMargin(20.0f);
     _container->addChild(_scrollView);
 
-    // ¼ÓÔØËùÓĞÉÌÆ·
+    // åŠ è½½æ‰€æœ‰å•†å“
     loadCategory("All");
 }
 
@@ -94,31 +94,31 @@ void ShopLayer::loadCategory(const std::string& categoryName) {
     auto buildings = config.getAllBuildings();
 
     for (const auto& cfg : buildings) {
-        // ¹¹½¨ÓÃÓÚ BuildingManager µÄ BuildingData
-        BuildingData bData(cfg.name, cfg.iconPath, Size(3, 3), 1.0f, cfg.cost, 0, cfg.costType); // Ä¬ÈÏ³ß´çĞèÒªÓÅ»¯
+        // æ„å»ºç”¨äº BuildingManager çš„ BuildingData
+        BuildingData bData(cfg.name, cfg.iconPath, Size(3, 3), 1.0f, cfg.cost, 0, cfg.costType); // é»˜è®¤å°ºå¯¸éœ€è¦ä¼˜åŒ–
 
-        // Õë¶ÔÌØ¶¨½¨ÖşĞŞÕı³ß´ç
-        if (cfg.name == "Wall" || cfg.name == "³ÇÇ½") bData.gridSize = Size(1, 1);
-        else if (cfg.name == "Town Hall" || cfg.name == "´ó±¾Óª") bData.gridSize = Size(5, 5);
-        else if (cfg.name == "Barracks" || cfg.name == "Army Camp" || cfg.name == "±øÓª" || cfg.name == "¾üÓª") bData.gridSize = Size(4, 4);
-        else if (cfg.name == "Builder Hut" || cfg.name == "½¨Öş¹¤ÈËĞ¡Îİ") bData.gridSize = Size(2, 2);
+        // é’ˆå¯¹ç‰¹å®šå»ºç­‘ä¿®æ­£å°ºå¯¸
+        if (cfg.name == "Wall" || cfg.name == "åŸå¢™") bData.gridSize = Size(1, 1);
+        else if (cfg.name == "Town Hall" || cfg.name == "å¤§æœ¬è¥") bData.gridSize = Size(5, 5);
+        else if (cfg.name == "Barracks" || cfg.name == "Army Camp" || cfg.name == "å…µè¥" || cfg.name == "å†›è¥") bData.gridSize = Size(4, 4);
+        else if (cfg.name == "Builder Hut" || cfg.name == "å»ºç­‘å·¥äººå°å±‹") bData.gridSize = Size(2, 2);
 
-        // ½« ConfigItem ´«Èë createShopItem£¬ÒòÎªËü°üº¬ÁË½âËøµÈ¼¶µÈĞÅÏ¢
+        // å°† ConfigItem ä¼ å…¥ createShopItemï¼Œå› ä¸ºå®ƒåŒ…å«äº†è§£é”ç­‰çº§ç­‰ä¿¡æ¯
         auto item = createShopItem(bData);
         _scrollView->pushBackCustomItem(item);
     }
 }
 
 cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data) {
-    // Íâ¿ò
+    // å¤–æ¡†
     auto itemLayout = Layout::create();
     itemLayout->setContentSize(Size(180, 220));
 
-    // ±³¾°Í¼
+    // èƒŒæ™¯å›¾
     auto bg = LayerColor::create(Color4B(80, 80, 80, 255), 180, 220);
     itemLayout->addChild(bg);
 
-    // »ñÈ¡ÏŞÖÆĞÅÏ¢
+    // è·å–é™åˆ¶ä¿¡æ¯
     auto& config = GameConfig::getInstance();
     int thLevel = getCurrentTownHallLevel();
     int maxCount = config.getMaxBuildingCount(data.name, thLevel);
@@ -129,29 +129,29 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data) {
     bool isMaxed = (currentCount >= maxCount);
     bool canAfford = ResourceManager::getInstance().HasEnough(data.costType, data.cost);
 
-    // 1. ½¨ÖşÍ¼±ê
+    // 1. å»ºç­‘å›¾æ ‡
     auto icon = Sprite::create(data.imageFile);
     if (icon) {
-        // ±£³ÖÍ¼±êÊÊÓ¦¿ò´óĞ¡
+        // ä¿æŒå›¾æ ‡é€‚åº”æ¡†å¤§å°
         float scale = 120.0f / icon->getContentSize().width;
         icon->setScale(scale);
         icon->setPosition(Vec2(90, 140));
-        // Èç¹ûÎ´½âËø»òÒÑ´ïÉÏÏŞ£¬ÖÃ»Ò
+        // å¦‚æœæœªè§£é”æˆ–å·²è¾¾ä¸Šé™ï¼Œç½®ç°
         if (!isUnlocked || isMaxed) {
             icon->setColor(Color3B::GRAY);
         }
         itemLayout->addChild(icon);
     }
 
-    // 2. ÊıÁ¿ÏŞÖÆÎÄ±¾ (e.g. 2/5)
+    // 2. æ•°é‡é™åˆ¶æ–‡æœ¬ (e.g. 2/5)
     auto countLabel = Label::createWithSystemFont(
         StringUtils::format("%d/%d", currentCount, maxCount), "Arial", 16);
     countLabel->setPosition(Vec2(90, 190));
     itemLayout->addChild(countLabel);
 
-    // 3. µ×²¿ĞÅÏ¢Çø (»¨·Ñ»òÌáÊ¾)
+    // 3. åº•éƒ¨ä¿¡æ¯åŒº (èŠ±è´¹æˆ–æç¤º)
     if (!isUnlocked) {
-        // Î´½âËøÌáÊ¾
+        // æœªè§£é”æç¤º
         auto lockLabel = Label::createWithSystemFont(
             StringUtils::format("TH %d Required", cfgItem->unlockTownHallLevel), "Arial", 18);
         lockLabel->setTextColor(Color4B::RED);
@@ -159,14 +159,14 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data) {
         itemLayout->addChild(lockLabel);
     }
     else if (isMaxed) {
-        // ÒÑ´ïÉÏÏŞ
+        // å·²è¾¾ä¸Šé™
         auto maxLabel = Label::createWithSystemFont("MAXED", "Arial", 24);
         maxLabel->setTextColor(Color4B::GRAY);
         maxLabel->setPosition(Vec2(90, 40));
         itemLayout->addChild(maxLabel);
     }
     else {
-        // Õı³£¹ºÂò×´Ì¬£ºÏÔÊ¾×ÊÔ´Í¼±êºÍ¼Û¸ñ
+        // æ­£å¸¸è´­ä¹°çŠ¶æ€ï¼šæ˜¾ç¤ºèµ„æºå›¾æ ‡å’Œä»·æ ¼
         std::string resIconPath = "";
         Color4B priceColor = Color4B::WHITE;
 
@@ -190,15 +190,15 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data) {
         priceLabel->setTextColor(priceColor);
         itemLayout->addChild(priceLabel);
 
-        // Ìí¼Óµã»÷ÊÂ¼ş
+        // æ·»åŠ ç‚¹å‡»äº‹ä»¶
         itemLayout->setTouchEnabled(true);
         itemLayout->addClickEventListener([this, data](Ref*) {
-            // ´¥·¢½¨Ôì
+            // è§¦å‘å»ºé€ 
             auto scene = dynamic_cast<DraggableMapScene*>(Director::getInstance()->getRunningScene());
             if (scene) {
-                // ¹Ø±ÕÉÌµê
+                // å…³é—­å•†åº—
                 this->hide();
-                // ¿ªÊ¼½¨ÔìÁ÷³Ì
+                // å¼€å§‹å»ºé€ æµç¨‹
                 scene->startPlacingBuilding(data);
             }
             });
@@ -208,14 +208,14 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data) {
 }
 
 int ShopLayer::getCurrentTownHallLevel() {
-    // ´Ó³¡¾°µÄ BuildingManager »ñÈ¡´ó±¾ÓªµÈ¼¶
-    // ÕâÀïĞèÒªÒ»ÖÖ·½Ê½·ÃÎÊÊı¾İ£¬¼òµ¥Æğ¼û£¬¼ÙÉè³¡¾°ÓĞ½Ó¿Ú
-    // »òÕß±éÀú BuildingManager µÄ½¨ÖşÁĞ±íÕÒ´ó±¾Óª
+    // ä»åœºæ™¯çš„ BuildingManager è·å–å¤§æœ¬è¥ç­‰çº§
+    // è¿™é‡Œéœ€è¦ä¸€ç§æ–¹å¼è®¿é—®æ•°æ®ï¼Œç®€å•èµ·è§ï¼Œå‡è®¾åœºæ™¯æœ‰æ¥å£
+    // æˆ–è€…éå† BuildingManager çš„å»ºç­‘åˆ—è¡¨æ‰¾å¤§æœ¬è¥
     auto scene = dynamic_cast<DraggableMapScene*>(Director::getInstance()->getRunningScene());
     if (scene) {
         return scene->getTownHallLevel();
     }
-    return 1; // Ä¬ÈÏ1¼¶
+    return 1; // é»˜è®¤1çº§
 }
 
 int ShopLayer::getBuildingCount(const std::string& name) {

@@ -1,9 +1,9 @@
-#pragma once
+ï»¿#pragma once
 /****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     WallBuilding.cpp
- * File Function:  ÉÌµê½çÃæ
- * Author:        ÁõÏà³É
+ * File Function:  å•†åº—ç•Œé¢
+ * Author:        åˆ˜ç›¸æˆ
  * Update Date:   2025/12/06
  * License:       MIT License
  ****************************************************************/
@@ -24,10 +24,10 @@ private:
     void createTabs();
     void loadCategory(const std::string& categoryName);
 
-    // ´´½¨µ¥¸öÉÌÆ·Ïî
+    // åˆ›å»ºå•ä¸ªå•†å“é¡¹
     cocos2d::ui::Widget* createShopItem(const BuildingData& data);
 
-    // ¸¨Öú¼ì²é
+    // è¾…åŠ©æ£€æŸ¥
     int getCurrentTownHallLevel();
     int getBuildingCount(const std::string& name);
 

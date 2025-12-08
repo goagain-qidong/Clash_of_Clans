@@ -1,29 +1,29 @@
-#pragma once
+ï»¿#pragma once
 /****************************************************************
   * Project Name:  Clash_of_Clans
   * File Name:     WallBuilding.cpp
-  * File Function: ÓÎÏ·ÅäÖÃÊı¾İ
-  * Author:        ÁõÏà³É
+  * File Function: æ¸¸æˆé…ç½®æ•°æ®
+  * Author:        åˆ˜ç›¸æˆ
   * Update Date:   2025/12/06
   * License:       MIT License
   ****************************************************************/
 #include <string>
 #include <map>
 #include <vector>
-#include "ResourceManager.h" // ÒıÓÃ ResourceType
+#include "ResourceManager.h" // å¼•ç”¨ ResourceType
 
 struct BuildingConfigItem {
-    std::string name;           // ½¨ÖşÃû³Æ (key)
-    std::string displayName;    // ÏÔÊ¾Ãû³Æ
-    std::string iconPath;       // ÉÌµêÍ¼±êÂ·¾¶
-    ResourceType costType;      // »¨·ÑÀàĞÍ
-    int cost;                   // Ôì¼Û (1¼¶)
-    int unlockTownHallLevel;    // ½âËøĞèÒªµÄ´ó±¾ÓªµÈ¼¶
-    // ²»Í¬´ó±¾ÓªµÈ¼¶¶ÔÓ¦µÄ×î´ó½¨ÖşÊıÁ¿ (Ë÷Òı0=TH1, Ë÷Òı1=TH2...)
+    std::string name;           // å»ºç­‘åç§° (key)
+    std::string displayName;    // æ˜¾ç¤ºåç§°
+    std::string iconPath;       // å•†åº—å›¾æ ‡è·¯å¾„
+    ResourceType costType;      // èŠ±è´¹ç±»å‹
+    int cost;                   // é€ ä»· (1çº§)
+    int unlockTownHallLevel;    // è§£é”éœ€è¦çš„å¤§æœ¬è¥ç­‰çº§
+    // ä¸åŒå¤§æœ¬è¥ç­‰çº§å¯¹åº”çš„æœ€å¤§å»ºç­‘æ•°é‡ (ç´¢å¼•0=TH1, ç´¢å¼•1=TH2...)
     std::vector<int> maxCountPerTHLevel;
-    // ¸Ã½¨ÖşÌá¹©µÄ×ÊÔ´ÈİÁ¿ (Èç¹ûÊÇ²Ö¿â)
+    // è¯¥å»ºç­‘æä¾›çš„èµ„æºå®¹é‡ (å¦‚æœæ˜¯ä»“åº“)
     int capacityIncrease;
-    // === ĞÂÔö£ºÏÔÊ½¹¹Ôìº¯Êı ===
+    // === æ–°å¢ï¼šæ˜¾å¼æ„é€ å‡½æ•° ===
     BuildingConfigItem(
         std::string name,
         std::string displayName,
@@ -43,16 +43,16 @@ class GameConfig {
 public:
     static GameConfig& getInstance();
 
-    // ³õÊ¼»¯ÅäÖÃ
+    // åˆå§‹åŒ–é…ç½®
     void init();
 
-    // »ñÈ¡½¨ÖşÅäÖÃ
+    // è·å–å»ºç­‘é…ç½®
     const BuildingConfigItem* getBuildingConfig(const std::string& name) const;
 
-    // »ñÈ¡Ä³´ó±¾ÓªµÈ¼¶ÏÂ£¬Ä³½¨ÖşµÄ×î´óÔÊĞíÊıÁ¿
+    // è·å–æŸå¤§æœ¬è¥ç­‰çº§ä¸‹ï¼ŒæŸå»ºç­‘çš„æœ€å¤§å…è®¸æ•°é‡
     int getMaxBuildingCount(const std::string& name, int townHallLevel) const;
 
-    // »ñÈ¡ËùÓĞÉÌµê¿ÉÊÛÂôµÄ½¨ÖşÁĞ±í
+    // è·å–æ‰€æœ‰å•†åº—å¯å”®å–çš„å»ºç­‘åˆ—è¡¨
     const std::vector<BuildingConfigItem>& getAllBuildings() const;
 
 private:

@@ -1,0 +1,37 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/cocos/core/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/Box2D/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/chipmunk/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/freetype2/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/recast/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/bullet/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/jpeg/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/openssl/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/uv/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/webp/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/websockets/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/tinyxml2/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/xxhash/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/xxtea/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/clipper/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/edtaa3func/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/ConvertUTF/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/poly2tri/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/md5/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/curl/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/png/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/win32-specific/gles/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/win32-specific/icon/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/win32-specific/MP3Decoder/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/win32-specific/OggDecoder/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/win32-specific/OpenalSoft/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/glfw3/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/zlib/cmake_install.cmake",
+		"C:/Users/Shalom/Documents/GitHub/coc/proj.win32/Visual Studio 18 2026/engine/external/unzip/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

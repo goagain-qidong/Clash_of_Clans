@@ -1,8 +1,8 @@
-/****************************************************************
+﻿/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     BuildingUpgradeUI.cpp
  * File Function: 通用建筑升级界面实现
- * Author:        赵崇治
+ * Author:        赵崇沛
  * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
@@ -88,7 +88,7 @@ void BuildingUpgradeUI::setupUI()
     _timeLabel->setTextColor(Color4B(150, 200, 255, 255));
     _panel->addChild(_timeLabel);
 
-    // ========== 按钮布局（根据是否为兵营调整）==========
+    // ========== 按钮布局（根据是否为兵营调整） ==========
     if (isBarracks)
     {
         // 兵营：三个按钮（训练、升级、关闭）

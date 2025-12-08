@@ -19,6 +19,11 @@
 #include "GridMap.h"
 #include <functional>
 #include <vector>
+
+// Forward declaration
+struct BuildingSerialData;
+struct AccountGameData;
+
 /**
 
  * @class BuildingManager
@@ -119,6 +124,44 @@ public:
 
      */
     BaseBuilding* getBuildingAtPosition(const cocos2d::Vec2& touchPos);
+    
+    // ==================== Serialization / Multiplayer Support ====================
+    
+    /**
+     * @brief 将所有建筑序列化为数据列表
+     * @return 建筑序列化数据列表
+     */
+    std::vector<BuildingSerialData> serializeBuildings() const;
+    
+    /**
+     * @brief 从序列化数据快速加载建筑（用于加载自己的存档或加载对手的基地）
+     * @param buildingsData 建筑序列化数据列表
+     * @param isReadOnly 是否为只读模式（true=攻击模式，false=编辑模式）
+     */
+    void loadBuildingsFromData(const std::vector<BuildingSerialData>& buildingsData, bool isReadOnly = false);
+    
+    /**
+     * @brief 清空所有建筑（切换账号或加载新地图前调用）
+     */
+    void clearAllBuildings();
+    
+    /**
+     * @brief 保存当前建筑状态到当前账号
+     */
+    void saveCurrentState();
+    
+    /**
+     * @brief 从当前账号加载建筑状态
+     */
+    void loadCurrentAccountState();
+    
+    /**
+     * @brief 加载指定玩家的建筑布局（用于攻击）
+     * @param userId 玩家ID
+     * @return 是否加载成功
+     */
+    bool loadPlayerBase(const std::string& userId);
+
     // ==================== 回调设置 ====================
     using BuildingPlacedCallback = std::function<void(BaseBuilding*)>;
     using HintCallback = std::function<void(const std::string&)>;
@@ -146,6 +189,9 @@ public:
     void confirmBuildingMove();
     /** @brief 是否正在移动建筑 */
     bool isMovingBuilding() const { return _isMovingBuilding; }
+    
+    /** @brief 获取正在移动的建筑 */
+    BaseBuilding* getMovingBuilding() const { return _movingBuilding; }
     
     // ==================== 内部方法 ====================
     /**
@@ -182,6 +228,14 @@ public:
      * @return 创建的建筑实体
      */
     BaseBuilding* createBuildingEntity(const BuildingData& buildingData);
+    
+    /**
+     * @brief 从序列化数据创建建筑实体
+     * @param data 序列化数据
+     * @return 创建的建筑实体
+     */
+    BaseBuilding* createBuildingFromSerialData(const BuildingSerialData& data);
+    
     /** @brief 显示提示信息 */
     void showHint(const std::string& hint);
     /**
@@ -198,6 +252,7 @@ public:
     bool _isDraggingBuilding = false;        // 是否正在拖拽
     bool _isWaitingConfirm = false;          // 是否等待确认
     bool _isMovingBuilding = false;          // 是否正在移动建筑
+    bool _isReadOnlyMode = false;            // 是否为只读模式（攻击模式）
     cocos2d::Sprite* _ghostSprite = nullptr; // 建筑预览精灵
     BuildingData _selectedBuilding;          // 当前选中的建筑数据
     cocos2d::Vec2 _pendingGridPos;           // 待确认的网格位置
@@ -214,4 +269,4 @@ public:
     cocos2d::Vec2 _buildingOriginalGridPos;            // 建筑原始网格位置
     cocos2d::Sprite* _movingGhostSprite = nullptr;     // 移动时的幽灵精灵
 };
-#endif // BUILDING_MANAGER_H_#endif // BUILDING_MANAGER_H_
+#endif // BUILDING_MANAGER_H_
