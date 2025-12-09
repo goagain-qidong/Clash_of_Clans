@@ -7,6 +7,7 @@
  * License:       MIT License
  ****************************************************************/
 #include "ArmyBuilding.h"
+#include "GameConfig.h" // 如果需要引用配置
 USING_NS_CC;
 ArmyBuilding* ArmyBuilding::create(int level)
 {
@@ -19,7 +20,11 @@ ArmyBuilding* ArmyBuilding::create(int level)
     CC_SAFE_DELETE(building);
     return nullptr;
 }
-
+float ArmyBuilding::getUpgradeTime() const
+{
+    // 无论多少级，统一 10 秒
+    return 10.0f;
+}
 ArmyBuilding* ArmyBuilding::create(int level, const std::string& imageFile)
 {
     ArmyBuilding* building = new (std::nothrow) ArmyBuilding();
@@ -112,13 +117,7 @@ int ArmyBuilding::getUpgradeCost() const
     int idx = std::min(_level, getMaxLevel());
     return costs[idx];
 }
-float ArmyBuilding::getUpgradeTime() const
-{
-    // 升级时间（秒）
-    static const int times[] = {0, 60, 300, 900, 3600, 7200, 14400, 28800, 57600, 86400};
-    int idx = std::min(_level, getMaxLevel());
-    return times[idx];
-}
+
 std::string ArmyBuilding::getBuildingDescription() const
 {
     return StringUtils::format("训练容量: %d\n训练速度: +%.0f%%", getTrainingCapacity(), getTrainingSpeedBonus() * 100);

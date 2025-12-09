@@ -8,6 +8,8 @@
  ****************************************************************/
 
 #include "BuildingUpgradeUI.h"
+#include "Services/BuildingUpgradeService.h" // 引入服务
+#include "SceneUIController.h" // 引入场景控制器用于显示提示
 #include "ResourceManager.h"
 #include "ArmyBuilding.h"
 #include "Unit/TrainingUI.h"
@@ -164,39 +166,49 @@ void BuildingUpgradeUI::setupUI()
     }
 }
 
+// 1. 修改 updateUI：只有满级才禁用按钮，否则让用户点，点了再报错
 void BuildingUpgradeUI::updateUI()
 {
-    if (!_building)
-        return;
+    if (!_building) return;
 
     _titleLabel->setString(_building->getDisplayName());
 
+    // --- 满级检查 ---
     if (_building->isMaxLevel())
     {
         _levelLabel->setString(StringUtils::format("等级: %d (MAX)", _building->getLevel()));
         _costLabel->setString("已达最高等级");
         _timeLabel->setString("");
-        _upgradeButton->setEnabled(false);
+        _upgradeButton->setEnabled(false); // 只有满级才彻底禁用
         _upgradeButton->setTitleColor(Color3B::GRAY);
     }
     else
     {
+        // --- 显示升级信息 ---
         _levelLabel->setString(StringUtils::format("等级: %d → %d",
-                                                   _building->getLevel(),
-                                                   _building->getLevel() + 1));
+            _building->getLevel(),
+            _building->getLevel() + 1));
 
         std::string resName = getResourceTypeName(_building->getUpgradeCostType());
         _costLabel->setString(StringUtils::format("费用: %d %s",
-                                                  _building->getUpgradeCost(),
-                                                  resName.c_str()));
+            _building->getUpgradeCost(),
+            resName.c_str()));
 
+        // 这里直接显示10秒，或者读取配置
         _timeLabel->setString(StringUtils::format("时间: %s",
-                                                  formatTime(_building->getUpgradeTime()).c_str()));
+            formatTime(_building->getUpgradeTime()).c_str()));
 
-        bool canUpgrade = _building->canUpgrade();
-        _upgradeButton->setEnabled(canUpgrade);
-        _upgradeButton->setTitleColor(canUpgrade ? Color3B::WHITE : Color3B::GRAY);
-        _costLabel->setTextColor(canUpgrade ? Color4B::GREEN : Color4B::RED);
+        // --- 按钮状态逻辑 ---
+        // 始终启用按钮，允许玩家点击（点击后检查条件并提示）
+        _upgradeButton->setEnabled(true);
+        _upgradeButton->setTitleColor(Color3B::WHITE);
+
+        // 仅仅改变文字颜色来提示资源是否足够（视觉反馈，不阻断操作）
+        bool hasResource = ResourceManager::getInstance().hasEnough(
+            _building->getUpgradeCostType(),
+            _building->getUpgradeCost()
+        );
+        _costLabel->setTextColor(hasResource ? Color4B::GREEN : Color4B::RED);
     }
 
     _descLabel->setString(_building->getBuildingDescription());
@@ -229,21 +241,74 @@ void BuildingUpgradeUI::hide()
     this->runAction(Sequence::create(scaleOut, remove, nullptr));
 }
 
+// 2. 修改 onUpgradeClicked：获取详细失败原因并提示
 void BuildingUpgradeUI::onUpgradeClicked()
 {
-    if (!_building)
-        return;
+    if (!_building) return;
 
-    bool success = _building->upgrade();
+    // 直接调用 Service 的 tryUpgrade，获取详细结果
+    auto result = BuildingUpgradeService::getInstance().tryUpgrade(_building);
 
-    if (_resultCallback)
+    if (result.success)
     {
-        _resultCallback(success, _building->getLevel());
-    }
+        // === 成功 ===
+        // 播放音效等...
 
-    if (success)
-    {
+        // 通知回调
+        if (_resultCallback) {
+            _resultCallback(true, _building->getLevel());
+        }
+
+        // 刷新UI（通常升级开始后会关闭此窗口，或者变为"升级中"状态）
         updateUI();
+
+        // 成功后关闭窗口
+        onCloseClicked();
+    }
+    else
+    {
+        // === 失败 ===
+        // 根据错误类型显示具体的提示
+        std::string hintMsg = result.message; // Service已经返回了很好的错误信息
+
+        // 如果想自定义提示，可以判断 result.error
+        switch (result.error) {
+        case UpgradeError::kNoAvailableBuilder:
+            hintMsg = "没有空闲的建筑工人！";
+            break;
+        case UpgradeError::kNotEnoughGold:
+            hintMsg = "金币不足，无法升级！";
+            break;
+        case UpgradeError::kNotEnoughElixir:
+            hintMsg = "圣水不足，无法升级！";
+            break;
+        default:
+            break;
+        }
+
+        // 调用场景控制器显示提示 (假设 SceneUIController 是单例或你能获取到)
+        // 如果 SceneUIController 不是单例，你需要通过 getParent() 找到它，或者在 Scene 中设置全局访问点
+        // 这里假设你在 SceneUIController 加了一个 getInstance() 或者通过场景查找
+        auto scene = Director::getInstance()->getRunningScene();
+        if (scene) {
+            // 尝试查找 SceneUIController，根据之前的代码它是一个 Node
+            // 你可能需要修改 SceneUIController 增加 getInstance() 静态方法
+            // 这里演示通过 name 查找或者直接 new 一个 Label 提示
+
+            // 简单提示方案：
+            auto label = Label::createWithSystemFont(hintMsg, "Arial", 24);
+            label->setPosition(Director::getInstance()->getVisibleSize() / 2);
+            label->setTextColor(Color4B::RED);
+            scene->addChild(label, 10000);
+
+            // 向上飘动并消失动画
+            auto move = MoveBy::create(1.0f, Vec2(0, 50));
+            auto fade = FadeOut::create(1.0f);
+            auto seq = Sequence::create(Spawn::create(move, fade, nullptr), RemoveSelf::create(), nullptr);
+            label->runAction(seq);
+        }
+
+        CCLOG("升级失败: %s", hintMsg.c_str());
     }
 }
 

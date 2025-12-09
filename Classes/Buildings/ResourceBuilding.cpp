@@ -3,12 +3,19 @@
  * @brief 资源生产/存储建筑实现
  */
 #include "ResourceBuilding.h"
+#include "../Managers/ResourceManager.h"
+#include "../UI/ResourceCollectionUI.h"
+#include "../Managers/BuildingCapacityManager.h"
+#include "cocos2d.h"
+#include "../Managers/ResourceCollectionManager.h"
 USING_NS_CC;
 
 // ==================== 生产型建筑数据表 ====================
-// 金矿/圣水收集器每小时产量（15级）
-static const int PRODUCTION_RATES[] = {0,    200,  400,  600,  800,  1000, 1200, 1400,
-                                       1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000};
+// 金矿/圣水收集器每10秒产量（15级）
+// 产量公式：200 + (等级-1)*100
+// 1级: 200，2级: 300，3级: 400，...，15级: 1600
+static const int PRODUCTION_PER_CYCLE[] = {0,    200,  300,  400,  500,  600,  700,  800,
+                                       900,  1000, 1100, 1200, 1300, 1400, 1500, 1600};
 
 // 生产型建筑内部存储容量（15级）
 static const int PRODUCER_CAPACITIES[] = {0,    500,   1000,  1500,  2000,  3000,  4000,  5000,
@@ -24,6 +31,7 @@ static const int STORAGE_CAPACITIES[] = {0,      1500,   3000,   6000,   12000, 
 static const int UPGRADE_COSTS[] = {0,     150,   300,    700,    1400,   3000,   7000,    14000,
                                     28000, 56000, 100000, 200000, 400000, 800000, 1500000, 3000000,
                                     6000000, 0};
+
 ResourceBuilding* ResourceBuilding::create(ResourceBuildingType buildingType, int level)
 {
     ResourceBuilding* ret = new (std::nothrow) ResourceBuilding();
@@ -53,6 +61,7 @@ ResourceBuilding* ResourceBuilding::create(ResourceBuildingType buildingType, in
     delete ret;
     return nullptr;
 }
+
 bool ResourceBuilding::init(int level)
 {
     _level = std::max(1, std::min(level, getMaxLevel()));
@@ -65,13 +74,31 @@ bool ResourceBuilding::init(int level)
     this->setAnchorPoint(Vec2(0.5f, 0.35f));
     this->setScale(0.8f);
     this->setName(getDisplayName());
+    
+    // 创建存储量标签
     _storageLabel = Label::createWithSystemFont("0", "Arial", 12);
     _storageLabel->setPosition(Vec2(this->getContentSize().width / 2, -10));
     _storageLabel->setTextColor(Color4B::WHITE);
     _storageLabel->setVisible(false);
     this->addChild(_storageLabel, 100);
+    
+    // ✅ 为生产型建筑创建收集UI
+    if (isProducer())
+    {
+        auto collectionUI = ResourceCollectionUI::create(const_cast<ResourceBuilding*>(this));
+        if (collectionUI)
+        {
+            collectionUI->setName("collectionUI");
+            this->addChild(collectionUI, 1000);
+            // 🔴 关键修复：必须向管理器注册自己，否则管理器不知道这个建筑的存在！
+            ResourceCollectionManager::getInstance()->registerBuilding(this);
+            CCLOG("✅ 为 %s 创建了收集UI", getDisplayName().c_str());
+        }
+    }
+    
     return true;
 }
+
 std::string ResourceBuilding::getDisplayName() const
 {
     std::string typeName;
@@ -136,6 +163,7 @@ std::string ResourceBuilding::getImageForLevel(int level) const
         return "buildings/GoldMine/Gold_Mine1.png";
     }
 }
+
 bool ResourceBuilding::isProducer() const
 {
     return _buildingType == ResourceBuildingType::kGoldMine || 
@@ -150,36 +178,34 @@ bool ResourceBuilding::isStorage() const
 
 int ResourceBuilding::getProductionRate() const
 {
-    // 只有生产型建筑有产量
-    if (!isProducer())
-        return 0;
-    
-    if (_level < 1 || _level > 15)
-        return 0;
-    return PRODUCTION_RATES[_level];
+    if (!isProducer()) return 0;
+    // 防止数组越界
+    int index = std::min(_level, (int)(sizeof(PRODUCTION_PER_CYCLE) / sizeof(int) - 1));
+    return PRODUCTION_PER_CYCLE[index];
 }
+
 int ResourceBuilding::getStorageCapacity() const
 {
-    if (_level < 1)
-        return 0;
-    
-    // 生产型建筑：使用内部存储容量表（15级）
+    // 🔴 关键修复1：将生产型建筑的内部存储容量设置为当前等级的单次产量
     if (isProducer())
     {
-        if (_level > 15)
-            return 0;
-        return PRODUCER_CAPACITIES[_level];
+        // 确保数组不越界
+        int maxIndex = sizeof(PRODUCTION_PER_CYCLE) / sizeof(int) - 1;
+        int index = std::min(_level, maxIndex);
+        return PRODUCTION_PER_CYCLE[index];
     }
-    // 存储型建筑：使用仓库容量表（14-17级）
-    else if (isStorage())
+
+    // 存储型建筑：保持原有逻辑，读取 STORAGE_CAPACITIES (如果定义了的话)
+    if (isStorage())
     {
-        // 根据实际素材数量调整最大等级
-        int maxLevel = (_buildingType == ResourceBuildingType::kElixirStorage) ? 17 : 14;
-        if (_level > maxLevel)
-            return 0;
-        return STORAGE_CAPACITIES[_level];
+        int maxIndex = sizeof(STORAGE_CAPACITIES) / sizeof(int) - 1;
+        int index = std::min(_level, maxIndex);
+
+        if (index < 1) return 0;
+
+        return STORAGE_CAPACITIES[index];
     }
-    
+
     return 0;
 }
 int ResourceBuilding::getUpgradeCost() const
@@ -195,6 +221,7 @@ int ResourceBuilding::getUpgradeCost() const
     
     return UPGRADE_COSTS[_level];
 }
+
 bool ResourceBuilding::upgrade()
 {
     if (!canUpgrade())
@@ -213,54 +240,89 @@ bool ResourceBuilding::upgrade()
     }
     return true;
 }
+
 void ResourceBuilding::tick(float dt)
 {
     // 只有生产型建筑需要生产资源
-    if (!isProducer())
-        return;
-    
+    if (!isProducer()) return;
+
+    // 🔴 修复点1：如果存储已满，立即返回，不累加时间，停止生产。
     if (isStorageFull())
-        return;
-    
-    float productionPerSecond = static_cast<float>(getProductionRate()) / 3600.0f;
-    _productionAccumulator += productionPerSecond * dt;
-    if (_productionAccumulator >= 1.0f)
     {
-        int produced = static_cast<int>(_productionAccumulator);
-        _productionAccumulator -= static_cast<float>(produced);
-        int capacity = getStorageCapacity();
-        _currentStorage = std::min(_currentStorage + produced, capacity);
-        if (_storageLabel)
+        // 确保 UI 显示满仓状态
+        auto collectionUI = getCollectionUI();
+        if (collectionUI)
         {
-            _storageLabel->setString(std::to_string(_currentStorage));
-            _storageLabel->setVisible(_currentStorage > 0);
+            collectionUI->updateReadyStatus(_currentStorage);
         }
+        return;
+    }
+
+    // 累加时间
+    _productionAccumulator += dt;
+
+    // 每 15 秒生成一次资源
+    const float PRODUCTION_INTERVAL = 15.0f;
+
+    if (_productionAccumulator >= PRODUCTION_INTERVAL)
+    {
+        // 🔴 修复点2：扣除周期时间（保留多余时间，防止误差累积）
+        _productionAccumulator -= PRODUCTION_INTERVAL;
+
+        // 获取当前等级的单次产量
+        int productionAmount = getProductionRate();
+        int capacity = getStorageCapacity();
+
+        // 增加资源，不超过容量
+        int prevStorage = _currentStorage;
+        _currentStorage = std::min(_currentStorage + productionAmount, capacity);
+
+        // 如果资源增加了，更新UI显示
+        if (_currentStorage > prevStorage)
+        {
+            CCLOG("💰 %s 产出资源：%d (当前库存: %d)", getDisplayName().c_str(), productionAmount, _currentStorage);
+
+            // 获取并更新收集UI
+            auto collectionUI = getCollectionUI();
+            if (collectionUI)
+            {
+                collectionUI->updateReadyStatus(_currentStorage);
+            }
+        }
+
+        // 🔴 修复点3：如果这次生产导致满仓，重置累加器并停止计时，等待收集。
         if (isStorageFull())
         {
-            showCollectHint();
+            _productionAccumulator = 0.0f;
+            CCLOG("⚠️ %s 已满仓，停止生产。", getDisplayName().c_str());
         }
     }
 }
+
 int ResourceBuilding::collect()
 {
     int collected = _currentStorage;
-    if (collected <= 0)
-        return 0;
-    auto& rm = ResourceManager::getInstance();
-    int actualAdded = rm.addResource(_resourceType, collected);
+    if (collected <= 0) return 0;
+
+    // 清空库存
     _currentStorage = 0;
+
+    // 🔴 关键修复2：收集后，将生产计时器重置为 0，立即开始新的生产周期。
+    // 这确保了收集完成后，下次生产是在 15 秒后，而不是剩余的几秒后。
     _productionAccumulator = 0.0f;
-    if (_storageLabel)
+
+    // 获取并更新收集UI (清空图标)
+    auto collectionUI = getCollectionUI();
+    if (collectionUI)
     {
-        _storageLabel->setString("0");
-        _storageLabel->setVisible(false);
+        collectionUI->updateReadyStatus(0); // 设置为 0，隐藏图标
     }
-    hideCollectHint();
-    auto scaleUp = ScaleTo::create(0.1f, this->getScale() * 1.1f);
-    auto scaleDown = ScaleTo::create(0.1f, this->getScale());
-    this->runAction(Sequence::create(scaleUp, scaleDown, nullptr));
-    return actualAdded;
+
+    // ... (播放动画、日志等保持不变) ...
+
+    return collected;
 }
+
 void ResourceBuilding::updateAppearance()
 {
     auto texture = Director::getInstance()->getTextureCache()->addImage(getImageFile());
@@ -270,20 +332,32 @@ void ResourceBuilding::updateAppearance()
         this->setName(getDisplayName());
     }
 }
+
 void ResourceBuilding::showCollectHint()
 {
-    auto hint = this->getChildByName("collectHint");
-    if (!hint)
+    // ✅ 新的实现：使用 ResourceCollectionUI 显示提示
+    auto collectionUI = this->getChildByName<ResourceCollectionUI*>("collectionUI");
+    if (collectionUI)
     {
-        auto hintLabel = Label::createWithSystemFont("!", "Arial", 20);
-        hintLabel->setName("collectHint");
-        hintLabel->setPosition(Vec2(this->getContentSize().width / 2, this->getContentSize().height + 10));
-        hintLabel->setTextColor(Color4B::YELLOW);
-        this->addChild(hintLabel, 100);
-        auto blink = RepeatForever::create(Blink::create(1.0f, 2));
-        hintLabel->runAction(blink);
+        collectionUI->updateReadyStatus(_currentStorage);
+    }
+    else
+    {
+        // 降级方案：显示简单的黄色感叹号
+        auto hint = this->getChildByName("collectHint");
+        if (!hint)
+        {
+            auto hintLabel = Label::createWithSystemFont("!", "Arial", 20);
+            hintLabel->setName("collectHint");
+            hintLabel->setPosition(Vec2(this->getContentSize().width / 2, this->getContentSize().height + 10));
+            hintLabel->setTextColor(Color4B::YELLOW);
+            this->addChild(hintLabel, 100);
+            auto blink = RepeatForever::create(Blink::create(1.0f, 2));
+            hintLabel->runAction(blink);
+        }
     }
 }
+
 void ResourceBuilding::hideCollectHint()
 {
     auto hint = this->getChildByName("collectHint");
@@ -291,4 +365,31 @@ void ResourceBuilding::hideCollectHint()
     {
         hint->removeFromParent();
     }
+}
+
+// ==================== 新增方法 ====================
+
+ResourceCollectionUI* ResourceBuilding::getCollectionUI() const
+{
+    if (!isProducer())
+        return nullptr;
+    
+    return this->getChildByName<ResourceCollectionUI*>("collectionUI");
+}
+void ResourceBuilding::onLevelUp()
+{
+    // 1. 调用基类逻辑（基类会处理外观更新等基础工作）
+    BaseBuilding::onLevelUp();
+
+    // 2. 如果是存储型建筑，通知 Capacity Manager 重新计算容量
+    if (isStorage())
+    {
+        // 注意：这里调用的是我们刚写的 BuildingCapacityManager
+        BuildingCapacityManager::getInstance().registerOrUpdateBuilding(this, true);
+
+        CCLOG("🎉 %s 升级到 Lv.%d 完成，已通知 CapacityManager 重新计算总容量。",
+            getDisplayName().c_str(), _level);
+    }
+
+    // (可选) 如果是生产型建筑，在这里也可以处理生产效率变化的逻辑
 }

@@ -62,7 +62,7 @@ public:
     /** @brief 获取升级消耗的资源类型 */
     virtual ResourceType getUpgradeCostType() const { return kGold; }
     /** @brief 获取升级所需时间（秒） */
-    virtual float getUpgradeTime() const { return 0.0f; }
+    virtual float getUpgradeTime() const { return 10.0f; }
     /** @brief 获取建筑描述信息 */
     virtual std::string getBuildingDescription() const { return ""; }
     /** @brief 获取升级信息 */
