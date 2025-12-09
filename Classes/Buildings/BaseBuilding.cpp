@@ -118,3 +118,25 @@ void BaseBuilding::repair(int amount)
     CCLOG("🔧 %s 修复 %d 点生命值！当前：%d/%d", 
           getDisplayName().c_str(), amount, _currentHitpoints, _maxHitpoints);
 }
+
+// ==================== 战斗系统实现 ⭐ 新增 ====================
+
+void BaseBuilding::setTarget(Unit* target)
+{
+    _currentTarget = target;
+    
+    if (target)
+    {
+        CCLOG("🎯 %s 锁定目标", getDisplayName().c_str());
+    }
+}
+
+void BaseBuilding::attackTarget(Unit* target)
+{
+    if (!target || !isDefenseBuilding()) return;
+    
+    CCLOG("⚔️ %s 攻击目标，造成 %d 点伤害", 
+          getDisplayName().c_str(), _combatStats.damage);
+    
+    // 由子类实现具体攻击逻辑（发射炮弹、箭矢等）
+}

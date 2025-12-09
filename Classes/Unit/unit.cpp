@@ -48,6 +48,30 @@ bool Unit::init(UnitType type)
         break;
     }
 
+    // ==================== 步骤3：初始化战斗属性 ⭐ 新增 ====================
+    unit_level_ = 1; // 默认1级
+    switch (type)
+    {
+    case UnitType::kBarbarian:
+        combat_stats_ = UnitConfig::getBarbarian(unit_level_);
+        break;
+    case UnitType::kArcher:
+        combat_stats_ = UnitConfig::getArcher(unit_level_);
+        break;
+    case UnitType::kGiant:
+        combat_stats_ = UnitConfig::getGiant(unit_level_);
+        break;
+    case UnitType::kGoblin:
+        combat_stats_ = UnitConfig::getGoblin(unit_level_);
+        break;
+    case UnitType::kWallBreaker:
+        combat_stats_ = UnitConfig::getWallBreaker(unit_level_);
+        break;
+    default:
+        combat_stats_ = UnitConfig::getBarbarian(unit_level_);
+        break;
+    }
+
     // 1. 根据类型加载资源 (比如加载野蛮人的 plist 文件)
     LoadConfig(type);
 
@@ -514,4 +538,51 @@ void Unit::Die()
         nullptr
     );
     this->runAction(removeAction);
+}
+
+// ==================== 战斗系统实现 ⭐ 新增 ====================
+
+bool Unit::takeDamage(int damage)
+{
+    if (is_dead_) return true;
+    
+    int actualDamage = combat_stats_.takeDamage(damage);
+    
+    CCLOG("Unit took %d damage, HP: %d/%d", 
+          actualDamage, 
+          combat_stats_.currentHitpoints, 
+          combat_stats_.maxHitpoints);
+    
+    // TODO: 播放受击效果（红光闪烁）
+    if (sprite_)
+    {
+        auto tint = TintTo::create(0.1f, 255, 0, 0);
+        auto restore = TintTo::create(0.1f, 255, 255, 255);
+        auto seq = Sequence::create(tint, restore, nullptr);
+        sprite_->runAction(seq);
+    }
+    
+    if (combat_stats_.currentHitpoints <= 0)
+    {
+        Die();
+        return true;
+    }
+    
+    return false;
+}
+
+void Unit::setTarget(BaseBuilding* target)
+{
+    current_target_ = target;
+    
+    if (target)
+    {
+        CCLOG("Unit targeting building");
+    }
+}
+
+bool Unit::isInAttackRange(const cocos2d::Vec2& targetPos) const
+{
+    float distance = this->getPosition().distance(targetPos);
+    return distance <= combat_stats_.attackRange;
 }

@@ -8,8 +8,12 @@
  ****************************************************************/
 #pragma once
 #include "ResourceManager.h"
+#include "Unit/CombatStats.h"
 #include "cocos2d.h"
 #include <functional>
+
+// 前向声明
+class Unit;
 /** @brief 建筑类型枚举 */
 enum class BuildingType
 {
@@ -56,6 +60,33 @@ public:
     void repair(int amount);
     /** @brief 是否已被摧毁 */
     bool isDestroyed() const { return _currentHitpoints <= 0; }
+    
+    // ==================== 战斗系统 ⭐ 新增 ====================
+    /** @brief 获取战斗属性 */
+    CombatStats& getCombatStats() { return _combatStats; }
+    const CombatStats& getCombatStats() const { return _combatStats; }
+    
+    /** @brief 是否是防御建筑（可以攻击） */
+    virtual bool isDefenseBuilding() const { return getBuildingType() == BuildingType::kDefense; }
+    
+    /** @brief 获取攻击伤害 */
+    int getDamage() const { return _combatStats.damage; }
+    
+    /** @brief 获取攻击范围 */
+    float getAttackRange() const { return _combatStats.attackRange; }
+    
+    /** @brief 设置攻击目标（仅防御建筑使用） */
+    void setTarget(Unit* target);
+    
+    /** @brief 获取当前目标 */
+    Unit* getTarget() const { return _currentTarget; }
+    
+    /** @brief 清除目标 */
+    void clearTarget() { _currentTarget = nullptr; }
+    
+    /** @brief 攻击目标（由子类实现具体逻辑） */
+    virtual void attackTarget(Unit* target);
+    
     // ==================== 升级相关（统一接口） ====================
     /** @brief 获取升级所需费用 */
     virtual int getUpgradeCost() const = 0;
@@ -143,4 +174,9 @@ protected:
     // 生命值系统
     int _maxHitpoints = 100;     // 最大生命值
     int _currentHitpoints = 100; // 当前生命值
+    
+    // ==================== 战斗系统 ⭐ 新增 ====================
+    CombatStats _combatStats;    // 战斗属性
+    Unit* _currentTarget = nullptr; // 当前攻击目标
+    float _attackCooldown = 0.0f;   // 攻击冷却计时器
 };

@@ -2,8 +2,12 @@
 #define UNIT_H
 
 #include "cocos2d.h"
+#include "Unit/CombatStats.h"
 #include <map>
 #include <string>
+
+// 前向声明
+class BaseBuilding;
 
 /**
  * 核心枚举定义
@@ -110,6 +114,63 @@ public:
      */
     float GetMoveSpeed() const { return move_speed_; }
 
+    // ---------------------------------------------------------
+    // 5. 战斗系统接口 ⭐ 新增
+    // ---------------------------------------------------------
+    
+    /**
+     * @brief 获取战斗属性
+     */
+    CombatStats& getCombatStats() { return combat_stats_; }
+    const CombatStats& getCombatStats() const { return combat_stats_; }
+    
+    /**
+     * @brief 受到伤害
+     * @param damage 伤害值
+     * @return 是否死亡
+     */
+    bool takeDamage(int damage);
+    
+    /**
+     * @brief 设置攻击目标（建筑）
+     */
+    void setTarget(BaseBuilding* target);
+    
+    /**
+     * @brief 获取当前攻击目标
+     */
+    BaseBuilding* getTarget() const { return current_target_; }
+    
+    /**
+     * @brief 清除目标
+     */
+    void clearTarget() { current_target_ = nullptr; }
+    
+    /**
+     * @brief 是否在攻击范围内
+     */
+    bool isInAttackRange(const cocos2d::Vec2& targetPos) const;
+    
+    /**
+     * @brief 获取攻击伤害
+     */
+    int getDamage() const { return combat_stats_.damage; }
+    
+    /**
+     * @brief 获取攻击范围
+     */
+    float getAttackRange() const { return combat_stats_.attackRange; }
+    
+    /**
+     * @brief 获取当前生命值
+     */
+    int getCurrentHP() const { return combat_stats_.currentHitpoints; }
+    
+    /**
+     * @brief 获取最大生命值
+     */
+    int getMaxHP() const { return combat_stats_.maxHitpoints; }
+
 private:
     // ---------------------------------------------------------
     // 4. 内部数据成员
@@ -137,7 +198,15 @@ private:
     UnitDirection current_dir_ = UnitDirection::kRight; // 记录当前朝向，停止移动时保持这个朝向
 
     // ---------------------------------------------------------
-    // 6. 内部辅助函数
+    // 6. 战斗系统属性 ⭐ 新增
+    // ---------------------------------------------------------
+    CombatStats combat_stats_;                          // 战斗属性
+    BaseBuilding* current_target_ = nullptr;            // 当前攻击目标
+    float attack_cooldown_ = 0.0f;                      // 攻击冷却计时器
+    int unit_level_ = 1;                                // 单位等级
+
+    // ---------------------------------------------------------
+    // 7. 内部辅助函数
     // ---------------------------------------------------------
 
     // 加载配置：根据 UnitType 加载对应的 plist 和 png
