@@ -1,4 +1,5 @@
 ﻿#include "HUDLayer.h"
+#include "Managers/UpgradeManager.h" // 引入升级管理器
 /****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     WallBuilding.cpp
@@ -38,7 +39,9 @@ bool HUDLayer::init() {
     // ================= 新增：显示人口 =================
     createResourceNode(ResourceType::kTroopPopulation, "units/barbarian_select_button_active.png", 4);
     // ====================================================
-
+    UpgradeManager::getInstance()->setOnAvailableBuilderChanged([this](int available) {
+        this->updateDisplay();
+        });
     // 注册资源变化监听
     ResourceManager::getInstance().setOnResourceChangeCallback([this](ResourceType type, int amount) {
         this->updateDisplay();
@@ -93,7 +96,7 @@ else {
 
 void HUDLayer::updateDisplay() {
     auto& rm = ResourceManager::getInstance();
-
+    auto* um = UpgradeManager::getInstance(); // 获取升级管理器
     for (auto& pair : _amountLabels) {
         ResourceType type = pair.first;
         Label* lbl = pair.second;
@@ -107,10 +110,20 @@ void HUDLayer::updateDisplay() {
             lbl->setTextColor(Color4B(0, 255, 0, 255)); // 亮绿色
         }
         else if (type == ResourceType::kBuilder) {
-            // 建筑工人特殊显示：空闲/总数
-            lbl->setString(StringUtils::format("建筑工人：%d / %d", current, max));
-            // 如果 current > 0 表示有空闲工人，显示绿色；否则显示红色
-            if (current > 0) {
+            int totalBuilders = rm.getResourceCapacity(ResourceType::kBuilder);
+            // 或者是 getResourceCount(kBuilder)，取决于你初始化的逻辑。
+            // 根据之前的 ResourceManager.cpp，addCapacity(kBuilder, 1) 是加在 Capacity 上。
+            // 但 init() 里 setResourceCount(kBuilder, 2)。
+            // 建议：总量用 Capacity，空闲用 UpgradeManager 计算。
+
+            int max = rm.getResourceCount(ResourceType::kBuilder); // 假设这是拥有的工人总数
+
+            // 获取空闲工人数 (从UpgradeManager)
+            int available = um->getAvailableBuilders();
+
+            lbl->setString(StringUtils::format("建筑工人：%d / %d", available, max));
+
+            if (available > 0) {
                 lbl->setTextColor(Color4B::GREEN);
             }
             else {

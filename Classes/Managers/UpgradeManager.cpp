@@ -19,16 +19,7 @@ UpgradeManager* UpgradeManager::getInstance()
 {
     if (!_instance)
     {
-        _instance = new (std::nothrow) UpgradeManager();
-        if (_instance && _instance->init())
-        {
-            _instance->autorelease();
-            _instance->retain();  // 保持单例不被释放
-        }
-        else
-        {
-            CC_SAFE_DELETE(_instance);
-        }
+        _instance = new UpgradeManager();
     }
     return _instance;
 }
@@ -42,37 +33,28 @@ bool UpgradeManager::init()
     if (!Node::init())
         return false;
     
-    // 启用每帧更新
     scheduleUpdate();
     
     CCLOG("✅ UpgradeManager 初始化成功");
     return true;
 }
 
-// ==================== 核心接口实现 ====================
-
 bool UpgradeManager::canStartUpgrade(BaseBuilding* building, bool needBuilder)
 {
     if (!building)
-    {
-        return false;  // 不输出日志，这是内部错误
-    }
-    
-    // 检查是否已在升级队列中
-    if (isUpgrading(building))
-    {
-        // ✅ 只在实际升级时输出日志（不在 UI 检查时）
         return false;
-    }
     
-    // 🎮 作弊模式：跳过工人检查
-    if (!_cheatModeEnabled && needBuilder)
+    // 检查是否已在升级
+    if (isUpgrading(building))
+        return false;
+    
+    // ✅ 检查工人数量
+    if (needBuilder && !_cheatModeEnabled)
     {
-        // 检查是否有空闲工人
         int availableBuilders = getAvailableBuilders();
         if (availableBuilders <= 0)
         {
-            // ✅ 只在实际升级时输出日志（不在 UI 检查时）
+            CCLOG("❌ 无空闲工人！当前空闲：%d", availableBuilders);
             return false;
         }
     }
@@ -82,14 +64,12 @@ bool UpgradeManager::canStartUpgrade(BaseBuilding* building, bool needBuilder)
 
 bool UpgradeManager::startUpgrade(BaseBuilding* building, int cost, float time, bool needBuilder)
 {
-    // 注意：此方法假设资源已经被扣除，只负责创建升级任务
     if (!building)
     {
         CCLOG("❌ startUpgrade 失败：建筑指针为空");
         return false;
     }
     
-    // 再次检查（防御性编程）
     if (isUpgrading(building))
     {
         CCLOG("❌ %s 已在升级队列中", building->getDisplayName().c_str());
@@ -100,7 +80,16 @@ bool UpgradeManager::startUpgrade(BaseBuilding* building, int cost, float time, 
     if (_cheatModeEnabled)
     {
         time = 0.0f;
-        CCLOG("🎮 [作弊模式] 升级时间设为 0 秒");
+    }
+    
+    // ✅ 尝试分配工人（只在需要且非作弊模式时）
+    if (needBuilder && !_cheatModeEnabled)
+    {
+        if (!allocateBuilder())
+        {
+            CCLOG("❌ 无法分配工人，升级失败");
+            return false;
+        }
     }
     
     // 创建升级任务
@@ -110,21 +99,28 @@ bool UpgradeManager::startUpgrade(BaseBuilding* building, int cost, float time, 
     // 标记建筑为升级中
     building->setUpgrading(true);
     
-    // ✅ 修复：避免重复显示等级（getDisplayName 已包含等级）
-    // 提取建筑名称（去掉 "Lv.X" 部分）
     std::string displayName = building->getDisplayName();
     size_t lvPos = displayName.find(" Lv.");
     std::string buildingName = (lvPos != std::string::npos) 
         ? displayName.substr(0, lvPos) 
         : displayName;
     
-    CCLOG("🔨 开始升级：%s Lv.%d → Lv.%d（升级时间：%.1f 秒，费用：%d，工人：%s）", 
-          buildingName.c_str(),      // ✅ 只显示建筑名称（如"大本营"）
-          building->getLevel(),       // 当前等级
-          building->getLevel() + 1,   // 目标等级
+    // ✅ 显示当前工人状态
+    int availableBuilders = getAvailableBuilders();
+    CCLOG("🔨 开始升级：%s Lv.%d → Lv.%d（升级时间：%.1f 秒，费用：%d，分配工人：%s，剩余工人：%d）", 
+          buildingName.c_str(),
+          building->getLevel(),
+          building->getLevel() + 1,
           time, 
           cost,
-          needBuilder ? "需要" : "不需要");
+          needBuilder ? "已分配" : "无需",
+          availableBuilders);
+    
+    // ✅ 触发工人数量更新回调
+    if (_onAvailableBuildersChanged)
+    {
+        _onAvailableBuildersChanged(availableBuilders);
+    }
     
     return true;
 }
@@ -134,7 +130,6 @@ bool UpgradeManager::cancelUpgrade(BaseBuilding* building)
     if (!building)
         return false;
     
-    // 查找升级任务
     auto it = std::find_if(_upgradeTasks.begin(), _upgradeTasks.end(),
                            [building](const UpgradeTask& task) {
                                return task.building == building;
@@ -160,7 +155,16 @@ bool UpgradeManager::cancelUpgrade(BaseBuilding* building)
     building->setUpgrading(false);
     _upgradeTasks.erase(it);
     
-    CCLOG("❌ 取消升级：%s，退还 %d 资源", building->getDisplayName().c_str(), refund);
+    CCLOG("❌ 取消升级：%s，退还 %d 资源，释放工人", 
+          building->getDisplayName().c_str(), refund);
+    
+    // ✅ 触发工人数量更新回调
+    int availableBuilders = getAvailableBuilders();
+    if (_onAvailableBuildersChanged)
+    {
+        _onAvailableBuildersChanged(availableBuilders);
+    }
+    
     return true;
 }
 
@@ -169,23 +173,17 @@ bool UpgradeManager::finishUpgradeNow(BaseBuilding* building)
     if (!building)
         return false;
     
-    // 查找升级任务
     auto it = std::find_if(_upgradeTasks.begin(), _upgradeTasks.end(),
                            [building](const UpgradeTask& task) {
                                return task.building == building;
                            });
     
     if (it == _upgradeTasks.end())
-    {
-        CCLOG("❌ 未找到 %s 的升级任务", building->getDisplayName().c_str());
         return false;
-    }
     
-    // 立即完成升级
     completeUpgrade(*it);
     _upgradeTasks.erase(it);
     
-    CCLOG("⚡ 立即完成升级：%s", building->getDisplayName().c_str());
     return true;
 }
 
@@ -194,10 +192,13 @@ bool UpgradeManager::isUpgrading(BaseBuilding* building) const
     if (!building)
         return false;
     
-    return std::any_of(_upgradeTasks.begin(), _upgradeTasks.end(),
-                       [building](const UpgradeTask& task) {
-                           return task.building == building;
-                       });
+    for (const auto& task : _upgradeTasks)
+    {
+        if (task.building == building)
+            return true;
+    }
+    
+    return false;
 }
 
 UpgradeTask* UpgradeManager::getUpgradeTask(BaseBuilding* building) const
@@ -205,21 +206,23 @@ UpgradeTask* UpgradeManager::getUpgradeTask(BaseBuilding* building) const
     if (!building)
         return nullptr;
     
-    auto it = std::find_if(_upgradeTasks.begin(), _upgradeTasks.end(),
-                           [building](const UpgradeTask& task) {
-                               return task.building == building;
-                           });
+    for (auto& task : const_cast<std::vector<UpgradeTask>&>(_upgradeTasks))
+    {
+        if (task.building == building)
+            return &task;
+    }
     
-    return (it != _upgradeTasks.end()) ? const_cast<UpgradeTask*>(&(*it)) : nullptr;
+    return nullptr;
 }
 
+// ✅ 获取空闲工人数量
 int UpgradeManager::getAvailableBuilders() const
 {
     auto& resMgr = ResourceManager::getInstance();
     int totalBuilders = resMgr.getResourceCount(kBuilder);
     int usedBuilders = 0;
     
-    // 统计正在使用的工人数量
+    // 计算正在使用的工人数（只计算需要工人的升级任务）
     for (const auto& task : _upgradeTasks)
     {
         if (task.useBuilder)
@@ -228,85 +231,78 @@ int UpgradeManager::getAvailableBuilders() const
         }
     }
     
-    return totalBuilders - usedBuilders;
+    int available = totalBuilders - usedBuilders;
+    
+    return std::max(0, available);  // ✅ 确保不返回负数
 }
 
-// ==================== 每帧更新 ====================
+// ✅ 分配工人：检查是否有空闲工人
+bool UpgradeManager::allocateBuilder()
+{
+    int available = getAvailableBuilders();
+    if (available <= 0)
+    {
+        CCLOG("❌ 无空闲工人可分配（总工人数：%d，使用中：%d）",
+              ResourceManager::getInstance().getResourceCount(kBuilder),
+              _upgradeTasks.size());
+        return false;
+    }
+    
+    CCLOG("✅ 分配工人成功（剩余空闲：%d）", available - 1);
+    return true;
+}
+
+// ✅ 释放工人：升级完成时调用
+void UpgradeManager::releaseBuilder()
+{
+    CCLOG("✅ 释放工人（当前空闲工人数将增加）");
+}
+
+void UpgradeManager::completeUpgrade(UpgradeTask& task)
+{
+    if (!task.building) return;
+
+    // 🔴 关键修复1：不要调用 upgrade() (那是开始升级)，要调用 onUpgradeComplete() (这是结算升级)
+    task.building->onUpgradeComplete();
+
+    // 标记结束
+    task.building->setUpgrading(false);
+
+    // 此时不要急着通知工人变化，因为任务还在队列里，getAvailableBuilders() 算出来还是少的。
+    // 我们在 update() 里移除任务后再通知。
+
+    // 日志
+    std::string displayName = task.building->getDisplayName();
+    CCLOG("✅ 升级完成：%s", displayName.c_str());
+}
 
 void UpgradeManager::update(float dt)
 {
-    if (_upgradeTasks.empty())
-        return;
-    
-    // 遍历所有升级任务
+    if (_upgradeTasks.empty()) return;
+
     auto it = _upgradeTasks.begin();
     while (it != _upgradeTasks.end())
     {
-        // 🎮 作弊模式：升级时间为0，立即完成
-        if (_cheatModeEnabled && it->totalTime <= 0.0f)
-        {
-            completeUpgrade(*it);
-            it = _upgradeTasks.erase(it);
-            continue;
-        }
-        
-        // 更新升级进度
         it->elapsedTime += dt;
-        
+
         // 检查是否完成
         if (it->elapsedTime >= it->totalTime)
         {
+            // 1. 完成结算（等级+1，改变外观）
             completeUpgrade(*it);
+
+            // 2. 🔴 关键修复2：先从队列移除任务
             it = _upgradeTasks.erase(it);
+
+            // 3. 🔴 关键修复3：任务移除后，空闲工人数才变对，此时再通知 UI 刷新
+            if (_onAvailableBuildersChanged)
+            {
+                _onAvailableBuildersChanged(getAvailableBuilders());
+            }
         }
         else
         {
             ++it;
         }
     }
-}
-
-// ==================== 私有方法 ====================
-
-void UpgradeManager::completeUpgrade(UpgradeTask& task)
-{
-    if (!task.building)
-        return;
-    
-    // 调用建筑的升级完成逻辑
-    task.building->onUpgradeComplete();
-    
-    // 释放工人
-    if (task.useBuilder)
-    {
-        releaseBuilder();
-    }
-    
-    // 标记建筑为未升级状态
-    task.building->setUpgrading(false);
-    
-    CCLOG("🎉 升级完成：%s 达到 Lv.%d", 
-          task.building->getDisplayName().c_str(), 
-          task.building->getLevel());
-}
-
-bool UpgradeManager::allocateBuilder()
-{
-    auto& resMgr = ResourceManager::getInstance();
-    
-    // 检查是否有空闲工人
-    if (getAvailableBuilders() <= 0)
-    {
-        return false;
-    }
-    
-    // 工人数量不变，只是标记为"正在使用"
-    // 实际的工人计数由 UpgradeTask 的 useBuilder 字段管理
-    return true;
-}
-
-void UpgradeManager::releaseBuilder()
-{
-    // 释放工人（实际上只是减少 _upgradeTasks 中的 useBuilder 计数）
-    // ResourceManager 中的工人数量不变
 }

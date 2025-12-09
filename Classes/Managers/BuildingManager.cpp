@@ -3,6 +3,7 @@
  * @brief 建筑管理器实现
  */
 #include "BuildingManager.h"
+#include "Managers/UpgradeManager.h" // 引入头文件
 #include "ArmyBuilding.h"
 #include "ArmyCampBuilding.h"
 #include "BuildersHutBuilding.h"
@@ -10,8 +11,10 @@
 #include "TownHallBuilding.h"
 #include "WallBuilding.h"
 #include "GameConfig.h"
+#include "BuildingCapacityManager.h"
 #include "UpgradeTimerUI.h"  // 🆕 引入升级倒计时 UI
 #include <map>
+#include "../Managers/ResourceCollectionManager.h"
 USING_NS_CC;
 bool BuildingManager::init()
 {
@@ -207,24 +210,17 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     building->runAction(Spawn::create(scaleAction, fadeIn, nullptr));
     // 6. 保存到建筑列表
     _buildings.pushBack(building);
-    // ==================== 新增：更新资源上限 ====================
-    auto& config = GameConfig::getInstance();
-    const auto* cfgItem = config.getBuildingConfig(_selectedBuilding.name);
-    if (cfgItem && cfgItem->capacityIncrease > 0) {
-        // 假设金币仓库增加金币上限，圣水仓库增加圣水上限
-        // 这里通过名字简单判断，或者你在 BuildingConfigItem 里加一个 storageType 字段
-        if (_selectedBuilding.name == "金币仓库") {
-            ResourceManager::getInstance().addCapacity(ResourceType::kGold, cfgItem->capacityIncrease);
-        }
-        else if (_selectedBuilding.name == "圣水仓库") {
-            ResourceManager::getInstance().addCapacity(ResourceType::kElixir, cfgItem->capacityIncrease);
-        }
+    auto* resBuilding = dynamic_cast<ResourceBuilding*>(building);
+    if (resBuilding && resBuilding->isStorage())
+    {
+        // 注册新建筑 -> 这会自动触发 recalculateCapacity
+        BuildingCapacityManager::getInstance().registerOrUpdateBuilding(resBuilding, true);
     }
-
-    // 注意：工人小屋的工人容量增加已由BuildersHutBuilding自己处理
-    
-    showHint(StringUtils::format("%s 建造完成！", _selectedBuilding.name.c_str()));
-    CCLOG("Building placed: %s at grid (%.0f, %.0f)", _selectedBuilding.name.c_str(), gridPos.x, gridPos.y);
+    auto* resourceBuilding = dynamic_cast<ResourceBuilding*>(building);
+    if (resourceBuilding && resourceBuilding->isStorage())
+    {
+        BuildingCapacityManager::getInstance().registerOrUpdateBuilding(resourceBuilding, true);
+    }
     
     // 7. 为建筑添加点击监听器
     setupBuildingClickListener(building);
@@ -323,45 +319,38 @@ void BuildingManager::endPlacing()
 }
 void BuildingManager::update(float dt)
 {
-    // 遍历所有建筑，调用 tick 方法
+    // 1. 🆕 驱动升级管理器更新 (修复倒计时不动的核心)
+    UpgradeManager::getInstance()->update(dt);
+
+    // 2. 遍历建筑
     for (auto* building : _buildings)
     {
         if (building)
         {
             building->tick(dt);
-            
-            // 🆕 自动管理升级倒计时 UI
+
+            // 3. 管理倒计时 UI
             if (building->isUpgrading())
             {
-                // 检查是否已有升级 UI
-                auto* existingUI = building->getChildByName<UpgradeTimerUI*>("upgradeTimerUI");
+                auto* existingUI = building->getChildByName("upgradeTimerUI");
                 if (!existingUI)
                 {
-                    // 创建并附加升级 UI
+                    // 创建 UI
                     auto* timerUI = UpgradeTimerUI::create(building);
                     if (timerUI)
                     {
                         timerUI->setName("upgradeTimerUI");
-                        building->addChild(timerUI, 1000);
-                        timerUI->show();
-                        CCLOG("✅ 为 %s 添加升级倒计时 UI", building->getDisplayName().c_str());
+                        // 确保 UI 位于最上层
+                        building->addChild(timerUI, 9999);
                     }
                 }
             }
-            else
-            {
-                // 升级完成，移除 UI
-                auto* existingUI = building->getChildByName<UpgradeTimerUI*>("upgradeTimerUI");
-                if (existingUI)
-                {
-                    existingUI->removeFromParent();
-                    CCLOG("✅ 移除 %s 的升级倒计时 UI", building->getDisplayName().c_str());
-                }
-            }
+            // 注意：UpgradeTimerUI 内部检测到非升级状态会自动销毁，
+            // 所以这里不需要 else { remove } 分支，
+            // 但为了双重保险也可以加上。
         }
     }
-}
-BaseBuilding* BuildingManager::getBuildingAtPosition(const cocos2d::Vec2& touchPos)
+}BaseBuilding* BuildingManager::getBuildingAtPosition(const cocos2d::Vec2& touchPos)
 {
     if (!_mapSprite)
         return nullptr;
@@ -722,7 +711,8 @@ void BuildingManager::clearAllBuildings()
             _gridMap->markArea(building->getGridPosition(), building->getGridSize(), false);
         }
     }
-    
+    // 🔴 关键修复：清除所有建筑后，通知资源收集管理器清除其引用。
+    ResourceCollectionManager::getInstance()->clearRegisteredBuildings();
     // 移除所有建筑节点
     _buildings.clear();
     
@@ -768,23 +758,29 @@ void BuildingManager::saveCurrentState()
 
 void BuildingManager::loadCurrentAccountState()
 {
-    /**
-     * 从当前账号加载建筑状态
-     */
     auto& accMgr = AccountManager::getInstance();
     auto gameData = accMgr.getCurrentGameData();
-    
-    // 同步资源到 ResourceManager
     auto& resMgr = ResourceManager::getInstance();
+
+    // 1. 🆕 清空当前的容量和资源，为加载做准备
+    resMgr.setResourceCapacity(ResourceType::kGold, 0);
+    resMgr.setResourceCapacity(ResourceType::kElixir, 0);
+
+    // 2. 加载建筑 (建筑实体被创建，并向 CapacityManager 注册)
+    loadBuildingsFromData(gameData.buildings, false);
+
+    // 3. 强制 Capacity Manager 重新计算所有仓库容量并更新 ResourceManager。
+    //    此时，ResourceManager 拥有了正确的容量上限（例如 50000）。
+    BuildingCapacityManager::getInstance().recalculateCapacity();
+
+    // 4. 🔴 关键修复：最后才加载玩家的资源数量。
+    //    由于容量现在是正确的（例如 50000），加载 3000 金币就不会被截断。
+
     resMgr.setResourceCount(ResourceType::kGold, gameData.gold);
     resMgr.setResourceCount(ResourceType::kElixir, gameData.elixir);
-    resMgr.setResourceCount(ResourceType::kGem, gameData.gems);
-    
-    // 加载建筑
-    loadBuildingsFromData(gameData.buildings, false);
-    
-    CCLOG("📂 Loaded account state: %zu buildings, Gold=%d, Elixir=%d",
-          gameData.buildings.size(), gameData.gold, gameData.elixir);
+    // ...
+
+    CCLOG("📂 Loaded account state: Capacity Updated, Resources Applied.");
 }
 
 bool BuildingManager::loadPlayerBase(const std::string& userId)

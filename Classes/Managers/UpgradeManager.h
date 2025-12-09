@@ -116,8 +116,19 @@ public:
      */
     int getAvailableBuilders() const;
     
+    // ==================== 回调接口 ====================
+    
+    /**
+     * @brief 设置工人数量变化回调（用于UI更新）
+     * @param callback 回调函数，参数为当前可用工人数
+     */
+    void setOnAvailableBuilderChanged(const std::function<void(int)>& callback)
+    {
+        _onAvailableBuildersChanged = callback;
+    }
+    
     // ==================== 每帧更新 ====================
-    virtual void update(float dt) override;
+    void update(float dt);
     
     // ==================== 🎮 作弊模式接口 ====================
     
@@ -138,6 +149,7 @@ private:
     
     std::vector<UpgradeTask> _upgradeTasks;  // 升级任务列表
     bool _cheatModeEnabled = false;          // 作弊模式开关
+    std::function<void(int)> _onAvailableBuildersChanged;  // ✅ 工人数量变化回调
     
     /**
      * @brief 完成升级任务

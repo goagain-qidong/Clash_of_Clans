@@ -25,14 +25,14 @@ void ResourceManager::init()
     _capacities[kGold] = 3000;
     _capacities[kElixir] = 3000;
     _capacities[kGem] = 9999999;
-    _capacities[kBuilder] = 0; // 初始没有建筑工人小屋，工人上限为0
+    _capacities[kBuilder] = 2;  // ✅ 修复：初始有2个工人位置
     _capacities[kTroopPopulation] = 0; // 初始没有军营，人口上限为0
 
     // 初始资源
     _resources[kGold] = 3000;
     _resources[kElixir] = 3000;
     _resources[kGem] = 1000;
-    _resources[kBuilder] = 0; // 初始没有工人
+    _resources[kBuilder] = 2;  // ✅ 修复：初始拥有2个工人
     _resources[kTroopPopulation] = 0; // 初始没有小兵
 }
 // 新增：增加容量的方法 (供 BuildingManager 在建造完成后调用)
@@ -55,8 +55,11 @@ int ResourceManager::getResourceCapacity(ResourceType type) const
 void ResourceManager::setResourceCount(ResourceType type, int amount)
 {
     int capacity = getResourceCapacity(type);
+    // ✅ 修复：调整日志并确保容量检查正确
     if (capacity > 0 && amount > capacity)
     {
+        CCLOG("⚠️ 资源 %d 超容！请求：%d，容量：%d，已限制为容量上限", 
+              type, amount, capacity);
         amount = capacity;
     }
     if (amount < 0)
@@ -79,6 +82,8 @@ void ResourceManager::setResourceCapacity(ResourceType type, int capacity)
     int current = getResourceCount(type);
     if (current > capacity)
     {
+        CCLOG("⚠️ 资源 %d 当前值 %d 超过新容量 %d，已调整为容量上限", 
+              type, current, capacity);
         _resources[type] = capacity;
     }
     
@@ -97,7 +102,7 @@ int ResourceManager::addResource(ResourceType type, int amount)
     int current = getResourceCount(type);
     int capacity = getResourceCapacity(type);
     int actualAdded = amount;
-    if (current + amount > capacity)
+    if (capacity > 0 && current + amount > capacity)
     {
         actualAdded = capacity - current;
     }
@@ -120,6 +125,8 @@ bool ResourceManager::consume(ResourceType type, int amount)
     }
     if (!hasEnough(type, amount))
     {
+        CCLOG("❌ 资源不足！类型：%d，需要：%d，当前：%d", 
+              type, amount, getResourceCount(type));
         return false;
     }
     setResourceCount(type, getResourceCount(type) - amount);
