@@ -4,6 +4,8 @@
 #include "BuildingManager.h"
 #include "GridMap.h"
 #include "ResourceManager.h"
+#include "Buildings/BaseBuilding.h"
+#include "Buildings/DefenseBuilding.h"
 
 USING_NS_CC;
 using namespace ui;
@@ -153,6 +155,161 @@ void BattleScene::setupUI()
         returnToMainScene();
     });
     this->addChild(_returnButton, 100);
+    
+    // ==================== ⭐ 设置士兵部署按钮 ====================
+    setupTroopButtons();
+}
+
+// ==================== ⭐ 新增：设置士兵部署按钮 ====================
+void BattleScene::setupTroopButtons()
+{
+    float buttonY = 150;
+    float buttonSize = 80;
+    float buttonSpacing = 100;
+    float startX = (_visibleSize.width - buttonSpacing * 2) / 2;
+    
+    // 野蛮人按钮
+    _barbarianButton = Button::create();
+    _barbarianButton->setTitleText("野蛮人");
+    _barbarianButton->setTitleFontSize(18);
+    _barbarianButton->setScale9Enabled(true);
+    _barbarianButton->setContentSize(Size(buttonSize, buttonSize));
+    _barbarianButton->setPosition(Vec2(startX, buttonY));
+    _barbarianButton->setVisible(false);
+    _barbarianButton->addClickEventListener([this](Ref*) {
+        onTroopButtonClicked(UnitType::kBarbarian);
+    });
+    this->addChild(_barbarianButton, 100);
+    
+    _barbarianCountLabel = Label::createWithSystemFont("20", "Arial", 24);
+    _barbarianCountLabel->setPosition(Vec2(startX, buttonY - 50));
+    _barbarianCountLabel->setTextColor(Color4B::WHITE);
+    _barbarianCountLabel->setVisible(false);
+    this->addChild(_barbarianCountLabel, 100);
+    
+    // 弓箭手按钮
+    _archerButton = Button::create();
+    _archerButton->setTitleText("弓箭手");
+    _archerButton->setTitleFontSize(18);
+    _archerButton->setScale9Enabled(true);
+    _archerButton->setContentSize(Size(buttonSize, buttonSize));
+    _archerButton->setPosition(Vec2(startX + buttonSpacing, buttonY));
+    _archerButton->setVisible(false);
+    _archerButton->addClickEventListener([this](Ref*) {
+        onTroopButtonClicked(UnitType::kArcher);
+    });
+    this->addChild(_archerButton, 100);
+    
+    _archerCountLabel = Label::createWithSystemFont("20", "Arial", 24);
+    _archerCountLabel->setPosition(Vec2(startX + buttonSpacing, buttonY - 50));
+    _archerCountLabel->setTextColor(Color4B::WHITE);
+    _archerCountLabel->setVisible(false);
+    this->addChild(_archerCountLabel, 100);
+    
+    // 巨人按钮
+    _giantButton = Button::create();
+    _giantButton->setTitleText("巨人");
+    _giantButton->setTitleFontSize(18);
+    _giantButton->setScale9Enabled(true);
+    _giantButton->setContentSize(Size(buttonSize, buttonSize));
+    _giantButton->setPosition(Vec2(startX + buttonSpacing * 2, buttonY));
+    _giantButton->setVisible(false);
+    _giantButton->addClickEventListener([this](Ref*) {
+        onTroopButtonClicked(UnitType::kGiant);
+    });
+    this->addChild(_giantButton, 100);
+    
+    _giantCountLabel = Label::createWithSystemFont("5", "Arial", 24);
+    _giantCountLabel->setPosition(Vec2(startX + buttonSpacing * 2, buttonY - 50));
+    _giantCountLabel->setTextColor(Color4B::WHITE);
+    _giantCountLabel->setVisible(false);
+    this->addChild(_giantCountLabel, 100);
+    
+    // 添加触摸监听器，用于部署士兵
+    auto touchListener = EventListenerTouchOneByOne::create();
+    touchListener->onTouchBegan = [this](Touch* touch, Event* event) {
+        if (_state != BattleState::READY && _state != BattleState::FIGHTING)
+            return false;
+        
+        Vec2 touchPos = touch->getLocation();
+        Vec2 mapLocalPos = _mapSprite->convertToNodeSpace(touchPos);
+        
+        // 部署士兵
+        deployUnit(_selectedUnitType, mapLocalPos);
+        return true;
+    };
+    
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
+}
+
+// ==================== ⭐ 新增：士兵部署逻辑 ====================
+void BattleScene::deployUnit(UnitType type, const cocos2d::Vec2& position)
+{
+    int* count = nullptr;
+    
+    switch (type)
+    {
+    case UnitType::kBarbarian:
+        count = &_barbarianCount;
+        break;
+    case UnitType::kArcher:
+        count = &_archerCount;
+        break;
+    case UnitType::kGiant:
+        count = &_giantCount;
+        break;
+    default:
+        return;
+    }
+    
+    if (*count <= 0)
+    {
+        CCLOG("⚠️ No more units of this type!");
+        return;
+    }
+    
+    // 创建士兵
+    Unit* unit = Unit::create(type);
+    if (!unit)
+    {
+        CCLOG("❌ Failed to create unit!");
+        return;
+    }
+    
+    unit->setPosition(position);
+    _mapSprite->addChild(unit, 100);
+    _deployedUnits.push_back(unit);
+    
+    (*count)--;
+    updateTroopCounts();
+    
+    // 开始战斗（第一个士兵部署时）
+    if (_state == BattleState::READY)
+    {
+        _state = BattleState::FIGHTING;
+        activateDefenseBuildings();
+    }
+    
+    CCLOG("✅ Deployed unit at (%.1f, %.1f), remaining: %d", position.x, position.y, *count);
+}
+
+void BattleScene::onTroopButtonClicked(UnitType type)
+{
+    _selectedUnitType = type;
+    
+    // 高亮选中的按钮
+    _barbarianButton->setScale(type == UnitType::kBarbarian ? 1.1f : 1.0f);
+    _archerButton->setScale(type == UnitType::kArcher ? 1.1f : 1.0f);
+    _giantButton->setScale(type == UnitType::kGiant ? 1.1f : 1.0f);
+    
+    CCLOG("Selected unit type: %d", static_cast<int>(type));
+}
+
+void BattleScene::updateTroopCounts()
+{
+    _barbarianCountLabel->setString(StringUtils::format("%d", _barbarianCount));
+    _archerCountLabel->setString(StringUtils::format("%d", _archerCount));
+    _giantCountLabel->setString(StringUtils::format("%d", _giantCount));
 }
 
 // ==================== 加载敌方基地 ====================
@@ -195,11 +352,37 @@ void BattleScene::startBattle()
     _starsLabel->setVisible(true);
     _destructionLabel->setVisible(true);
     _endBattleButton->setVisible(true);
+    
+    // ⭐ 显示士兵部署按钮
+    _barbarianButton->setVisible(true);
+    _archerButton->setVisible(true);
+    _giantButton->setVisible(true);
+    _barbarianCountLabel->setVisible(true);
+    _archerCountLabel->setVisible(true);
+    _giantCountLabel->setVisible(true);
+    
+    // 获取敌方建筑列表并计算总血量
+    if (_buildingManager)
+    {
+        const auto& buildings = _buildingManager->getBuildings();
+        _enemyBuildings.clear();
+        _enemyBuildings.assign(buildings.begin(), buildings.end());
+        
+        _totalBuildingHP = 0;
+        _destroyedBuildingHP = 0;
+        
+        for (auto* building : _enemyBuildings)
+        {
+            if (building)
+            {
+                _totalBuildingHP += building->getMaxHitpoints();
+            }
+        }
+        
+        CCLOG("📊 Total buildings: %zu, Total HP: %d", _enemyBuildings.size(), _totalBuildingHP);
+    }
 
-    CCLOG("⚔️ Battle started!");
-
-    // TODO: 玩家可以开始部署士兵
-    // 这里需要实现士兵部署UI和逻辑
+    CCLOG("⚔️ Battle started! Click on map to deploy troops!");
 }
 
 void BattleScene::update(float dt)
@@ -223,10 +406,56 @@ void BattleScene::updateBattleState(float dt)
 
     updateTimer();
 
-    // TODO: 更新战斗状态
-    // - 士兵移动、攻击
-    // - 建筑被摧毁
-    // - 计算摧毁百分比和星数
+    // ⭐ 更新所有士兵的 AI
+    updateUnitAI(dt);
+    
+    // ⭐ 更新防御建筑的攻击逻辑
+    for (auto* building : _enemyBuildings)
+    {
+        if (building && building->isDefenseBuilding())
+        {
+            auto* defenseBuilding = dynamic_cast<DefenseBuilding*>(building);
+            if (defenseBuilding)
+            {
+                defenseBuilding->tick(dt);
+                defenseBuilding->detectEnemies(_deployedUnits);
+            }
+        }
+    }
+    
+    // ⭐ 计算摧毁百分比
+    _destroyedBuildingHP = 0;
+    int destroyedCount = 0;
+    
+    for (auto* building : _enemyBuildings)
+    {
+        if (building)
+        {
+            int lostHP = building->getMaxHitpoints() - building->getHitpoints();
+            _destroyedBuildingHP += lostHP;
+            
+            if (building->isDestroyed())
+            {
+                destroyedCount++;
+            }
+        }
+    }
+    
+    if (_totalBuildingHP > 0)
+    {
+        int newDestruction = (_destroyedBuildingHP * 100) / _totalBuildingHP;
+        if (newDestruction != _destructionPercent)
+        {
+            updateDestruction(newDestruction);
+        }
+    }
+    
+    // 检查是否所有建筑被摧毁
+    if (destroyedCount == _enemyBuildings.size() && !_enemyBuildings.empty())
+    {
+        CCLOG("🎉 All buildings destroyed!");
+        endBattle(false);
+    }
 }
 
 void BattleScene::updateTimer()
@@ -404,4 +633,141 @@ void BattleScene::uploadBattleResult()
     
     client.uploadBattleResult(result.dump());
     */
+}
+
+// ==================== ⭐ 新增：士兵 AI 更新逻辑 ====================
+void BattleScene::updateUnitAI(float dt)
+{
+    for (auto it = _deployedUnits.begin(); it != _deployedUnits.end();)
+    {
+        Unit* unit = *it;
+        
+        // 移除已死亡的士兵
+        if (!unit || unit->IsDead())
+        {
+            it = _deployedUnits.erase(it);
+            continue;
+        }
+        
+        // 如果士兵没有目标，寻找最近的建筑
+        BaseBuilding* target = unit->getTarget();
+        
+        if (!target || target->isDestroyed())
+        {
+            // 寻找最近的建筑作为目标
+            BaseBuilding* closestBuilding = nullptr;
+            float closestDistance = 99999.0f;
+            
+            Vec2 unitWorldPos = unit->getParent()->convertToWorldSpace(unit->getPosition());
+            
+            for (auto* building : _enemyBuildings)
+            {
+                if (!building || building->isDestroyed())
+                    continue;
+                
+                // 根据士兵类型选择目标
+                CombatStats& unitStats = unit->getCombatStats();
+                
+                // 巨人优先攻击防御建筑
+                if (unit->GetType() == UnitType::kGiant)
+                {
+                    if (!building->isDefenseBuilding())
+                        continue;
+                }
+                
+                // 哥布林优先攻击资源建筑
+                if (unit->GetType() == UnitType::kGoblin)
+                {
+                    if (building->getBuildingType() != BuildingType::kResource)
+                        continue;
+                }
+                
+                Vec2 buildingWorldPos = building->getParent()->convertToWorldSpace(building->getPosition());
+                float distance = unitWorldPos.distance(buildingWorldPos);
+                
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestBuilding = building;
+                }
+            }
+            
+            if (closestBuilding)
+            {
+                unit->setTarget(closestBuilding);
+                target = closestBuilding;
+            }
+        }
+        
+        // 如果有目标，移动并攻击
+        if (target && !target->isDestroyed())
+        {
+            Vec2 unitPos = unit->getPosition();
+            Vec2 targetPos = target->getPosition();
+            
+            // 如果在攻击范围内，攻击
+            if (unit->isInAttackRange(targetPos))
+            {
+                // 攻击冷却
+                static std::map<Unit*, float> attackCooldowns;
+                
+                if (attackCooldowns.find(unit) == attackCooldowns.end())
+                {
+                    attackCooldowns[unit] = 0.0f;
+                }
+                
+                attackCooldowns[unit] -= dt;
+                
+                if (attackCooldowns[unit] <= 0.0f)
+                {
+                    // 播放攻击动画
+                    unit->Attack(false);
+                    
+                    // 对建筑造成伤害
+                    target->takeDamage(unit->getDamage());
+                    
+                    // 重置冷却时间
+                    attackCooldowns[unit] = unit->getCombatStats().attackSpeed;
+                    
+                    CCLOG("⚔️ Unit attacks building! Damage: %d, Building HP: %d/%d",
+                          unit->getDamage(),
+                          target->getHitpoints(),
+                          target->getMaxHitpoints());
+                    
+                    // 如果建筑被摧毁，清除目标
+                    if (target->isDestroyed())
+                    {
+                        unit->clearTarget();
+                        CCLOG("💥 Building destroyed!");
+                    }
+                }
+            }
+            else
+            {
+                // 移动到目标
+                unit->MoveTo(targetPos);
+            }
+        }
+        
+        ++it;
+    }
+}
+
+// ==================== ⭐ 新增：激活防御建筑 ====================
+void BattleScene::activateDefenseBuildings()
+{
+    CCLOG("🏹 Activating defense buildings...");
+    
+    for (auto* building : _enemyBuildings)
+    {
+        if (building && building->isDefenseBuilding())
+        {
+            auto* defenseBuilding = dynamic_cast<DefenseBuilding*>(building);
+            if (defenseBuilding)
+            {
+                defenseBuilding->setBattleMode(true);
+                CCLOG("✅ Activated: %s", defenseBuilding->getDisplayName().c_str());
+            }
+        }
+    }
 }
