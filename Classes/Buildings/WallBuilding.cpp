@@ -74,11 +74,31 @@ int WallBuilding::getUpgradeCost() const
 
 float WallBuilding::getUpgradeTime() const
 {
-    // 🟢 修改后：直接返回 10.0f，忽略之前的数组配置
-    if (_level < 1 || _level >= getMaxLevel())
-        return 0.0f; // 满级或无效等级不需要时间
+    // 城墙升级时间（秒）
+    static const float times[] = {
+        0,      // Level 0 (无效)
+        0,      // Level 1 (即时)
+        60,     // Level 2 (1分钟)
+        300,    // Level 3 (5分钟)
+        900,    // Level 4 (15分钟)
+        1800,   // Level 5 (30分钟)
+        3600,   // Level 6 (1小时)
+        7200,   // Level 7 (2小时)
+        14400,  // Level 8 (4小时)
+        28800,  // Level 9 (8小时)
+        43200,  // Level 10 (12小时)
+        86400,  // Level 11 (1天)
+        172800, // Level 12 (2天)
+        259200, // Level 13 (3天)
+        345600, // Level 14 (4天)
+        432000, // Level 15 (5天)
+        518400  // Level 16 (6天)
+    };
 
-    return 10.0f;
+    if (_level < 1 || _level > 16)
+        return 0;
+
+    return times[_level];
 }
 
 std::string WallBuilding::getBuildingDescription() const

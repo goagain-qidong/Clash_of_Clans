@@ -22,8 +22,32 @@ ArmyBuilding* ArmyBuilding::create(int level)
 }
 float ArmyBuilding::getUpgradeTime() const
 {
-    // 无论多少级，统一 10 秒
-    return 10.0f;
+    // 升级时间（秒）
+    static const float times[] = {
+        0,      // Level 0 (无效)
+        0,      // Level 1 (即时)
+        60,     // Level 2 (1分钟)
+        300,    // Level 3 (5分钟)
+        900,    // Level 4 (15分钟)
+        1800,   // Level 5 (30分钟)
+        3600,   // Level 6 (1小时)
+        7200,   // Level 7 (2小时)
+        14400,  // Level 8 (4小时)
+        28800,  // Level 9 (8小时)
+        43200,  // Level 10 (12小时)
+        86400,  // Level 11 (1天)
+        172800, // Level 12 (2天)
+        259200, // Level 13 (3天)
+        345600, // Level 14 (4天)
+        432000, // Level 15 (5天)
+        518400,  // Level 16 (6天)
+        604800 // Level 17 (7天)
+    };
+
+    if (_level < 1 || _level > 17)
+        return 0;
+
+    return times[_level];
 }
 ArmyBuilding* ArmyBuilding::create(int level, const std::string& imageFile)
 {
@@ -319,17 +343,17 @@ float ArmyBuilding::getUnitBaseTrainingTime(UnitType type)
     switch (type)
     {
     case UnitType::kBarbarian:
-        return 20.0f;   // 野蛮人：20秒
+        return 1.0f;   // 野蛮人
     case UnitType::kArcher:
-        return 25.0f;   // 弓箭手：25秒
+        return 1.0f;   // 弓箭手
     case UnitType::kGoblin:
-        return 30.0f;   // 哥布林：30秒
+        return 1.0f;   // 哥布林
     case UnitType::kGiant:
-        return 120.0f;  // 巨人：2分钟
+        return 1.0f;  // 巨人
     case UnitType::kWallBreaker:
-        return 180.0f;  // 炸弹人：3分钟
+        return 1.0f;  // 炸弹人
     default:
-        return 20.0f;
+        return 1.0f;
     }
 }
 

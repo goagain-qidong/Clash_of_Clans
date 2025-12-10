@@ -42,7 +42,7 @@ public:
     ResourceType getResourceType() const { return _resourceType; }
     bool isProducer() const; // 是否为生产型建筑（金矿/圣水收集器）
     bool isStorage() const;  // 是否为存储型建筑（金币仓库/圣水仓库）
-    virtual float getUpgradeTime() const override { return 10.0f; }
+    virtual float getUpgradeTime() const override;
     int getProductionRate() const;      // 生产型建筑：每10秒产量
     int getStorageCapacity() const;     // 存储容量（生产型和存储型都有）
     int getCurrentStorage() const { return _currentStorage; }

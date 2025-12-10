@@ -222,6 +222,36 @@ int ResourceBuilding::getUpgradeCost() const
     return UPGRADE_COSTS[_level];
 }
 
+// 新增：根据等级返回升级所需时间（秒）
+float ResourceBuilding::getUpgradeTime() const
+{
+    // 升级时间表（16级）- 单位：秒
+    static const int times[] = {
+        0,        // Level 0 (无效)
+        5,        // Level 1 -> 2: 5秒
+        15,       // Level 2 -> 3: 15秒
+        60,       // Level 3 -> 4: 1分钟
+        120,      // Level 4 -> 5: 2分钟
+        300,      // Level 5 -> 6: 5分钟
+        900,      // Level 6 -> 7: 15分钟
+        1800,     // Level 7 -> 8: 30分钟
+        3600,     // Level 8 -> 9: 1小时
+        7200,     // Level 9 -> 10: 2小时
+        10800,    // Level 10 -> 11: 3小时
+        14400,    // Level 11 -> 12: 4小时
+        21600,    // Level 12 -> 13: 6小时
+        28800,    // Level 13 -> 14: 8小时
+        36000,    // Level 14 -> 15: 10小时
+        64800,    // Level 15 -> 16: 18小时
+        172800    // Level 16 -> 17: 2天
+    };
+    
+    if (_level < 1 || _level > 16)
+        return 0;
+    
+    return times[_level];
+}
+
 bool ResourceBuilding::upgrade()
 {
     if (!canUpgrade())
