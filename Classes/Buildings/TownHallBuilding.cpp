@@ -4,24 +4,28 @@
  */
 #include "TownHallBuilding.h"
 #include "ResourceManager.h"
+#include "Managers/BuildingLimitManager.h"
 USING_NS_CC;
+
 // ==================== TownHallConfig 实现 ====================
 TownHallConfig* TownHallConfig::getInstance()
 {
     static TownHallConfig instance;
     return &instance;
 }
+
 TownHallConfig::TownHallConfig()
 {
     initialize();
 }
+
 void TownHallConfig::initialize()
 {
     // 大本营等级配置表（1 - 17级）
     // 格式: {等级, 生命值, 升级费用, 升级时间(秒), 经验值, 最大建筑数, 最大陷阱数, 图片路径, 描述}
     _levels = {
         {1,  400,   0,          0,      0,   13, 0,  "buildings/BaseCamp/town-hall-1.png",  "初始大本营"},
-        {2,  800,   1000,       10,     3,   17, 0,  "buildings/BaseCamp/town-hall-2.png",  "二级大本营"},
+        {2,  800,   1000,       60,     3,   17, 0,  "buildings/BaseCamp/town-hall-2.png",  "二级大本营"},
         {3,  1600,  4000,       1800,   42,  25, 2,  "buildings/BaseCamp/town-hall-3.png",  "三级大本营"},
         {4,  2000,  25000,      10800,  103, 29, 4,  "buildings/BaseCamp/town-hall-4.png",  "四级大本营"},
         {5,  2400,  150000,     21600,  146, 36, 8,  "buildings/BaseCamp/town-hall-5.png",  "五级大本营"},
@@ -39,28 +43,33 @@ void TownHallConfig::initialize()
         {17, 10400, 16000000,   864000, 929, 94, 47, "buildings/BaseCamp/town-hall-17.png", "满级大本营"}
     };
 }
+
 const TownHallConfig::LevelData* TownHallConfig::getLevel(int level) const
 {
     if (level < 1 || level > static_cast<int>(_levels.size()))
         return nullptr;
     return &_levels[level - 1];
 }
+
 const TownHallConfig::LevelData* TownHallConfig::getNextLevel(int currentLevel) const
 {
     if (currentLevel < 1 || currentLevel >= static_cast<int>(_levels.size()))
         return nullptr;
     return &_levels[currentLevel];
 }
+
 bool TownHallConfig::canUpgrade(int currentLevel) const
 {
     return currentLevel >= 1 && currentLevel < static_cast<int>(_levels.size());
 }
+
 int TownHallConfig::getUpgradeCost(int currentLevel) const
 {
     if (!canUpgrade(currentLevel))
         return 0;
     return _levels[currentLevel].upgradeCost;
 }
+
 // ==================== TownHallBuilding 实现 ====================
 TownHallBuilding* TownHallBuilding::create(int level)
 {
@@ -73,6 +82,7 @@ TownHallBuilding* TownHallBuilding::create(int level)
     delete ret;
     return nullptr;
 }
+
 bool TownHallBuilding::init(int level)
 {
     // 1. 设置等级
@@ -97,28 +107,35 @@ bool TownHallBuilding::init(int level)
     this->setScale(0.8f);
     this->setName(getDisplayName());
     
-    // 5. 🆕 设置生命值（从配置表读取）
+    // 5. 设置生命值（从配置表读取）
     auto* levelConfig = TownHallConfig::getInstance()->getLevel(_level);
     if (levelConfig)
     {
         setMaxHitpoints(levelConfig->hitpoints);
         CCLOG("✅ 大本营 Lv.%d 生命值：%d", _level, levelConfig->hitpoints);
     }
+    
+    // 6. 初始化建筑限制管理器
+    BuildingLimitManager::getInstance()->updateLimitsFromTownHall(_level);
 
     return true;
 }
+
 int TownHallBuilding::getMaxLevel() const
 {
     return TownHallConfig::getInstance()->getMaxLevel();
 }
+
 bool TownHallBuilding::canUpgrade() const
 {
     return TownHallConfig::getInstance()->canUpgrade(_level) && !_isUpgrading;
 }
+
 int TownHallBuilding::getUpgradeCost() const
 {
     return TownHallConfig::getInstance()->getUpgradeCost(_level);
 }
+
 float TownHallBuilding::getUpgradeTime() const
 {
     auto* nextLevel = TownHallConfig::getInstance()->getNextLevel(_level);
@@ -127,21 +144,19 @@ float TownHallBuilding::getUpgradeTime() const
 
 void TownHallBuilding::onLevelUp()
 {
-    // 🔧 修复：不再重写 upgrade()，而是在升级完成后处理逻辑
-    BaseBuilding::onLevelUp();  // 调用基类的升级逻辑（更新外观）
+    BaseBuilding::onLevelUp();
     
-    // 更新生命值
-    auto* levelConfig = TownHallConfig::getInstance()->getLevel(_level);
-    if (levelConfig)
-    {
-        setMaxHitpoints(levelConfig->hitpoints);
-        CCLOG("🎉 大本营升级到 Lv.%d，生命值提升至：%d", _level, levelConfig->hitpoints);
-    }
+    CCLOG("🎉 TownHall upgraded to Lv.%d", _level);
+    
+    // 更新所有建筑的数量限制
+    BuildingLimitManager::getInstance()->updateLimitsFromTownHall(_level);
 }
+
 std::string TownHallBuilding::getDisplayName() const
 {
     return "大本营 Lv." + std::to_string(_level);
 }
+
 std::string TownHallBuilding::getUpgradeInfo() const
 {
     if (!canUpgrade())
@@ -152,16 +167,19 @@ std::string TownHallBuilding::getUpgradeInfo() const
         return "";
     return "升级到 " + nextLevel->description + "\n需要: " + std::to_string(cost) + " 金币";
 }
+
 std::string TownHallBuilding::getImageFile() const
 {
     auto* levelConfig = TownHallConfig::getInstance()->getLevel(_level);
     return levelConfig ? levelConfig->imageFile : "";
 }
+
 std::string TownHallBuilding::getImageForLevel(int level) const
 {
     auto* levelConfig = TownHallConfig::getInstance()->getLevel(level);
     return levelConfig ? levelConfig->imageFile : "";
 }
+
 void TownHallBuilding::updateAppearance()
 {
     auto* levelConfig = TownHallConfig::getInstance()->getLevel(_level);
@@ -175,7 +193,7 @@ void TownHallBuilding::updateAppearance()
     }
 }
 
-// ==================== 建筑限制系统（空实现，预留未来）====================
+// ==================== 建筑限制系统 ====================
 int TownHallConfig::getMaxBuildingLevel(int townHallLevel, const std::string& buildingName) const
 {
     // TODO: 实现建筑等级限制逻辑
@@ -185,7 +203,7 @@ int TownHallConfig::getMaxBuildingLevel(int townHallLevel, const std::string& bu
     return townHallLevel;
 }
 
-// ==================== 建筑解锁系统（空实现，预留未来）====================
+// ==================== 建筑解锁系统 ====================
 bool TownHallConfig::isBuildingUnlocked(int townHallLevel, const std::string& buildingName) const
 {
     // TODO: 实现建筑解锁逻辑
