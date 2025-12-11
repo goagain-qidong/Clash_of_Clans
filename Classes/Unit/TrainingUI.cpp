@@ -40,6 +40,15 @@ bool TrainingUI::init(ArmyBuilding* barracks)
     }
 
     _barracks = barracks;
+    
+    // 🆕 初始化人口缓存值
+    auto& resMgr = ResourceManager::getInstance();
+    _lastTroopCount = resMgr.getCurrentTroopCount();
+    _lastTroopCapacity = resMgr.getMaxTroopCapacity();
+    
+    // 🆕 启用每帧更新，用于实时同步人口显示
+    this->scheduleUpdate();
+    
     setupUI();
     return true;
 }
@@ -291,9 +300,23 @@ void TrainingUI::updatePopulationDisplay()
     auto popLabel = dynamic_cast<Label*>(_panel->getChildByName("populationLabel"));
     if (popLabel)
     {
-        popLabel->setString(StringUtils::format("人口：%d/%d", 
-            resMgr.getCurrentTroopCount(), 
-            resMgr.getMaxTroopCapacity()));
+        int current = resMgr.getCurrentTroopCount();
+        int max = resMgr.getMaxTroopCapacity();
+        popLabel->setString(StringUtils::format("人口：%d/%d", current, max));
+        
+        // 🎨 根据人口比例改变颜色
+        if (current >= max)
+        {
+            popLabel->setTextColor(Color4B::RED);  // 满了，红色警告
+        }
+        else if (current >= max * 0.8f)
+        {
+            popLabel->setTextColor(Color4B::YELLOW);  // 快满了，黄色提示
+        }
+        else
+        {
+            popLabel->setTextColor(Color4B(200, 200, 255, 255));  // 正常，蓝色
+        }
     }
 }
 
@@ -308,6 +331,11 @@ void TrainingUI::show()
     this->setVisible(true);
     _panel->setPosition(Vec2(visibleSize.width / 2, -350));
     _panel->runAction(MoveTo::create(0.3f, Vec2(visibleSize.width / 2, 0)));
+    
+    // 🆕 显示时立即更新一次人口显示
+    updatePopulationDisplay();
+    
+    CCLOG("✅ TrainingUI: 已启动实时人口同步");
 }
 
 void TrainingUI::hide()
@@ -318,6 +346,41 @@ void TrainingUI::hide()
         this->removeFromParent();
     });
     _panel->runAction(Sequence::create(moveDown, callback, nullptr));
+}
+
+void TrainingUI::update(float dt)
+{
+    // 🆕 每帧检查人口是否变化，如果变化则更新显示
+    auto& resMgr = ResourceManager::getInstance();
+    int currentCount = resMgr.getCurrentTroopCount();
+    int currentCapacity = resMgr.getMaxTroopCapacity();
+    
+    // 只有当人口或容量变化时才更新UI（减少不必要的UI刷新）
+    if (currentCount != _lastTroopCount || currentCapacity != _lastTroopCapacity)
+    {
+        CCLOG("🔄 TrainingUI: 检测到人口变化 %d/%d -> %d/%d",
+              _lastTroopCount, _lastTroopCapacity,
+              currentCount, currentCapacity);
+        
+        // 更新缓存值
+        _lastTroopCount = currentCount;
+        _lastTroopCapacity = currentCapacity;
+        
+        // 更新UI显示
+        updatePopulationDisplay();
+        
+        // 如果人口变化，可能影响能否训练，需要刷新卡片
+        auto scrollView = dynamic_cast<cocos2d::ui::ListView*>(_panel->getChildByName("scrollView"));
+        if (scrollView)
+        {
+            scrollView->removeAllItems();
+            createUnitCard(scrollView, UnitType::kBarbarian, "野蛮人", 25, 1);
+            createUnitCard(scrollView, UnitType::kArcher, "弓箭手", 50, 1);
+            createUnitCard(scrollView, UnitType::kGoblin, "哥布林", 40, 1);
+            createUnitCard(scrollView, UnitType::kGiant, "巨人", 250, 5);
+            createUnitCard(scrollView, UnitType::kWallBreaker, "炸弹人", 600, 1);
+        }
+    }
 }
 
 std::string TrainingUI::getUnitName(UnitType type) const
