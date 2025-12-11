@@ -183,12 +183,13 @@ void BattleScene::setupTroopButtons()
     float buttonSpacing = 100;
     float startX = (_visibleSize.width - buttonSpacing * 2) / 2;
     
-    // 野蛮人按钮
-    _barbarianButton = Button::create();
-    _barbarianButton->setTitleText("野蛮人");
-    _barbarianButton->setTitleFontSize(18);
-    _barbarianButton->setScale9Enabled(true);
-    _barbarianButton->setContentSize(Size(buttonSize, buttonSize));
+    // 野蛮人按钮 - 使用图片
+    _barbarianButton = Button::create(
+        "units/barbarian_select_button_active.png",    // 正常状态
+        "units/barbarian_select_button_active.png",    // 按下状态
+        "units/barbarian_select_button_active.png"     // 禁用状态
+    );
+    _barbarianButton->setScale(0.8f);  // 调整大小
     _barbarianButton->setPosition(Vec2(startX, buttonY));
     _barbarianButton->setVisible(false);
     _barbarianButton->addClickEventListener([this](Ref*) {
@@ -202,12 +203,13 @@ void BattleScene::setupTroopButtons()
     _barbarianCountLabel->setVisible(false);
     this->addChild(_barbarianCountLabel, 100);
     
-    // 弓箭手按钮
-    _archerButton = Button::create();
-    _archerButton->setTitleText("弓箭手");
-    _archerButton->setTitleFontSize(18);
-    _archerButton->setScale9Enabled(true);
-    _archerButton->setContentSize(Size(buttonSize, buttonSize));
+    // 弓箭手按钮 - 使用图片
+    _archerButton = Button::create(
+        "units/archer_select_button_active.png",
+        "units/archer_select_button_active.png",
+        "units/archer_select_button_active.png"
+    );
+    _archerButton->setScale(0.8f);
     _archerButton->setPosition(Vec2(startX + buttonSpacing, buttonY));
     _archerButton->setVisible(false);
     _archerButton->addClickEventListener([this](Ref*) {
@@ -221,12 +223,13 @@ void BattleScene::setupTroopButtons()
     _archerCountLabel->setVisible(false);
     this->addChild(_archerCountLabel, 100);
     
-    // 巨人按钮
-    _giantButton = Button::create();
-    _giantButton->setTitleText("巨人");
-    _giantButton->setTitleFontSize(18);
-    _giantButton->setScale9Enabled(true);
-    _giantButton->setContentSize(Size(buttonSize, buttonSize));
+    // 巨人按钮 - 使用图片
+    _giantButton = Button::create(
+        "units/giant_select_button_active.png",
+        "units/giant_select_button_active.png",
+        "units/giant_select_button_active.png"
+    );
+    _giantButton->setScale(0.8f);
     _giantButton->setPosition(Vec2(startX + buttonSpacing * 2, buttonY));
     _giantButton->setVisible(false);
     _giantButton->addClickEventListener([this](Ref*) {

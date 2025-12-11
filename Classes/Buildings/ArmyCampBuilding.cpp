@@ -168,3 +168,102 @@ void ArmyCampBuilding::onLevelUp()
               _level, housingSpace, addedCapacity);
     }
 }
+
+// ==================== 🆕 小兵显示功能实现 ====================
+
+void ArmyCampBuilding::addTroopDisplay(UnitType type)
+{
+    // 🎮 创建真实的站立小兵（使用 Unit 类）
+    Unit* troopUnit = Unit::create(type);
+    if (!troopUnit)
+    {
+        CCLOG("❌ Failed to create troop unit for display");
+        return;
+    }
+    
+    // 设置缩放（军营里的小兵应该比较小）
+    troopUnit->setScale(0.5f);
+    
+    // 计算小兵应该站立的位置
+    int index = static_cast<int>(_troopSprites.size());
+    Vec2 pos = getTroopDisplayPosition(index);
+    troopUnit->setPosition(pos);
+    
+    // 播放待机动画（朝向右边）
+    troopUnit->PlayAnimation(UnitAction::kIdle, UnitDirection::kRight);
+    
+    // 添加到军营建筑
+    this->addChild(troopUnit, 50);  // Z-Order 50，在建筑上方
+    
+    // 保存到列表（注意：这里存的是 Sprite* 指针，但实际是 Unit*）
+    _troopSprites.push_back(troopUnit);
+    
+    CCLOG("✅ Added troop unit to Army Camp (total: %zu)", _troopSprites.size());
+}
+
+void ArmyCampBuilding::removeTroopDisplay(UnitType type)
+{
+    // 从后往前移除第一个匹配的小兵
+    // 简化处理：直接移除最后一个
+    if (_troopSprites.empty())
+        return;
+    
+    auto lastSprite = _troopSprites.back();
+    lastSprite->removeFromParent();
+    _troopSprites.pop_back();
+    
+    // 更新剩余小兵的位置
+    updateTroopPositions();
+    
+    CCLOG("✅ Removed troop display from Army Camp (remaining: %zu)", _troopSprites.size());
+}
+
+void ArmyCampBuilding::clearTroopDisplays()
+{
+    for (auto* sprite : _troopSprites)
+    {
+        if (sprite)
+        {
+            sprite->removeFromParent();
+        }
+    }
+    _troopSprites.clear();
+    
+    CCLOG("🗑️ Cleared all troop displays from Army Camp");
+}
+
+void ArmyCampBuilding::updateTroopPositions()
+{
+    // 重新排列所有小兵的位置
+    for (size_t i = 0; i < _troopSprites.size(); ++i)
+    {
+        if (_troopSprites[i])
+        {
+            Vec2 pos = getTroopDisplayPosition(static_cast<int>(i));
+            
+            // 使用移动动作让小兵走到新位置
+            auto moveTo = MoveTo::create(0.3f, pos);
+            _troopSprites[i]->runAction(moveTo);
+        }
+    }
+}
+
+Vec2 ArmyCampBuilding::getTroopDisplayPosition(int index) const
+{
+    // 在军营周围排列小兵
+    // 使用2x2或3x3网格排列
+    float buildingWidth = this->getContentSize().width;
+    float buildingHeight = this->getContentSize().height;
+    
+    // 每行3个小兵
+    int row = index / 3;
+    int col = index % 3;
+    
+    // 小兵站在军营前方（下方）
+    float startX = -buildingWidth * 0.3f;
+    float startY = -buildingHeight * 0.2f;  // 负值表示在建筑下方
+    float spacingX = buildingWidth * 0.3f;
+    float spacingY = buildingHeight * 0.25f;
+    
+    return Vec2(startX + col * spacingX, startY - row * spacingY);
+}

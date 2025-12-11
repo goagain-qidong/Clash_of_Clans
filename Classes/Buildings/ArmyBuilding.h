@@ -116,6 +116,9 @@ public:
 protected:
     virtual void onLevelUp() override;
     virtual std::string getImageForLevel(int level) const override;
+    
+    // 🆕 通知军营显示训练好的小兵
+    void notifyArmyCampsToDisplayTroop(UnitType type);
 
 private:
     std::string _customImagePath;  // 自定义图片路径（用于箭塔、炮塔等）
