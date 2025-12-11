@@ -7,6 +7,7 @@
 #include "Buildings/BaseBuilding.h"
 #include "Buildings/DefenseBuilding.h"
 #include "Managers/DefenseLogSystem.h"  // 🔴 添加防守日志系统头文件
+#include "Managers/TroopInventory.h"  // 🆕 添加士兵库存管理
 #include <ctime>  // 🔴 添加time头文件
 
 USING_NS_CC;
@@ -282,11 +283,21 @@ void BattleScene::deployUnit(UnitType type, const cocos2d::Vec2& position)
         return;
     }
     
+    // 🆕 从士兵库存消耗士兵
+    auto& troopInv = TroopInventory::getInstance();
+    if (!troopInv.consumeTroops(type, 1))
+    {
+        CCLOG("⚠️ 无法从库存中消耗士兵！");
+        return;
+    }
+    
     // 创建士兵
     Unit* unit = Unit::create(type);
     if (!unit)
     {
         CCLOG("❌ Failed to create unit!");
+        // 部署失败，退还士兵
+        troopInv.addTroops(type, 1);
         return;
     }
     
@@ -367,6 +378,15 @@ void BattleScene::startBattle()
     _destructionLabel->setVisible(true);
     _endBattleButton->setVisible(true);
     
+    // 🆕 从士兵库存读取可用士兵数量
+    auto& troopInv = TroopInventory::getInstance();
+    _barbarianCount = troopInv.getTroopCount(UnitType::kBarbarian);
+    _archerCount = troopInv.getTroopCount(UnitType::kArcher);
+    _giantCount = troopInv.getTroopCount(UnitType::kGiant);
+    
+    CCLOG("📦 可用士兵：野蛮人=%d，弓箭手=%d，巨人=%d", 
+          _barbarianCount, _archerCount, _giantCount);
+    
     // ⭐ 显示士兵部署按钮
     _barbarianButton->setVisible(true);
     _archerButton->setVisible(true);
@@ -374,6 +394,9 @@ void BattleScene::startBattle()
     _barbarianCountLabel->setVisible(true);
     _archerCountLabel->setVisible(true);
     _giantCountLabel->setVisible(true);
+    
+    // 更新士兵数量显示
+    updateTroopCounts();
     
     // 获取敌方建筑列表并计算总血量
     if (_buildingManager)
@@ -525,6 +548,11 @@ void BattleScene::endBattle(bool surrender)
 
     calculateBattleResult();
     showBattleResult();
+
+    // 🆕 保存更新后的游戏数据（包括士兵库存）
+    auto& accountMgr = AccountManager::getInstance();
+    accountMgr.saveGameStateToFile();
+    CCLOG("💾 战斗结束，已保存游戏数据（包括剩余士兵）");
 
     // 上传战斗结果（可选）
     uploadBattleResult();

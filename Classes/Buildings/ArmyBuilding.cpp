@@ -8,6 +8,7 @@
  ****************************************************************/
 #include "ArmyBuilding.h"
 #include "GameConfig.h" // 如果需要引用配置
+#include "Managers/TroopInventory.h"  // 🆕 添加士兵库存管理
 USING_NS_CC;
 ArmyBuilding* ArmyBuilding::create(int level)
 {
@@ -323,10 +324,6 @@ void ArmyBuilding::completeCurrentTask()
     auto task = _trainingQueue.front();
     _trainingQueue.pop();
     
-    // 🔧 修复：增加正确的人口计数
-    int population = getUnitPopulation(task.unitType);  // ✅ 获取兵种人口
-    ResourceManager::getInstance().addTroops(population);
-    
     // 创建训练好的单位
     Unit* unit = Unit::create(task.unitType);
     
@@ -342,15 +339,28 @@ void ArmyBuilding::completeCurrentTask()
     default: unitName = "未知兵种"; break;
     }
     
-    auto& resMgr = ResourceManager::getInstance();
-    CCLOG("🎉 训练完成：%s（占用 %d 人口）！（剩余队列：%d，人口：%d/%d）", 
-          unitName.c_str(), population, getQueueLength(),
-          resMgr.getCurrentTroopCount(), resMgr.getMaxTroopCapacity());
+    // 🆕 添加士兵到库存（而不是只增加人口）
+    auto& troopInv = TroopInventory::getInstance();
+    int addedCount = troopInv.addTroops(task.unitType, 1);
     
-    // 触发回调
-    if (_onTrainingComplete && unit)
+    if (addedCount > 0)
     {
-        _onTrainingComplete(unit);
+        auto& resMgr = ResourceManager::getInstance();
+        CCLOG("🎉 训练完成：%s！（剩余队列：%d，人口：%d/%d）", 
+              unitName.c_str(), getQueueLength(),
+              resMgr.getCurrentTroopCount(), resMgr.getMaxTroopCapacity());
+        
+        // 触发回调
+        if (_onTrainingComplete && unit)
+        {
+            _onTrainingComplete(unit);
+        }
+    }
+    else
+    {
+        CCLOG("⚠️ 人口已满，无法完成训练：%s", unitName.c_str());
+        // 退还资源
+        ResourceManager::getInstance().addResource(ResourceType::kElixir, task.cost);
     }
 }
 

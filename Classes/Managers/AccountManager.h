@@ -66,6 +66,9 @@ struct AccountGameData {
     int goldCapacity = 3000;
     int elixirCapacity = 3000;
     
+    // 🆕 添加士兵库存字段
+    std::string troopInventory = "";  // JSON格式存储士兵库存
+    
     std::vector<BuildingSerialData> buildings;
 
 
