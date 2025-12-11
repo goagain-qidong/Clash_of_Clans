@@ -302,7 +302,12 @@ void BattleScene::deployUnit(UnitType type, const cocos2d::Vec2& position)
     }
     
     unit->setPosition(position);
-    _mapSprite->addChild(unit, 100);
+    // 🎨 根据 Y 坐标设置初始 Z-Order（Y 越大，Z-Order 越小，渲染在越前面）
+    // 使用一个基准值（10000）减去 Y 坐标，确保 Z-Order 始终为正数
+    // 例如：Y=100 -> ZOrder=9900, Y=200 -> ZOrder=9800
+    // 这样 Y 大的对象 ZOrder 小，但都是正数，确保在地图上方渲染
+    int zOrder = 10000 - static_cast<int>(position.y);
+    _mapSprite->addChild(unit, zOrder);
     _deployedUnits.push_back(unit);
     
     (*count)--;
@@ -442,6 +447,33 @@ void BattleScene::updateBattleState(float dt)
     }
 
     updateTimer();
+
+    // 🎨 动态更新所有士兵的 Z-Order（根据 Y 坐标实现2.5D深度排序）
+    // 规则：Y 坐标越大（越靠屏幕下方），Z-Order 越小，渲染在越前面
+    // 使用 10000 - Y 作为基准，确保所有 Z-Order 都是正数
+    for (auto* unit : _deployedUnits)
+    {
+        if (unit && !unit->IsDead())
+        {
+            // 使用 10000 - Y 作为 Z-Order
+            // 例如：Y=100 -> ZOrder=9900, Y=200 -> ZOrder=9800
+            // ZOrder 越大越在前面，所以 9900 > 9800，Y=100 的对象在前面
+            // 但我们希望 Y 大的在前面，所以这个公式是对的
+            int newZOrder = 10000 - static_cast<int>(unit->getPositionY());
+            unit->setLocalZOrder(newZOrder);
+        }
+    }
+    
+    // 🎨 建筑的 Z-Order 也需要动态更新
+    // 每帧更新一次以确保与士兵的深度关系正确
+    for (auto* building : _enemyBuildings)
+    {
+        if (building && !building->isDestroyed())
+        {
+            int newZOrder = 10000 - static_cast<int>(building->getPositionY());
+            building->setLocalZOrder(newZOrder);
+        }
+    }
 
     // ⭐ 更新所有士兵的 AI
     updateUnitAI(dt);
@@ -802,7 +834,11 @@ void BattleScene::updateUnitAI(float dt)
         {
             // 寻找最近的建筑作为目标
             BaseBuilding* closestBuilding = nullptr;
+            BaseBuilding* closestDefenseBuilding = nullptr;  // 巨人优先目标
+            BaseBuilding* closestResourceBuilding = nullptr;  // 哥布林优先目标
             float closestDistance = 99999.0f;
+            float closestDefenseDistance = 99999.0f;
+            float closestResourceDistance = 99999.0f;
             
             Vec2 unitWorldPos = unit->getParent()->convertToWorldSpace(unit->getPosition());
             
@@ -811,37 +847,74 @@ void BattleScene::updateUnitAI(float dt)
                 if (!building || building->isDestroyed())
                     continue;
                 
-                // 根据士兵类型选择目标
-                CombatStats& unitStats = unit->getCombatStats();
-                
-                // 巨人优先攻击防御建筑
-                if (unit->GetType() == UnitType::kGiant)
-                {
-                    if (!building->isDefenseBuilding())
-                        continue;
-                }
-                
-                // 哥布林优先攻击资源建筑
-                if (unit->GetType() == UnitType::kGoblin)
-                {
-                    if (building->getBuildingType() != BuildingType::kResource)
-                        continue;
-                }
-                
                 Vec2 buildingWorldPos = building->getParent()->convertToWorldSpace(building->getPosition());
                 float distance = unitWorldPos.distance(buildingWorldPos);
                 
+                // 记录最近的任意建筑（备用）
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
                     closestBuilding = building;
                 }
+                
+                // 巨人：记录最近的防御建筑
+                if (unit->GetType() == UnitType::kGiant && building->isDefenseBuilding())
+                {
+                    if (distance < closestDefenseDistance)
+                    {
+                        closestDefenseDistance = distance;
+                        closestDefenseBuilding = building;
+                    }
+                }
+                
+                // 哥布林：记录最近的资源建筑
+                if (unit->GetType() == UnitType::kGoblin && building->getBuildingType() == BuildingType::kResource)
+                {
+                    if (distance < closestResourceDistance)
+                    {
+                        closestResourceDistance = distance;
+                        closestResourceBuilding = building;
+                    }
+                }
             }
             
-            if (closestBuilding)
+            // 根据兵种类型选择目标（带降级逻辑）
+            BaseBuilding* selectedTarget = nullptr;
+            
+            if (unit->GetType() == UnitType::kGiant)
             {
-                unit->setTarget(closestBuilding);
-                target = closestBuilding;
+                // 巨人：优先攻击防御建筑，找不到就攻击任意建筑
+                selectedTarget = closestDefenseBuilding ? closestDefenseBuilding : closestBuilding;
+                
+                if (selectedTarget)
+                {
+                    CCLOG("🎯 Giant target: %s (isDefense=%d)", 
+                          closestDefenseBuilding ? "Defense Building" : "Any Building",
+                          selectedTarget->isDefenseBuilding() ? 1 : 0);
+                }
+            }
+            else if (unit->GetType() == UnitType::kGoblin)
+            {
+                // 哥布林：优先攻击资源建筑，找不到就攻击任意建筑
+                selectedTarget = closestResourceBuilding ? closestResourceBuilding : closestBuilding;
+            }
+            else
+            {
+                // 其他兵种：攻击最近的建筑
+                selectedTarget = closestBuilding;
+            }
+            
+            if (selectedTarget)
+            {
+                unit->setTarget(selectedTarget);
+                target = selectedTarget;
+            }
+            else
+            {
+                if (unit->GetType() == UnitType::kGiant)
+                {
+                    CCLOG("⚠️ Giant: No target found! Total buildings: %zu", _enemyBuildings.size());
+                }
             }
         }
         

@@ -201,6 +201,10 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     Vec2 buildingPos = calculateBuildingPosition(gridPos);
     building->setPosition(buildingPos);
     // 4. 设置动态 Z-Order (Y-Sorting)
+    // 🎨 使用 10000 - Y 作为 Z-Order，确保始终为正数
+    // 例如：Y=100 -> ZOrder=9900, Y=200 -> ZOrder=9800
+    // ZOrder 越大越在前面，所以 Y 小的对象会在前面（靠屏幕上方）
+    // 这符合 2.5D 游戏的深度逻辑
     building->setLocalZOrder(10000 - static_cast<int>(buildingPos.y));
     _mapSprite->addChild(building);
     // 5. 播放落地动画

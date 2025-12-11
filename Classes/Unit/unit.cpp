@@ -212,12 +212,12 @@ void Unit::LoadConfig(UnitType type)
         // 加载巨人图集
         SpriteFrameCache::getInstance()->addSpriteFramesWithFile("units/giant/giant.plist");
 
-        // ========== 跑步动画（12帧/方向，慢速）==========
-        AddAnim("giant", "run_down_right", 49, 56, 0.12f);  // 49~56 downright run (8帧，注意素材是反的)
-        AddAnim("giant", "run_right", 41, 48, 0.12f);       // 41~48 right run (8帧)
-        AddAnim("giant", "run_up_right", 33, 40, 0.12f);    // 33~40 upright run (8帧)
+        // ========== 跑步动画（根据分类.txt：1~12 downright, 13~24 right, 25~36 upright）==========
+        AddAnim("giant", "run_down_right", 1, 12, 0.12f);   // 1~12 downright run
+        AddAnim("giant", "run_right", 13, 24, 0.12f);       // 13~24 right run
+        AddAnim("giant", "run_up_right", 25, 36, 0.12f);    // 25~36 upright run
 
-        // ========== 待机动画（有小动作）==========
+        // ========== 待机动画（根据分类.txt：37 downright, 38 right, 39 upright）==========
         AddAnim("giant", "idle_down_right", 37, 37, 1.0f);  // 37 downright stand main
         AddAnim("giant", "idle_right", 38, 38, 1.0f);       // 38 right stand main
         AddAnim("giant", "idle_up_right", 39, 39, 1.0f);    // 39 upright stand main
@@ -394,6 +394,14 @@ void Unit::PlayAnimation(UnitAction action, UnitDirection dir)
 
     std::string final_key = prefix + anim_key;
 
+    // 🔍 调试日志：检查动画是否存在
+    if (type_ == UnitType::kGiant)
+    {
+        CCLOG("🎬 Giant PlayAnimation: action=%s, dir=%s, final_key=%s, exists=%d",
+              prefix.c_str(), anim_key.c_str(), final_key.c_str(), 
+              anim_cache_.count(final_key) ? 1 : 0);
+    }
+
     // 只有当动画存在且 Sprite 有效时才播放
     if (sprite_ && anim_cache_.count(final_key))
     {
@@ -401,6 +409,19 @@ void Unit::PlayAnimation(UnitAction action, UnitDirection dir)
         sprite_->setFlippedX(flip_x); // 设置翻转
         // 运行新动作：RepeatForever 表示无限循环播放
         sprite_->runAction(RepeatForever::create(Animate::create(anim_cache_[final_key])));
+        
+        if (type_ == UnitType::kGiant)
+        {
+            CCLOG("✅ Giant animation started: %s", final_key.c_str());
+        }
+    }
+    else
+    {
+        if (type_ == UnitType::kGiant)
+        {
+            CCLOG("❌ Giant animation NOT found or sprite is null: %s (sprite=%p, count=%d)", 
+                  final_key.c_str(), sprite_, anim_cache_.count(final_key));
+        }
     }
 }
 
@@ -424,6 +445,15 @@ void Unit::MoveTo(const Vec2& target_pos)
 
     // 1. 计算方向并播放跑步动画
     current_dir_ = CalculateDirection(diff);
+    
+    // 🔍 调试日志
+    if (type_ == UnitType::kGiant)
+    {
+        CCLOG("🏃 Giant MoveTo: pos=(%.1f,%.1f), target=(%.1f,%.1f), distance=%.1f, speed=%.1f", 
+              current_pos.x, current_pos.y, target_pos.x, target_pos.y, 
+              diff.getLength(), move_speed_);
+    }
+    
     PlayAnimation(UnitAction::kRun, current_dir_);
 
     // 2. 计算每帧速度向量
@@ -448,11 +478,23 @@ void Unit::update(float dt)
     float distance    = current_pos.distance(target_pos_); // 离终点还有多远
     float step        = move_speed_ * dt;                  // 这一帧能走多远 (速度 * 时间)
 
+    // 🔍 调试日志：每60帧输出一次（约1秒）
+    static int frameCount = 0;
+    if (type_ == UnitType::kGiant && ++frameCount % 60 == 0)
+    {
+        CCLOG("🎮 Giant update: pos=(%.1f,%.1f), target=(%.1f,%.1f), distance=%.1f, step=%.1f",
+              current_pos.x, current_pos.y, target_pos_.x, target_pos_.y, distance, step);
+    }
+
     // 如果 这一帧能走的距离 >= 剩余距离，说明到了
     if (step >= distance)
     {
         this->setPosition(target_pos_);                 // 直接修正到终点 (防止跑过头)
         is_moving_ = false;                             // 停止移动标记
+        if (type_ == UnitType::kGiant)
+        {
+            CCLOG("🎯 Giant reached target!");
+        }
         PlayAnimation(UnitAction::kIdle, current_dir_); // 播放待机动画
     }
     else
