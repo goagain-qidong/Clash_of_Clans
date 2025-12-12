@@ -128,10 +128,8 @@ public:
 
 
     // Switch active account by userId. Returns true if success.
-
-    bool switchAccount(const std::string& userId);
-
-
+    // @param silent If true, suppresses UI notifications (e.g. defense logs)
+    bool switchAccount(const std::string& userId, bool silent = false);
 
     // Create or update an account and set it active.
 

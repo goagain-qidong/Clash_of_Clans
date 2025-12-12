@@ -325,9 +325,6 @@ void ArmyBuilding::completeCurrentTask()
     auto task = _trainingQueue.front();
     _trainingQueue.pop();
     
-    // 创建训练好的单位
-    Unit* unit = Unit::create(task.unitType);
-    
     // 获取兵种名称
     std::string unitName;
     switch (task.unitType)
@@ -354,10 +351,10 @@ void ArmyBuilding::completeCurrentTask()
         // 🆕 通知所有军营显示小兵
         notifyArmyCampsToDisplayTroop(task.unitType);
         
-        // 触发回调
-        if (_onTrainingComplete && unit)
+        // 🔴 方案A清理：触发回调（不传递Unit对象，场景只需显示提示）
+        if (_onTrainingComplete)
         {
-            _onTrainingComplete(unit);
+            _onTrainingComplete(nullptr);  // 传递nullptr，表示不需要Unit对象
         }
     }
     else

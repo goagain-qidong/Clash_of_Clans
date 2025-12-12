@@ -344,35 +344,14 @@ int ResourceBuilding::collect()
     if (_currentStorage <= 0) return 0;
 
     int buildingCapacity = getStorageCapacity();  // 建筑内部容量
-    auto& rm = ResourceManager::getInstance();
-    int currentPlayerResource = rm.getResourceCount(_resourceType);  // 玩家当前资源
-    int playerCapacity = rm.getResourceCapacity(_resourceType);      // 玩家容量上限
+    int collected = _currentStorage;              // 默认收集当前积累的资源
 
-    int collected = _currentStorage;
-
-    // ========== 关键改动：资源满仓时直接达到上限 =========
-    // 当建筑已满仓时，计算所需的资源量，使玩家资源直接达到容量上限
+    // ========== 关键改动：点击后增加生成数量，而不是直接填满 =========
+    // 无论是否满仓，都只收集建筑当前储存的资源
+    // 这样每次点击都能获得增量，符合《部落冲突》的游戏逻辑
     
-    if (_currentStorage >= buildingCapacity)
-    {
-        // 满仓状态：直接达到玩家容量上限
-        // 需要收集的数量 = 容量上限 - 当前数量
-        collected = playerCapacity - currentPlayerResource;
-        
-        // 确保不为负数
-        if (collected < 0) {
-            collected = 0;
-        }
-        
-        CCLOG("💎 %s 满仓收集：当前资源 %d, 目标上限 %d, 需要收集 %d", 
-              getDisplayName().c_str(), currentPlayerResource, playerCapacity, collected);
-    }
-    else
-    {
-        // 未满仓：收集当前积累的资源
-        CCLOG("💰 %s 部分收集：获得 %d", 
-              getDisplayName().c_str(), collected);
-    }
+    CCLOG("💰 %s 收集资源：获得 %d", 
+          getDisplayName().c_str(), collected);
 
     // 清空库存（准备下一个生产周期）
     _currentStorage = 0;

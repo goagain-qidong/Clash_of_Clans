@@ -7,6 +7,7 @@
 #include "AccountManager.h"
 #include "Unit/unit.h"
 #include "Buildings/DefenseBuilding.h"
+#include "Managers/ReplaySystem.h" // 🆕 添加 ReplaySystem 头文件
 #include <string>
 #include <vector>
 
@@ -45,6 +46,12 @@ public:
      */
     static BattleScene* createWithEnemyData(const AccountGameData& enemyData, const std::string& enemyUserId);
     
+    /**
+     * @brief 创建战斗回放场景
+     * @param replayDataStr 序列化的回放数据
+     */
+    static BattleScene* createWithReplayData(const std::string& replayDataStr);
+
     virtual bool init() override;
     
     /**
@@ -60,6 +67,11 @@ public:
      */
     virtual bool initWithEnemyData(const AccountGameData& enemyData, const std::string& enemyUserId);
     
+    /**
+     * @brief 初始化战斗回放场景
+     */
+    virtual bool initWithReplayData(const std::string& replayDataStr);
+
     virtual void update(float dt) override;
     
 private:
@@ -75,6 +87,7 @@ private:
     };
     
     BattleState _state = BattleState::LOADING;
+    bool _isReplayMode = false; // 🆕 是否为回放模式
     
     // ==================== 敌方数据 ====================
     AccountGameData _enemyGameData;
@@ -108,10 +121,12 @@ private:
     cocos2d::Label* _destructionLabel = nullptr;
     cocos2d::ui::Button* _endBattleButton = nullptr;
     cocos2d::ui::Button* _returnButton = nullptr;
+    cocos2d::ui::Button* _speedButton = nullptr; // 🆕 速度控制按钮
     
     // ✅ 新增：触摸控制相关
     cocos2d::Vec2 _lastTouchPos;
     bool _isDragging = false;
+    float _timeScale = 1.0f; // 🆕 时间缩放比例
     
     // ==================== 士兵部署 UI ⭐ 新增 ====================
     cocos2d::ui::Button* _barbarianButton = nullptr;
@@ -152,6 +167,7 @@ private:
     void updateStars(int stars);
     void updateDestruction(int percent);
     void showBattleResult();
+    void toggleSpeed(); // 🆕 切换回放速度
     
     // ==================== 返回主场景 ====================
     void returnToMainScene();

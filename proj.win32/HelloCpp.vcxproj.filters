@@ -25,6 +25,9 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BuildingCapacityManager.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BuildingLimitManager.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BuildingManager.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
@@ -32,6 +35,9 @@
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\GameConfig.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\GlobalAudioManager.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\HUDLayer.cpp">
@@ -55,6 +61,9 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\NetworkManager.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\ReplaySystem.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\ResourceCollectionManager.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
@@ -74,6 +83,9 @@
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\TownHallSystem.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\TroopInventory.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\UpgradeManager.cpp">
@@ -168,6 +180,9 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BuildingCapacityManager.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BuildingLimitManager.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BuildingManager.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
@@ -175,6 +190,9 @@
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\GameConfig.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\GlobalAudioManager.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\HUDLayer.h">
@@ -198,6 +216,9 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\NetworkManager.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\ReplaySystem.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\ResourceCollectionManager.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
@@ -217,6 +238,9 @@
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\TownHallSystem.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\TroopInventory.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\UpgradeManager.h">

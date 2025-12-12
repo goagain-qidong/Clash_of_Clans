@@ -1,6 +1,7 @@
 ﻿#include "DefenseLogSystem.h"
 #include "AccountManager.h"
 #include "ResourceManager.h"
+#include "Scenes/BattleScene.h" // 🆕 添加 BattleScene 头文件
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
 #include <sstream>
@@ -15,7 +16,7 @@ std::string DefenseLog::serialize() const
     std::ostringstream oss;
     oss << attackerId << "|" << attackerName << "|" << starsLost << "|" 
         << goldLost << "|" << elixirLost << "|" << trophyChange << "|" 
-        << timestamp << "|" << (isViewed ? "1" : "0");
+        << timestamp << "|" << (isViewed ? "1" : "0") << "|" << replayData;
     return oss.str();
 }
 
@@ -38,6 +39,17 @@ DefenseLog DefenseLog::deserialize(const std::string& data)
     std::getline(iss, log.timestamp, '|');
     std::getline(iss, token, '|');
     log.isViewed = (token == "1");
+    
+    // 读取剩余部分作为 replayData
+    // 注意：replayData 可能包含 '|'，所以不能用 getline(..., '|')
+    // 我们读取完 isViewed 后，iss 指针在 '|' 之后（如果存在）
+    // 但 getline 会吞掉分隔符。
+    // 让我们检查一下：getline(iss, token, '|') 读取直到 '|'，并将流位置移到 '|' 之后。
+    // 所以现在可以直接读取剩余的所有内容。
+    
+    std::string remaining;
+    std::getline(iss, remaining); // 读取直到行尾
+    log.replayData = remaining;
     
     return log;
 }
@@ -322,9 +334,23 @@ void DefenseLogSystem::showDefenseLogUI()
             replayBtn->setPosition(Vec2(580, 30));
             replayBtn->addClickEventListener([idx, &log](Ref*) {
                 CCLOG("🎬 Battle replay clicked for attack from: %s", log.attackerName.c_str());
-                // TODO: 实现战斗回放逻辑
-                // 当点击回放按钮时，可以展示该战斗的回放信息
-                // 目前只打印日志
+                
+                if (log.replayData.empty())
+                {
+                    CCLOG("⚠️ No replay data available!");
+                    return;
+                }
+                
+                // 切换场景到战斗回放
+                // 注意：我们需要保存当前场景以便返回，或者直接替换
+                // 这里我们使用 pushScene/popScene 机制，但 BattleScene 比较重
+                // 最好是 BattleScene::createWithReplayData
+                
+                auto scene = BattleScene::createWithReplayData(log.replayData);
+                if (scene)
+                {
+                    Director::getInstance()->pushScene(TransitionFade::create(0.5f, scene, Color3B::BLACK));
+                }
             });
             item->addChild(replayBtn);
             
@@ -486,8 +512,18 @@ void DefenseLogSystem::showAttackDetailPopup(const cocos2d::Size& visibleSize, c
     replayBtn->setPosition(Vec2(275, labelY));
     replayBtn->addClickEventListener([&log](Ref*) {
         CCLOG("🎬 Playing battle replay for attack from: %s", log.attackerName.c_str());
-        // TODO: 实现战斗回放逻辑
-        // 可以在这里加载BattleReplayScene或类似的场景来回放战斗
+        
+        if (log.replayData.empty())
+        {
+            CCLOG("⚠️ No replay data available!");
+            return;
+        }
+        
+        auto scene = BattleScene::createWithReplayData(log.replayData);
+        if (scene)
+        {
+            Director::getInstance()->pushScene(TransitionFade::create(0.5f, scene, Color3B::BLACK));
+        }
     });
     detailPanel->addChild(replayBtn);
     

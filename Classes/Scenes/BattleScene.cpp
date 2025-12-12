@@ -38,6 +38,18 @@ BattleScene* BattleScene::createWithEnemyData(const AccountGameData& enemyData, 
     return nullptr;
 }
 
+BattleScene* BattleScene::createWithReplayData(const std::string& replayDataStr)
+{
+    BattleScene* scene = new (std::nothrow) BattleScene();
+    if (scene && scene->initWithReplayData(replayDataStr))
+    {
+        scene->autorelease();
+        return scene;
+    }
+    CC_SAFE_DELETE(scene);
+    return nullptr;
+}
+
 // ==================== 初始化 ====================
 
 bool BattleScene::init()
@@ -75,6 +87,7 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
     _enemyGameData = enemyData;
     _enemyUserId = enemyUserId;
     _enemyTownHallLevel = enemyData.townHallLevel;
+    _isReplayMode = false; // 正常模式
 
     setupMap();
     setupUI();
@@ -82,6 +95,73 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
     loadEnemyBase();
 
     scheduleUpdate();
+
+    return true;
+}
+
+bool BattleScene::initWithReplayData(const std::string& replayDataStr)
+{
+    if (!Scene::init())
+    {
+        return false;
+    }
+
+    _visibleSize = Director::getInstance()->getVisibleSize();
+    _isReplayMode = true; // 回放模式
+
+    // 加载回放数据
+    auto& replaySystem = ReplaySystem::getInstance();
+    replaySystem.loadReplay(replayDataStr);
+    
+    // 从回放数据中恢复敌方信息
+    _enemyUserId = replaySystem.getReplayEnemyUserId();
+    std::string enemyJson = replaySystem.getReplayEnemyGameDataJson();
+    
+    if (enemyJson.empty())
+    {
+        CCLOG("❌ Replay data missing enemy game data!");
+        return false;
+    }
+    
+    _enemyGameData = AccountGameData::fromJson(enemyJson);
+    _enemyTownHallLevel = _enemyGameData.townHallLevel;
+    
+    // 设置随机种子（如果有随机逻辑）
+    // srand(replaySystem.getReplaySeed());
+
+    setupMap();
+    setupUI();
+    // 回放模式下不需要触摸监听来部署士兵，但可能需要拖动地图
+    setupTouchListeners(); 
+    loadEnemyBase();
+
+    scheduleUpdate();
+    
+    // 设置回放回调
+    replaySystem.setDeployUnitCallback([this](UnitType type, const Vec2& pos) {
+        // 在回放模式下，直接部署，不检查库存
+        deployUnit(type, pos);
+    });
+    
+    replaySystem.setEndBattleCallback([this]() {
+        endBattle(false);
+    });
+    
+    // 隐藏部署按钮
+    _barbarianButton->setVisible(false);
+    _archerButton->setVisible(false);
+    _giantButton->setVisible(false);
+    _barbarianCountLabel->setVisible(false);
+    _archerCountLabel->setVisible(false);
+    _giantCountLabel->setVisible(false);
+    
+    // 显示回放提示
+    auto replayLabel = Label::createWithSystemFont("🔴 战斗回放中", "Arial", 32);
+    replayLabel->setPosition(Vec2(_visibleSize.width / 2, 100));
+    replayLabel->setTextColor(Color4B::RED);
+    replayLabel->runAction(RepeatForever::create(Sequence::create(
+        FadeOut::create(1.0f), FadeIn::create(1.0f), nullptr)));
+    this->addChild(replayLabel, 1000);
 
     return true;
 }
@@ -156,9 +236,26 @@ void BattleScene::setupUI()
     _endBattleButton->setPosition(Vec2(_visibleSize.width - 100, 60));
     _endBattleButton->setVisible(false);
     _endBattleButton->addClickEventListener([this](Ref*) {
-        endBattle(true);  // 投降
+        if (_isReplayMode) {
+            returnToMainScene();
+        } else {
+            endBattle(true);  // 投降
+        }
     });
     this->addChild(_endBattleButton, 100);
+
+    // 🆕 速度控制按钮 (仅回放模式)
+    if (_isReplayMode)
+    {
+        _speedButton = Button::create();
+        _speedButton->setTitleText("x1");
+        _speedButton->setTitleFontSize(32);
+        _speedButton->setPosition(Vec2(_visibleSize.width - 200, 60));
+        _speedButton->addClickEventListener([this](Ref*) {
+            toggleSpeed();
+        });
+        this->addChild(_speedButton, 100);
+    }
 
     // 返回按钮（战斗结束后显示）
     _returnButton = Button::create();
@@ -244,20 +341,24 @@ void BattleScene::setupTroopButtons()
     this->addChild(_giantCountLabel, 100);
     
     // 添加触摸监听器，用于部署士兵
-    auto touchListener = EventListenerTouchOneByOne::create();
-    touchListener->onTouchBegan = [this](Touch* touch, Event* event) {
-        if (_state != BattleState::READY && _state != BattleState::FIGHTING)
-            return false;
+    // 🔴 修复：回放模式下禁用部署触摸监听
+    if (!_isReplayMode)
+    {
+        auto touchListener = EventListenerTouchOneByOne::create();
+        touchListener->onTouchBegan = [this](Touch* touch, Event* event) {
+            if (_state != BattleState::READY && _state != BattleState::FIGHTING)
+                return false;
+            
+            Vec2 touchPos = touch->getLocation();
+            Vec2 mapLocalPos = _mapSprite->convertToNodeSpace(touchPos);
+            
+            // 部署士兵
+            deployUnit(_selectedUnitType, mapLocalPos);
+            return true;
+        };
         
-        Vec2 touchPos = touch->getLocation();
-        Vec2 mapLocalPos = _mapSprite->convertToNodeSpace(touchPos);
-        
-        // 部署士兵
-        deployUnit(_selectedUnitType, mapLocalPos);
-        return true;
-    };
-    
-    _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
+        _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
+    }
 }
 
 // ==================== ⭐ 新增：士兵部署逻辑 ====================
@@ -280,18 +381,28 @@ void BattleScene::deployUnit(UnitType type, const cocos2d::Vec2& position)
         return;
     }
     
-    if (*count <= 0)
+    // 在非回放模式下检查库存
+    if (!_isReplayMode)
     {
-        CCLOG("⚠️ No more units of this type!");
-        return;
-    }
-    
-    // 🆕 从士兵库存消耗士兵
-    auto& troopInv = TroopInventory::getInstance();
-    if (!troopInv.consumeTroops(type, 1))
-    {
-        CCLOG("⚠️ 无法从库存中消耗士兵！");
-        return;
+        if (*count <= 0)
+        {
+            CCLOG("⚠️ No more units of this type!");
+            return;
+        }
+        
+        // 🆕 从士兵库存消耗士兵
+        auto& troopInv = TroopInventory::getInstance();
+        if (!troopInv.consumeTroops(type, 1))
+        {
+            CCLOG("⚠️ 无法从库存中消耗士兵！");
+            return;
+        }
+        
+        (*count)--;
+        updateTroopCounts();
+        
+        // 🎥 录制部署事件
+        ReplaySystem::getInstance().recordDeployUnit(_elapsedTime, type, position);
     }
     
     // 创建士兵
@@ -299,8 +410,11 @@ void BattleScene::deployUnit(UnitType type, const cocos2d::Vec2& position)
     if (!unit)
     {
         CCLOG("❌ Failed to create unit!");
-        // 部署失败，退还士兵
-        troopInv.addTroops(type, 1);
+        if (!_isReplayMode)
+        {
+            // 部署失败，退还士兵
+            TroopInventory::getInstance().addTroops(type, 1);
+        }
         return;
     }
     
@@ -313,9 +427,6 @@ void BattleScene::deployUnit(UnitType type, const cocos2d::Vec2& position)
     _mapSprite->addChild(unit, zOrder);
     _deployedUnits.push_back(unit);
     
-    (*count)--;
-    updateTroopCounts();
-    
     // 开始战斗（第一个士兵部署时）
     if (_state == BattleState::READY)
     {
@@ -323,7 +434,7 @@ void BattleScene::deployUnit(UnitType type, const cocos2d::Vec2& position)
         activateDefenseBuildings();
     }
     
-    CCLOG("✅ Deployed unit at (%.1f, %.1f), remaining: %d", position.x, position.y, *count);
+    CCLOG("✅ Deployed unit at (%.1f, %.1f)", position.x, position.y);
 }
 
 void BattleScene::onTroopButtonClicked(UnitType type)
@@ -386,25 +497,47 @@ void BattleScene::startBattle()
     _destructionLabel->setVisible(true);
     _endBattleButton->setVisible(true);
     
-    // 🆕 从士兵库存读取可用士兵数量
-    auto& troopInv = TroopInventory::getInstance();
-    _barbarianCount = troopInv.getTroopCount(UnitType::kBarbarian);
-    _archerCount = troopInv.getTroopCount(UnitType::kArcher);
-    _giantCount = troopInv.getTroopCount(UnitType::kGiant);
-    
-    CCLOG("📦 可用士兵：野蛮人=%d，弓箭手=%d，巨人=%d", 
-          _barbarianCount, _archerCount, _giantCount);
-    
-    // ⭐ 显示士兵部署按钮
-    _barbarianButton->setVisible(true);
-    _archerButton->setVisible(true);
-    _giantButton->setVisible(true);
-    _barbarianCountLabel->setVisible(true);
-    _archerCountLabel->setVisible(true);
-    _giantCountLabel->setVisible(true);
-    
-    // 更新士兵数量显示
-    updateTroopCounts();
+    if (!_isReplayMode)
+    {
+        // 🆕 从士兵库存读取可用士兵数量
+        auto& troopInv = TroopInventory::getInstance();
+        _barbarianCount = troopInv.getTroopCount(UnitType::kBarbarian);
+        _archerCount = troopInv.getTroopCount(UnitType::kArcher);
+        _giantCount = troopInv.getTroopCount(UnitType::kGiant);
+        
+        CCLOG("📦 可用士兵：野蛮人=%d，弓箭手=%d，巨人=%d", 
+              _barbarianCount, _archerCount, _giantCount);
+        
+        // ⭐ 显示士兵部署按钮
+        _barbarianButton->setVisible(true);
+        _archerButton->setVisible(true);
+        _giantButton->setVisible(true);
+        _barbarianCountLabel->setVisible(true);
+        _archerCountLabel->setVisible(true);
+        _giantCountLabel->setVisible(true);
+        
+        // 更新士兵数量显示
+        updateTroopCounts();
+        
+        // 🎥 开始录制
+        // 使用当前时间作为随机种子
+        unsigned int seed = static_cast<unsigned int>(time(nullptr));
+        srand(seed);
+        ReplaySystem::getInstance().startRecording(_enemyUserId, _enemyGameData.toJson(), seed);
+    }
+    else
+    {
+        // 回放模式下隐藏按钮
+        _barbarianButton->setVisible(false);
+        _archerButton->setVisible(false);
+        _giantButton->setVisible(false);
+        _barbarianCountLabel->setVisible(false);
+        _archerCountLabel->setVisible(false);
+        _giantCountLabel->setVisible(false);
+        
+        _statusLabel->setString("正在回放战斗...");
+        _endBattleButton->setTitleText("退出回放"); // 🆕 更新按钮文本
+    }
     
     // 获取敌方建筑列表并计算总血量
     if (_buildingManager)
@@ -432,9 +565,31 @@ void BattleScene::startBattle()
 
 void BattleScene::update(float dt)
 {
+    // 🆕 应用时间缩放
+    float scaledDt = dt * _timeScale;
+
     if (_state == BattleState::READY || _state == BattleState::FIGHTING)
     {
-        updateBattleState(dt);
+        updateBattleState(scaledDt);
+        
+        // 🎥 更新回放系统
+        if (_isReplayMode)
+        {
+            ReplaySystem::getInstance().update(scaledDt);
+        }
+    }
+}
+
+void BattleScene::toggleSpeed()
+{
+    if (_timeScale >= 4.0f) {
+        _timeScale = 1.0f;
+    } else {
+        _timeScale *= 2.0f;
+    }
+    
+    if (_speedButton) {
+        _speedButton->setTitleText(StringUtils::format("x%.0f", _timeScale));
     }
 }
 
@@ -580,17 +735,26 @@ void BattleScene::endBattle(bool surrender)
         return;
 
     _state = BattleState::FINISHED;
+    
+    // 🎥 记录结束事件
+    if (!_isReplayMode)
+    {
+        ReplaySystem::getInstance().recordEndBattle(_elapsedTime);
+    }
 
     calculateBattleResult();
     showBattleResult();
 
-    // 🆕 保存更新后的游戏数据（包括士兵库存）
-    auto& accountMgr = AccountManager::getInstance();
-    accountMgr.saveGameStateToFile();
-    CCLOG("💾 战斗结束，已保存游戏数据（包括剩余士兵）");
+    if (!_isReplayMode)
+    {
+        // 🆕 保存更新后的游戏数据（包括士兵库存）
+        auto& accountMgr = AccountManager::getInstance();
+        accountMgr.saveGameStateToFile();
+        CCLOG("💾 战斗结束，已保存游戏数据（包括剩余士兵）");
 
-    // 上传战斗结果（可选）
-    uploadBattleResult();
+        // 上传战斗结果（可选）
+        uploadBattleResult();
+    }
 
     CCLOG("⚔️ Battle ended! Stars: %d, Destruction: %d%%, Gold: %d, Elixir: %d",
           _starsEarned, _destructionPercent, _goldLooted, _elixirLooted);
@@ -629,7 +793,8 @@ void BattleScene::showBattleResult()
     this->addChild(panel, 200);
 
     // 标题
-    auto title = Label::createWithSystemFont("战斗结束!", "Arial", 42);
+    std::string titleText = _isReplayMode ? "回放结束" : "战斗结束!";
+    auto title = Label::createWithSystemFont(titleText, "Arial", 42);
     title->setPosition(Vec2(250, 360));
     title->setTextColor(Color4B::YELLOW);
     panel->addChild(title);
@@ -652,21 +817,50 @@ void BattleScene::showBattleResult()
     panel->addChild(destructionLabel);
 
     // 掠夺信息
-    auto lootLabel = Label::createWithSystemFont(
-        StringUtils::format("掠夺金币: +%d\n掠夺圣水: +%d", _goldLooted, _elixirLooted),
-        "Arial", 28);
+    std::string lootText;
+    Color4B lootColor;
+    
+    if (_isReplayMode)
+    {
+        // 回放模式（防守方视角）：显示损失
+        lootText = StringUtils::format("损失金币: -%d\n损失圣水: -%d", _goldLooted, _elixirLooted);
+        lootColor = Color4B::RED;
+    }
+    else
+    {
+        // 进攻模式：显示掠夺
+        lootText = StringUtils::format("掠夺金币: +%d\n掠夺圣水: +%d", _goldLooted, _elixirLooted);
+        lootColor = Color4B::GREEN;
+    }
+    
+    auto lootLabel = Label::createWithSystemFont(lootText, "Arial", 28);
     lootLabel->setPosition(Vec2(250, 150));
     lootLabel->setAlignment(TextHAlignment::CENTER);
-    lootLabel->setTextColor(Color4B::GREEN);
+    lootLabel->setTextColor(lootColor);
     panel->addChild(lootLabel);
 
     // 奖杯变化（简化计算）
     int trophyChange = _starsEarned * 10 - (3 - _starsEarned) * 3;
-    auto trophyLabel = Label::createWithSystemFont(
-        StringUtils::format("奖杯: %s%d", trophyChange >= 0 ? "+" : "", trophyChange),
-        "Arial", 26);
+    std::string trophyText;
+    Color4B trophyColor;
+    
+    if (_isReplayMode)
+    {
+        // 回放模式：显示奖杯变化（防守方相反）
+        // 进攻方赢了(正分)，防守方输了(负分)
+        int defenderTrophyChange = -trophyChange;
+        trophyText = StringUtils::format("奖杯: %s%d", defenderTrophyChange >= 0 ? "+" : "", defenderTrophyChange);
+        trophyColor = defenderTrophyChange >= 0 ? Color4B::GREEN : Color4B::RED;
+    }
+    else
+    {
+        trophyText = StringUtils::format("奖杯: %s%d", trophyChange >= 0 ? "+" : "", trophyChange);
+        trophyColor = trophyChange >= 0 ? Color4B::GREEN : Color4B::RED;
+    }
+    
+    auto trophyLabel = Label::createWithSystemFont(trophyText, "Arial", 26);
     trophyLabel->setPosition(Vec2(250, 80));
-    trophyLabel->setTextColor(trophyChange >= 0 ? Color4B::GREEN : Color4B::RED);
+    trophyLabel->setTextColor(trophyColor);
     panel->addChild(trophyLabel);
 
     // 显示返回按钮
@@ -776,12 +970,16 @@ void BattleScene::uploadBattleResult()
     defenseLog.trophyChange = -(_starsEarned * 10 - (3 - _starsEarned) * 3); // 被攻击者的奖杯变化是负值
     defenseLog.timestamp = getCurrentTimestamp();
     defenseLog.isViewed = false;
+    
+    // 🎥 获取回放数据
+    defenseLog.replayData = ReplaySystem::getInstance().stopRecording();
 
     // 🔴 关键修复：直接将防守日志添加到被攻击者账号的日志系统
     // 切换到被攻击者帳號 -> 添加日志 -> 切换回来
     std::string attackerUserId = currentAccount->userId;
     
-    if (accMgr.switchAccount(_enemyUserId))
+    // 使用 silent=true 防止弹出日志UI
+    if (accMgr.switchAccount(_enemyUserId, true))
     {
         DefenseLogSystem::getInstance().load(); // 加载被攻击者的日志
         DefenseLogSystem::getInstance().addDefenseLog(defenseLog);
@@ -789,8 +987,8 @@ void BattleScene::uploadBattleResult()
               _enemyUserId.c_str(), attackerUserId.c_str(), 
               _starsEarned, _goldLooted, _elixirLooted);
         
-        // 切换回攻击者账号
-        accMgr.switchAccount(attackerUserId);
+        // 切换回攻击者账号，同样使用 silent=true
+        accMgr.switchAccount(attackerUserId, true);
         DefenseLogSystem::getInstance().load(); // 重新加载攻击者的日志
     }
     else

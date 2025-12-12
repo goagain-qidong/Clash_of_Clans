@@ -142,8 +142,9 @@ public:
     
     /**
      * @brief 清空所有建筑（切换账号或加载新地图前调用）
+     * @param clearTroops 是否同时清空士兵库存（默认true，攻击别人时设为false）
      */
-    void clearAllBuildings();
+    void clearAllBuildings(bool clearTroops = true);
     
     /**
      * @brief 保存当前建筑状态到当前账号

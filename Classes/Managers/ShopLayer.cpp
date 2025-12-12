@@ -297,8 +297,10 @@ void ShopLayer::show() {
 void ShopLayer::hide() {
     auto visibleSize = Director::getInstance()->getVisibleSize();
     auto moveDown = MoveTo::create(0.3f, Vec2(visibleSize.width / 2, -350));
-    auto callback = CallFunc::create([this]() {
-        this->removeFromParent();
-    });
-    _container->runAction(Sequence::create(moveDown, callback, nullptr));
+    _container->runAction(moveDown);
+
+    // 延迟后移除整个层（包括遮罩），而不仅仅是容器
+    auto delay = DelayTime::create(0.3f);
+    auto removeSelf = RemoveSelf::create();
+    this->runAction(Sequence::create(delay, removeSelf, nullptr));
 }

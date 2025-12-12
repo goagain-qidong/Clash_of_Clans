@@ -424,8 +424,11 @@ void DraggableMapScene::onConfirmBuilding()
     if (_uiController)
         _uiController->hideConfirmButtons();
 
-    // If BuildingManager exposes a confirm method it will handle confirmation; otherwise ignore
-    // (keeps call safe and avoids linker issues)
+    // Notify BuildingManager to confirm placement if it's waiting for confirmation
+    if (_buildingManager && _buildingManager->isWaitingConfirm())
+    {
+        _buildingManager->confirmBuilding();
+    }
 }
 
 void DraggableMapScene::onCancelBuilding()
@@ -469,20 +472,12 @@ void DraggableMapScene::onBuildingPlaced(BaseBuilding* building)
         auto barracks = dynamic_cast<ArmyBuilding*>(building);
         if (barracks)
         {
-            barracks->setOnTrainingComplete([this, barracks](Unit* unit) {
-                if (!unit)
-                    return;
-
-                Vec2 barracksWorldPos = barracks->getParent()->convertToWorldSpace(barracks->getPosition());
-                Vec2 spawnPos = barracksWorldPos;
-                spawnPos.x += barracks->getContentSize().width * barracks->getScale() + 20;
-
-                Vec2 spawnLocalPos = _mapController->getMapSprite()->convertToNodeSpace(spawnPos);
-                unit->setPosition(spawnLocalPos);
-                _mapController->getMapSprite()->addChild(unit, 100);
-                unit->PlayAnimation(UnitAction::kIdle, UnitDirection::kRight);
-
-                CCLOG("?? Unit training complete!");
+            // 🔴 方案A优化：训练完成时只显示提示，不在地图上创建独立 Unit
+            // 小兵会自动显示在军营中（由 ArmyBuilding::notifyArmyCampsToDisplayTroop 处理）
+            barracks->setOnTrainingComplete([this](Unit* unit) {
+                // unit 参数现在总是 nullptr，不需要检查
+                // 只显示提示信息
+                CCLOG("🎉 Unit training complete!");
                 _uiController->showHint("士兵训练完成！");
             });
         }
@@ -628,14 +623,14 @@ void DraggableMapScene::setupNetworkCallbacks()
             CCLOG("🛡️ Defense log added for defender: %s, attacked by: %s", 
                   result.defenderId.c_str(), result.attackerId.c_str());
 
-            // ✅ 修复：立即显示防守日志UI（不需要延迟，因为已经在主线程）
+            // 🔧 修复内存泄漏：使用 performFunctionInCocosThread 避免循环引用
             if (DefenseLogSystem::getInstance().hasUnviewedLogs())
             {
-                // 延迟0.5秒显示，让玩家注意到
-                this->scheduleOnce([](float){
+                // 直接在主线程显示，不使用 scheduleOnce 捕获 this
+                Director::getInstance()->getScheduler()->performFunctionInCocosThread([](){
                     DefenseLogSystem::getInstance().showDefenseLogUI();
                     CCLOG("🔔 Displaying defense log UI after receiving attack result");
-                }, 0.5f, "show_defense_log_ui");
+                });
             }
         }
     });
@@ -713,6 +708,12 @@ void DraggableMapScene::update(float dt)
 
 DraggableMapScene::~DraggableMapScene()
 {
+    // 🔧 修复内存泄漏：清理所有 schedule 回调
+    this->unscheduleAllCallbacks();
+    
+    // 🔧 修复内存泄漏：移除所有事件监听器
+    _eventDispatcher->removeEventListenersForTarget(this);
+    
     if (_currentUpgradeUI)
     {
         _currentUpgradeUI->removeFromParent();
@@ -722,8 +723,10 @@ DraggableMapScene::~DraggableMapScene()
     if (_buildingManager && !_isAttackMode)
     {
         _buildingManager->saveCurrentState();
-        CCLOG("? Game state auto-saved on scene destruction");
+        CCLOG("💾 Game state auto-saved on scene destruction");
     }
+    
+    CCLOG("🗑️ DraggableMapScene destroyed, all callbacks cleaned");
 }
 
 void DraggableMapScene::onSceneResume()

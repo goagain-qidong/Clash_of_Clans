@@ -21,6 +21,7 @@ struct DefenseLog
     int trophyChange = 0;       // 奖杯变化
     std::string timestamp;      // 时间戳
     bool isViewed = false;      // 是否已查看
+    std::string replayData;     // 🆕 回放数据
     
     std::string serialize() const;
     static DefenseLog deserialize(const std::string& data);

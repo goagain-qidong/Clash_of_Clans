@@ -136,8 +136,10 @@ void ArmySelectionUI::show()
 void ArmySelectionUI::hide()
 {
     auto scaleAction = ScaleTo::create(0.2f, 0.0f);
-    auto callback = CallFunc::create([this]() {
-        this->removeFromParent();
-    });
-    _container->runAction(Sequence::create(scaleAction, callback, nullptr));
+    _container->runAction(scaleAction);
+
+    // 延迟后移除整个层（包括遮罩），而不仅仅是容器
+    auto delay = DelayTime::create(0.2f);
+    auto removeSelf = RemoveSelf::create();
+    this->runAction(Sequence::create(delay, removeSelf, nullptr));
 }

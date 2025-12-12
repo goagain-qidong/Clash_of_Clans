@@ -5,6 +5,7 @@
 #include "BuildingManager.h"
 #include "Managers/UpgradeManager.h" // 引入头文件
 #include "Managers/TroopInventory.h"  // 🆕 引入士兵库存管理
+#include "Managers/BuildingLimitManager.h"  // 🆕 引入建筑数量限制管理
 #include "ArmyBuilding.h"
 #include "ArmyCampBuilding.h"
 #include "BuildersHutBuilding.h"
@@ -168,6 +169,57 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
         showHint("无法在此处建造！区域被占用或越界");
         return;
     }
+    
+    // ==================== 检查建筑数量限制 ====================
+    // 建筑名称映射到 BuildingLimitManager 的键
+    std::string limitKey = _selectedBuilding.name;
+    if (_selectedBuilding.name == "Town Hall" || _selectedBuilding.name == "大本营") {
+        limitKey = "TownHall";
+    }
+    else if (_selectedBuilding.name == "Wall" || _selectedBuilding.name == "城墙") {
+        limitKey = "Wall";
+    }
+    else if (_selectedBuilding.name == "Builder Hut" || _selectedBuilding.name == "建筑工人小屋") {
+        limitKey = "BuildersHut";
+    }
+    else if (_selectedBuilding.name == "Cannon" || _selectedBuilding.name == "炮塔") {
+        limitKey = "Cannon";
+    }
+    else if (_selectedBuilding.name == "Archer Tower" || _selectedBuilding.name == "箭塔" || _selectedBuilding.name == "ArcherTower") {
+        limitKey = "ArcherTower";
+    }
+    else if (_selectedBuilding.name == "Wizard Tower" || _selectedBuilding.name == "法师塔" || _selectedBuilding.name == "WizardTower") {
+        limitKey = "WizardTower";
+    }
+    else if (_selectedBuilding.name == "Gold Mine" || _selectedBuilding.name == "金矿" || _selectedBuilding.name == "GoldMine") {
+        limitKey = "GoldMine";
+    }
+    else if (_selectedBuilding.name == "Elixir Collector" || _selectedBuilding.name == "圣水收集器" || _selectedBuilding.name == "ElixirCollector") {
+        limitKey = "ElixirCollector";
+    }
+    else if (_selectedBuilding.name == "Gold Storage" || _selectedBuilding.name == "金币仓库" || _selectedBuilding.name == "GoldStorage") {
+        limitKey = "GoldStorage";
+    }
+    else if (_selectedBuilding.name == "Elixir Storage" || _selectedBuilding.name == "圣水仓库" || _selectedBuilding.name == "ElixirStorage") {
+        limitKey = "ElixirStorage";
+    }
+    else if (_selectedBuilding.name == "Barracks" || _selectedBuilding.name == "兵营") {
+        limitKey = "Barracks";
+    }
+    else if (_selectedBuilding.name == "Army Camp" || _selectedBuilding.name == "军营" || _selectedBuilding.name == "ArmyCamp") {
+        limitKey = "ArmyCamp";
+    }
+    
+    // 检查是否可以建造
+    auto* limitMgr = BuildingLimitManager::getInstance();
+    if (!limitMgr->canBuild(limitKey))
+    {
+        int currentCount = limitMgr->getBuildingCount(limitKey);
+        int maxCount = limitMgr->getLimit(limitKey);
+        showHint(StringUtils::format("已达到建造上限！当前: %d/%d", currentCount, maxCount));
+        return;
+    }
+    
     // ==================== 检查并扣除建造费用 ====================
     auto& resMgr = ResourceManager::getInstance();
     int cost = _selectedBuilding.cost;
@@ -215,6 +267,10 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     building->runAction(Spawn::create(scaleAction, fadeIn, nullptr));
     // 6. 保存到建筑列表
     _buildings.pushBack(building);
+    
+    // 记录建筑到BuildingLimitManager
+    limitMgr->recordBuilding(limitKey);
+    
     auto* resBuilding = dynamic_cast<ResourceBuilding*>(building);
     if (resBuilding && resBuilding->isStorage())
     {
@@ -649,7 +705,8 @@ void BuildingManager::loadBuildingsFromData(const std::vector<BuildingSerialData
     }
     
     // 先清空现有建筑
-    clearAllBuildings();
+    // 🔴 关键修复：如果是只读模式（攻击别人），不要清空士兵库存!
+    clearAllBuildings(!isReadOnly);
     
     _isReadOnlyMode = isReadOnly;
     
@@ -689,9 +746,50 @@ void BuildingManager::loadBuildingsFromData(const std::vector<BuildingSerialData
         // 标记网格占用
         _gridMap->markArea(gridPos, gridSize, true);
         
-        // 只在非只读模式下添加点击监听器
+        // 记录建筑到BuildingLimitManager（只在非只读模式下）
         if (!isReadOnly)
         {
+            // 建筑名称映射到 BuildingLimitManager 的键
+            std::string limitKey = data.name;
+            if (data.name.find("Town Hall") != std::string::npos || data.name.find("大本营") != std::string::npos) {
+                limitKey = "TownHall";
+            }
+            else if (data.name.find("Wall") != std::string::npos || data.name.find("城墙") != std::string::npos) {
+                limitKey = "Wall";
+            }
+            else if (data.name.find("Builder") != std::string::npos || data.name.find("建筑工人") != std::string::npos) {
+                limitKey = "BuildersHut";
+            }
+            else if (data.name.find("Cannon") != std::string::npos || data.name.find("炮塔") != std::string::npos) {
+                limitKey = "Cannon";
+            }
+            else if (data.name.find("Archer Tower") != std::string::npos || data.name.find("箭塔") != std::string::npos) {
+                limitKey = "ArcherTower";
+            }
+            else if (data.name.find("Wizard Tower") != std::string::npos || data.name.find("法师塔") != std::string::npos) {
+                limitKey = "WizardTower";
+            }
+            else if (data.name.find("Gold Mine") != std::string::npos || data.name.find("金矿") != std::string::npos) {
+                limitKey = "GoldMine";
+            }
+            else if (data.name.find("Elixir Collector") != std::string::npos || data.name.find("圣水收集器") != std::string::npos) {
+                limitKey = "ElixirCollector";
+            }
+            else if (data.name.find("Gold Storage") != std::string::npos || data.name.find("金币仓库") != std::string::npos) {
+                limitKey = "GoldStorage";
+            }
+            else if (data.name.find("Elixir Storage") != std::string::npos || data.name.find("圣水仓库") != std::string::npos) {
+                limitKey = "ElixirStorage";
+            }
+            else if (data.name.find("Barracks") != std::string::npos || data.name.find("兵营") != std::string::npos) {
+                limitKey = "Barracks";
+            }
+            else if (data.name.find("Army Camp") != std::string::npos || data.name.find("军营") != std::string::npos) {
+                limitKey = "ArmyCamp";
+            }
+            
+            BuildingLimitManager::getInstance()->recordBuilding(limitKey);
+            
             setupBuildingClickListener(building);
         }
     }
@@ -700,7 +798,7 @@ void BuildingManager::loadBuildingsFromData(const std::vector<BuildingSerialData
           _buildings.size(), isReadOnly ? "Attack" : "Edit");
 }
 
-void BuildingManager::clearAllBuildings()
+void BuildingManager::clearAllBuildings(bool clearTroops)
 {
     /**
      * 清空所有建筑
@@ -722,12 +820,31 @@ void BuildingManager::clearAllBuildings()
     }
     // 🔴 关键修复：清除所有建筑后，通知资源收集管理器清除其引用。
     ResourceCollectionManager::getInstance()->clearRegisteredBuildings();
+    
+    // 重置BuildingLimitManager的建筑计数
+    BuildingLimitManager::getInstance()->reset();
+    
+    if (clearTroops)
+    {
+        // 清空士兵库存（因为没有军营了）
+        TroopInventory::getInstance().clearAll();
+        
+        // 重置军队人口容量为0（因为没有军营了）
+        auto& resMgr = ResourceManager::getInstance();
+        resMgr.setResourceCapacity(ResourceType::kTroopPopulation, 0);
+        resMgr.setResourceCount(ResourceType::kTroopPopulation, 0);
+        
+        CCLOG("🗑️ Cleared all buildings, reset building limits, and cleared troop inventory");
+    }
+    else
+    {
+        CCLOG("🗑️ Cleared all buildings and reset building limits (Troops preserved)");
+    }
+    
     // 移除所有建筑节点
     _buildings.clear();
     
     _isReadOnlyMode = false;
-    
-    CCLOG("🗑️ Cleared all buildings");
 }
 
 void BuildingManager::saveCurrentState()
@@ -779,9 +896,18 @@ void BuildingManager::loadCurrentAccountState()
     auto& accMgr = AccountManager::getInstance();
     auto gameData = accMgr.getCurrentGameData();
     auto& resMgr = ResourceManager::getInstance();
+    
+    // 🔍 调试：显示加载前的军队人口状态
+    CCLOG("📊 [Before Loading] TroopPopulation: %d / %d", 
+          resMgr.getResourceCount(ResourceType::kTroopPopulation),
+          resMgr.getResourceCapacity(ResourceType::kTroopPopulation));
 
     // 1. 加载建筑 (建筑实体被创建，并向 CapacityManager 注册)
     loadBuildingsFromData(gameData.buildings, false);
+    
+    // 🔍 调试：显示加载建筑后的军队人口容量
+    CCLOG("📊 [After Loading Buildings] TroopPopulation Capacity: %d", 
+          resMgr.getResourceCapacity(ResourceType::kTroopPopulation));
 
     // 2. 🆕 先恢复保存的容量
     //    如果存档中有容量数据，直接使用；否则通过 CapacityManager 重新计算
@@ -806,11 +932,23 @@ void BuildingManager::loadCurrentAccountState()
     auto& troopInv = TroopInventory::getInstance();
     if (!gameData.troopInventory.empty())
     {
+        CCLOG("📦 准备恢复士兵库存，当前容量: %d", 
+              resMgr.getResourceCapacity(ResourceType::kTroopPopulation));
         troopInv.fromJson(gameData.troopInventory);
-        CCLOG("📂 从存档恢复士兵库存");
+        CCLOG("📂 从存档恢复士兵库存，当前人口: %d / %d",
+              resMgr.getResourceCount(ResourceType::kTroopPopulation),
+              resMgr.getResourceCapacity(ResourceType::kTroopPopulation));
         
         // 🆕 恢复军营的小兵显示
         restoreArmyCampTroopDisplays();
+    }
+    else
+    {
+        // 新账号或没有士兵数据，清空士兵库存
+        troopInv.clearAll();
+        CCLOG("📂 新账号：清空士兵库存，当前人口: %d / %d",
+              resMgr.getResourceCount(ResourceType::kTroopPopulation),
+              resMgr.getResourceCapacity(ResourceType::kTroopPopulation));
     }
     
     // 4. 最后加载资源数量（此时容量已正确设置）
@@ -870,6 +1008,13 @@ void BuildingManager::restoreArmyCampTroopDisplays()
     {
         CCLOG("⚠️ No Army Camps found to restore troop displays");
         return;
+    }
+    
+    // 🔴 方案A修复：先清空所有军营的旧显示，避免重复
+    CCLOG("🧹 Clearing existing troop displays from %zu Army Camps before restore", armyCamps.size());
+    for (auto* armyCamp : armyCamps)
+    {
+        armyCamp->clearTroopDisplays();
     }
     
     // 获取所有兵种

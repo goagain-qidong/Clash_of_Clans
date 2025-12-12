@@ -36,6 +36,7 @@ void BuildingLimitManager::reset()
     _cachedTownHallLevel = 1;
     
     // 初始化各建筑的上限与计数
+    _limits["TownHall"] = 1;               // 大本营只能有1个
     _limits["BuildersHut"] = -1;           // 无限制
     _limits["Wall"] = 50;                  // 初始上限50（TH Lv.1）
     _limits["Cannon"] = 1;                 // 初始上限1
@@ -100,11 +101,15 @@ void BuildingLimitManager::updateLimitsFromTownHall(int townHallLevel)
     
     CCLOG("📊 Updating building limits: TownHall Lv.%d -> Lv.%d", prevLevel, townHallLevel);
     
-    // ========== 规则1：BuildersHut 保持无限制 ==========
+    // ========== 规则1：TownHall 永远只能有1个 ==========
+    _limits["TownHall"] = 1;
+    CCLOG("  ✓ TownHall: 1 (fixed)");
+    
+    // ========== 规则2：BuildersHut 保持无限制 ==========
     _limits["BuildersHut"] = -1;
     CCLOG("  ✓ BuildersHut: unlimited");
     
-    // ========== 规则2：Wall 每升级增加50 ==========
+    // ========== 规则3：Wall 每升级增加50 ==========
     // 初始值：50（TH Lv.1）
     // Lv.2: 50 + 50 = 100
     // Lv.3: 100 + 50 = 150
@@ -118,7 +123,7 @@ void BuildingLimitManager::updateLimitsFromTownHall(int townHallLevel)
     CCLOG("  ✓ Wall: %d -> %d (增加 %d)", 
           currentWallLimit, newWallLimit, (townHallLevel - prevLevel) * 50);
     
-    // ========== 规则3：其他建筑 ==========
+    // ========== 规则4：其他建筑 ==========
     // 每升级增加1，且不少于大本营等级
     std::vector<std::string> otherBuildings = {
         "Cannon", "ArcherTower", "WizardTower",

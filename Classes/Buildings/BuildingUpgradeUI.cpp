@@ -305,8 +305,9 @@ void BuildingUpgradeUI::show()
 void BuildingUpgradeUI::hide()
 {
     auto scaleOut = EaseBackIn::create(ScaleTo::create(0.15f, 0.0f));
-    auto remove = CallFunc::create([this]() { this->removeFromParent(); });
-    this->runAction(Sequence::create(scaleOut, remove, nullptr));
+    // 🔧 修复内存泄漏：使用 RemoveSelf 替代 lambda 捕获 this
+    auto removeSelf = RemoveSelf::create();
+    this->runAction(Sequence::create(scaleOut, removeSelf, nullptr));
 }
 
 void BuildingUpgradeUI::onUpgradeClicked()
