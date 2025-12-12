@@ -2,15 +2,18 @@
 #include "Managers/ResourceManager.h"
 #include "Managers/BuildingManager.h"
 #include "Managers/GameConfig.h"
-#include "DraggableMapScene.h" // 为了获取BuildingManager，或者使用单例
+#include "Managers/BuildingLimitManager.h"
+#include "DraggableMapScene.h"
+
 /****************************************************************
  * Project Name:  Clash_of_Clans
- * File Name:     WallBuilding.cpp
- * File Function:  商店界面
+ * File Name:     ShopLayer.cpp
+ * File Function: 商店界面
  * Author:        刘相成
- * Update Date:   2025/12/06
+ * Update Date:   2025/12/08
  * License:       MIT License
  ****************************************************************/
+
 USING_NS_CC;
 using namespace ui;
 
@@ -57,12 +60,10 @@ void ShopLayer::initUI() {
     _container->setAnchorPoint(Vec2(0.5f, 0.0f));
     _container->setPosition(Vec2(visibleSize.width / 2.0f, 0.0f));
 
-    this->addChild(_container); // <--- 检查这里是否有分号
+    this->addChild(_container);
 
-    // 标题 (注意：这里全是英文符号)
+    // 标题
     auto title = Label::createWithSystemFont("Shop", "Arial", 28);
-
-    // 设置标题位置
     title->setPosition(Vec2(_container->getContentSize().width / 2.0f, _container->getContentSize().height - 30.0f));
     _container->addChild(title);
 
@@ -93,9 +94,11 @@ void ShopLayer::loadCategory(const std::string& categoryName) {
     auto& config = GameConfig::getInstance();
     auto buildings = config.getAllBuildings();
 
+    CCLOG("📦 ShopLayer 加载建筑列表 (TH Lv.%d)", thLevel);
+
     for (const auto& cfg : buildings) {
         // 构建用于 BuildingManager 的 BuildingData
-        BuildingData bData(cfg.name, cfg.iconPath, Size(3, 3), 1.0f, cfg.cost, 0, cfg.costType); // 默认尺寸需要优化
+        BuildingData bData(cfg.name, cfg.iconPath, Size(3, 3), 1.0f, cfg.cost, 0, cfg.costType);
 
         // 针对特定建筑修正尺寸
         if (cfg.name == "Wall" || cfg.name == "城墙") bData.gridSize = Size(1, 1);
@@ -103,7 +106,6 @@ void ShopLayer::loadCategory(const std::string& categoryName) {
         else if (cfg.name == "Barracks" || cfg.name == "Army Camp" || cfg.name == "兵营" || cfg.name == "军营") bData.gridSize = Size(4, 4);
         else if (cfg.name == "Builder Hut" || cfg.name == "建筑工人小屋") bData.gridSize = Size(2, 2);
 
-        // 将 ConfigItem 传入 createShopItem，因为它包含了解锁等级等信息
         auto item = createShopItem(bData);
         _scrollView->pushBackCustomItem(item);
     }
@@ -118,40 +120,90 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data) {
     auto bg = LayerColor::create(Color4B(80, 80, 80, 255), 180, 220);
     itemLayout->addChild(bg);
 
-    // 获取限制信息
+    // ========== 关键修复：建筑名称映射 ==========
+    // 将 GameConfig 的建筑名称映射到 BuildingLimitManager 的键
+    std::string limitKey = data.name;
+    
+    // 名称映射表
+    if (data.name == "城墙" || data.name == "Wall") {
+        limitKey = "Wall";
+    }
+    else if (data.name == "建筑工人小屋" || data.name == "Builder Hut") {
+        limitKey = "BuildersHut";
+    }
+    else if (data.name == "炮塔" || data.name == "Cannon") {
+        limitKey = "Cannon";
+    }
+    else if (data.name == "箭塔" || data.name == "ArcherTower") {
+        limitKey = "ArcherTower";
+    }
+    else if (data.name == "法师塔" || data.name == "WizardTower") {
+        limitKey = "WizardTower";
+    }
+    else if (data.name == "金矿" || data.name == "GoldMine") {
+        limitKey = "GoldMine";
+    }
+    else if (data.name == "圣水收集器" || data.name == "ElixirCollector") {
+        limitKey = "ElixirCollector";
+    }
+    else if (data.name == "金币仓库" || data.name == "GoldStorage") {
+        limitKey = "GoldStorage";
+    }
+    else if (data.name == "圣水仓库" || data.name == "ElixirStorage") {
+        limitKey = "ElixirStorage";
+    }
+    else if (data.name == "兵营" || data.name == "Barracks") {
+        limitKey = "Barracks";
+    }
+    else if (data.name == "军营" || data.name == "ArmyCamp") {
+        limitKey = "ArmyCamp";
+    }
+    
+    // 获取当前上限（已考虑大本营等级的影响）
+    auto* limitMgr = BuildingLimitManager::getInstance();
+    int maxCount = limitMgr->getLimit(limitKey);
+    
     auto& config = GameConfig::getInstance();
     int thLevel = getCurrentTownHallLevel();
-    int maxCount = config.getMaxBuildingCount(data.name, thLevel);
+    
     int currentCount = getBuildingCount(data.name);
     const auto* cfgItem = config.getBuildingConfig(data.name);
 
     bool isUnlocked = (thLevel >= cfgItem->unlockTownHallLevel);
-    bool isMaxed = (currentCount >= maxCount);
+    bool isMaxed = (maxCount != -1 && currentCount >= maxCount);
     bool canAfford = ResourceManager::getInstance().hasEnough(data.costType, data.cost);
+
+    CCLOG("  建筑: %s (键:%s), 当前: %d, 上限: %s, 已满: %s", 
+          data.name.c_str(), limitKey.c_str(), currentCount,
+          (maxCount == -1 ? "∞" : std::to_string(maxCount).c_str()), 
+          isMaxed ? "是" : "否");
 
     // 1. 建筑图标
     auto icon = Sprite::create(data.imageFile);
     if (icon) {
-        // 保持图标适应框大小
         float scale = 120.0f / icon->getContentSize().width;
         icon->setScale(scale);
         icon->setPosition(Vec2(90, 140));
-        // 如果未解锁或已达上限，置灰
         if (!isUnlocked || isMaxed) {
             icon->setColor(Color3B::GRAY);
         }
         itemLayout->addChild(icon);
     }
 
-    // 2. 数量限制文本 (e.g. 2/5)
-    auto countLabel = Label::createWithSystemFont(
-        StringUtils::format("%d/%d", currentCount, maxCount), "Arial", 16);
+    // 2. 数量限制文本
+    std::string countText;
+    if (maxCount == -1) {
+        countText = StringUtils::format("%d/∞", currentCount);
+    } else {
+        countText = StringUtils::format("%d/%d", currentCount, maxCount);
+    }
+    
+    auto countLabel = Label::createWithSystemFont(countText, "Arial", 16);
     countLabel->setPosition(Vec2(90, 190));
     itemLayout->addChild(countLabel);
 
-    // 3. 底部信息区 (花费或提示)
+    // 3. 底部信息区（后续代码保持不变...）
     if (!isUnlocked) {
-        // 未解锁提示
         auto lockLabel = Label::createWithSystemFont(
             StringUtils::format("TH %d Required", cfgItem->unlockTownHallLevel), "Arial", 18);
         lockLabel->setTextColor(Color4B::RED);
@@ -159,14 +211,13 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data) {
         itemLayout->addChild(lockLabel);
     }
     else if (isMaxed) {
-        // 已达上限
         auto maxLabel = Label::createWithSystemFont("MAXED", "Arial", 24);
         maxLabel->setTextColor(Color4B::GRAY);
         maxLabel->setPosition(Vec2(90, 40));
         itemLayout->addChild(maxLabel);
     }
     else {
-        // 正常购买状态：显示资源图标和价格
+        // 正常购买状态...
         std::string resIconPath = "";
         Color4B priceColor = Color4B::WHITE;
 
@@ -190,32 +241,25 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data) {
         priceLabel->setTextColor(priceColor);
         itemLayout->addChild(priceLabel);
 
-        // 添加点击事件
         itemLayout->setTouchEnabled(true);
         itemLayout->addClickEventListener([this, data](Ref*) {
-            // 触发建造
             auto scene = dynamic_cast<DraggableMapScene*>(Director::getInstance()->getRunningScene());
             if (scene) {
-                // 关闭商店
                 this->hide();
-                // 开始建造流程
                 scene->startPlacingBuilding(data);
             }
-            });
+        });
     }
 
     return itemLayout;
 }
 
 int ShopLayer::getCurrentTownHallLevel() {
-    // 从场景的 BuildingManager 获取大本营等级
-    // 这里需要一种方式访问数据，简单起见，假设场景有接口
-    // 或者遍历 BuildingManager 的建筑列表找大本营
     auto scene = dynamic_cast<DraggableMapScene*>(Director::getInstance()->getRunningScene());
     if (scene) {
         return scene->getTownHallLevel();
     }
-    return 1; // 默认1级
+    return 1;
 }
 
 int ShopLayer::getBuildingCount(const std::string& name) {
@@ -228,9 +272,26 @@ int ShopLayer::getBuildingCount(const std::string& name) {
 
 void ShopLayer::show() {
     auto visibleSize = Director::getInstance()->getVisibleSize();
+    
+    // ========== 关键改动：打开 Shop 时重新加载所有数据 ==========
+    CCLOG("🛒 Shop 打开，刷新建筑上限...");
+    
+    // 获取当前大本营等级
+    int thLevel = getCurrentTownHallLevel();
+    CCLOG("当前大本营等级: Lv.%d", thLevel);
+    
+    // 更新 BuildingLimitManager 的大本营等级
+    BuildingLimitManager::getInstance()->updateLimitsFromTownHall(thLevel);
+    
+    // 重新加载所有建筑商品（这样会重新计算上限）
+    loadCategory("All");
+    
+    // 显示动画
     this->setVisible(true);
     _container->setPosition(Vec2(visibleSize.width / 2, -350));
     _container->runAction(MoveTo::create(0.3f, Vec2(visibleSize.width / 2, 0)));
+    
+    CCLOG("✅ Shop 已刷新");
 }
 
 void ShopLayer::hide() {
@@ -238,6 +299,6 @@ void ShopLayer::hide() {
     auto moveDown = MoveTo::create(0.3f, Vec2(visibleSize.width / 2, -350));
     auto callback = CallFunc::create([this]() {
         this->removeFromParent();
-        });
+    });
     _container->runAction(Sequence::create(moveDown, callback, nullptr));
 }

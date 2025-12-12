@@ -35,6 +35,9 @@ bool WallBuilding::init(int level)
     this->setScale(0.6f); // 城墙较小，缩放为0.6
     this->setName(getDisplayName());
     
+    // 记录城墙建造
+    // BuildingLimitManager::getInstance()->recordBuilding("Wall");
+    
     return true;
 }
 
@@ -77,7 +80,7 @@ float WallBuilding::getUpgradeTime() const
     // 城墙升级时间（秒）
     static const float times[] = {
         0,      // Level 0 (无效)
-        0,      // Level 1 (即时)
+        30,      // Level 1 (即时)
         60,     // Level 2 (1分钟)
         300,    // Level 3 (5分钟)
         900,    // Level 4 (15分钟)

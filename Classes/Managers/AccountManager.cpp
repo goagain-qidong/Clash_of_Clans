@@ -5,6 +5,7 @@
 #include "StorageManager.h"
 #include "ResourceManager.h"
 #include "DefenseLogSystem.h"
+#include "TroopInventory.h"
 #include "cocos2d.h"
 
 using namespace cocos2d;
@@ -70,6 +71,11 @@ std::string AccountGameData::toJson() const {
     doc.AddMember("goldCapacity", goldCapacity, allocator);
     doc.AddMember("elixirCapacity", elixirCapacity, allocator);
     
+    // 🆕 序列化士兵库存
+    rapidjson::Value troopInvVal;
+    troopInvVal.SetString(troopInventory.c_str(), static_cast<rapidjson::SizeType>(troopInventory.length()), allocator);
+    doc.AddMember("troopInventory", troopInvVal, allocator);
+    
     // Serialize buildings
     rapidjson::Value buildingsArray(rapidjson::kArrayType);
     for (const auto& building : buildings) {
@@ -120,6 +126,11 @@ AccountGameData AccountGameData::fromJson(const std::string& jsonStr) {
     }
     if (doc.HasMember("elixirCapacity") && doc["elixirCapacity"].IsInt()) {
         data.elixirCapacity = doc["elixirCapacity"].GetInt();
+    }
+    
+    // 🆕 反序列化士兵库存
+    if (doc.HasMember("troopInventory") && doc["troopInventory"].IsString()) {
+        data.troopInventory = doc["troopInventory"].GetString();
     }
     
     // Deserialize buildings
@@ -337,13 +348,16 @@ std::string AccountManager::getGameDataFilePath(const std::string& userId) const
 }
 
 bool AccountManager::saveGameStateToFile() {
-    if (_activeIndex < 0 || _activeIndex >= (int)_accounts.size()) {
-        return false;
-    }
+if (_activeIndex < 0 || _activeIndex >= (int)_accounts.size()) {
+    return false;
+}
     
-    const auto& account = _accounts[_activeIndex];
-    std::string filePath = getGameDataFilePath(account.userId);
-    std::string jsonData = account.gameData.toJson();
+// 🆕 保存前同步士兵库存到 gameData
+auto& account = _accounts[_activeIndex];
+account.gameData.troopInventory = TroopInventory::getInstance().toJson();
+    
+std::string filePath = getGameDataFilePath(account.userId);
+std::string jsonData = account.gameData.toJson();
     
     bool result = FileUtils::getInstance()->writeStringToFile(jsonData, filePath);
     
@@ -382,6 +396,14 @@ bool AccountManager::loadGameStateFromFile(const std::string& userId) {
             resMgr.setResourceCount(ResourceType::kElixir, account.gameData.elixir);
             // darkElixir 暂不支持
             resMgr.setResourceCount(ResourceType::kGem, account.gameData.gems);
+            
+            // 🆕 Sync troop inventory to TroopInventory
+            auto& troopInv = TroopInventory::getInstance();
+            if (!account.gameData.troopInventory.empty()) {
+                troopInv.fromJson(account.gameData.troopInventory);
+            } else {
+                troopInv.clearAll();  // 清空士兵库存
+            }
             
             CCLOG("✅ Game state loaded for user %s: Gold=%d, Elixir=%d, Buildings=%zu",
                   userId.c_str(), account.gameData.gold, account.gameData.elixir, 

@@ -7,7 +7,9 @@
  * License:       MIT License
  ****************************************************************/
 #include "ArmyBuilding.h"
+#include "ArmyCampBuilding.h"  // 🆕 添加军营头文件
 #include "GameConfig.h" // 如果需要引用配置
+#include "Managers/TroopInventory.h"  // 🆕 添加士兵库存管理
 USING_NS_CC;
 ArmyBuilding* ArmyBuilding::create(int level)
 {
@@ -25,7 +27,7 @@ float ArmyBuilding::getUpgradeTime() const
     // 升级时间（秒）
     static const float times[] = {
         0,      // Level 0 (无效)
-        0,      // Level 1 (即时)
+        30,      // Level 1 (即时)
         60,     // Level 2 (1分钟)
         300,    // Level 3 (5分钟)
         900,    // Level 4 (15分钟)
@@ -137,7 +139,26 @@ std::string ArmyBuilding::getDisplayName() const
 int ArmyBuilding::getUpgradeCost() const
 {
     // 升级费用随等级递增
-    static const int costs[] = {0, 1000, 2000, 4000, 8000, 15000, 30000, 60000, 120000, 200000};
+    static const int costs[] = {
+        0, 
+        1000, 
+        2000, 
+        4000, 
+        8000, 
+        15000, 
+        30000, 
+        60000, 
+        120000, 
+        200000,
+        280000,
+        360000,
+        440000,
+		520000,
+        600000,
+        700000,
+        800000,
+		900000
+    };
     int idx = std::min(_level, getMaxLevel());
     return costs[idx];
 }
@@ -304,10 +325,6 @@ void ArmyBuilding::completeCurrentTask()
     auto task = _trainingQueue.front();
     _trainingQueue.pop();
     
-    // 🔧 修复：增加正确的人口计数
-    int population = getUnitPopulation(task.unitType);  // ✅ 获取兵种人口
-    ResourceManager::getInstance().addTroops(population);
-    
     // 创建训练好的单位
     Unit* unit = Unit::create(task.unitType);
     
@@ -323,15 +340,31 @@ void ArmyBuilding::completeCurrentTask()
     default: unitName = "未知兵种"; break;
     }
     
-    auto& resMgr = ResourceManager::getInstance();
-    CCLOG("🎉 训练完成：%s（占用 %d 人口）！（剩余队列：%d，人口：%d/%d）", 
-          unitName.c_str(), population, getQueueLength(),
-          resMgr.getCurrentTroopCount(), resMgr.getMaxTroopCapacity());
+    // 🆕 添加士兵到库存（而不是只增加人口）
+    auto& troopInv = TroopInventory::getInstance();
+    int addedCount = troopInv.addTroops(task.unitType, 1);
     
-    // 触发回调
-    if (_onTrainingComplete && unit)
+    if (addedCount > 0)
     {
-        _onTrainingComplete(unit);
+        auto& resMgr = ResourceManager::getInstance();
+        CCLOG("🎉 训练完成：%s！（剩余队列：%d，人口：%d/%d）", 
+              unitName.c_str(), getQueueLength(),
+              resMgr.getCurrentTroopCount(), resMgr.getMaxTroopCapacity());
+        
+        // 🆕 通知所有军营显示小兵
+        notifyArmyCampsToDisplayTroop(task.unitType);
+        
+        // 触发回调
+        if (_onTrainingComplete && unit)
+        {
+            _onTrainingComplete(unit);
+        }
+    }
+    else
+    {
+        CCLOG("⚠️ 人口已满，无法完成训练：%s", unitName.c_str());
+        // 退还资源
+        ResourceManager::getInstance().addResource(ResourceType::kElixir, task.cost);
     }
 }
 
@@ -394,5 +427,45 @@ int ArmyBuilding::getUnitPopulation(UnitType type)
         return 2;      // 炸弹人：2人口
     default:
         return 1;
+    }
+}
+
+// ==================== 🆕 通知军营显示小兵 ====================
+
+void ArmyBuilding::notifyArmyCampsToDisplayTroop(UnitType type)
+{
+    // 🔍 查找场景中的所有军营建筑
+    // 注意：这需要访问 BuildingManager 或场景
+    // 由于架构限制，这里暂时使用简化方案：
+    // 通过父节点查找兄弟节点（同样是建筑）
+    
+    auto parent = this->getParent();
+    if (!parent)
+    {
+        CCLOG("⚠️ ArmyBuilding: No parent node, cannot notify ArmyCamps");
+        return;
+    }
+    
+    // 遍历父节点的所有子节点，查找军营
+    auto& children = parent->getChildren();
+    bool found = false;
+    
+    for (auto child : children)
+    {
+        // 尝试转换为 ArmyCampBuilding
+        auto* armyCamp = dynamic_cast<ArmyCampBuilding*>(child);
+        if (armyCamp)
+        {
+            // 找到军营，添加小兵显示
+            armyCamp->addTroopDisplay(type);
+            found = true;
+            CCLOG("✅ Notified ArmyCamp to display troop");
+            break;  // 只通知第一个军营（简化处理）
+        }
+    }
+    
+    if (!found)
+    {
+        CCLOG("⚠️ No ArmyCamp found to display troop");
     }
 }

@@ -161,6 +161,11 @@ public:
      * @return 是否加载成功
      */
     bool loadPlayerBase(const std::string& userId);
+    
+    /**
+     * @brief 恢复军营的小兵显示（从士兵库存）
+     */
+    void restoreArmyCampTroopDisplays();
 
     // ==================== 回调设置 ====================
     using BuildingPlacedCallback = std::function<void(BaseBuilding*)>;

@@ -50,6 +50,11 @@ public:
     int getMaxTroopCapacity() const { return getResourceCapacity(kTroopPopulation); }
     bool hasTroopSpace(int count) const;
     bool addTroops(int count);
+    
+    /**
+     * @brief 将所有资源填满到容量上限
+     */
+    void fillAllResourcesMax();
 private:
     ResourceManager();
     static ResourceManager* _instance;

@@ -7,6 +7,7 @@
 #include "Buildings/BaseBuilding.h"
 #include "Buildings/DefenseBuilding.h"
 #include "Managers/DefenseLogSystem.h"  // 🔴 添加防守日志系统头文件
+#include "Managers/TroopInventory.h"  // 🆕 添加士兵库存管理
 #include <ctime>  // 🔴 添加time头文件
 
 USING_NS_CC;
@@ -182,12 +183,13 @@ void BattleScene::setupTroopButtons()
     float buttonSpacing = 100;
     float startX = (_visibleSize.width - buttonSpacing * 2) / 2;
     
-    // 野蛮人按钮
-    _barbarianButton = Button::create();
-    _barbarianButton->setTitleText("野蛮人");
-    _barbarianButton->setTitleFontSize(18);
-    _barbarianButton->setScale9Enabled(true);
-    _barbarianButton->setContentSize(Size(buttonSize, buttonSize));
+    // 野蛮人按钮 - 使用图片
+    _barbarianButton = Button::create(
+        "units/barbarian_select_button_active.png",    // 正常状态
+        "units/barbarian_select_button_active.png",    // 按下状态
+        "units/barbarian_select_button_active.png"     // 禁用状态
+    );
+    _barbarianButton->setScale(0.8f);  // 调整大小
     _barbarianButton->setPosition(Vec2(startX, buttonY));
     _barbarianButton->setVisible(false);
     _barbarianButton->addClickEventListener([this](Ref*) {
@@ -201,12 +203,13 @@ void BattleScene::setupTroopButtons()
     _barbarianCountLabel->setVisible(false);
     this->addChild(_barbarianCountLabel, 100);
     
-    // 弓箭手按钮
-    _archerButton = Button::create();
-    _archerButton->setTitleText("弓箭手");
-    _archerButton->setTitleFontSize(18);
-    _archerButton->setScale9Enabled(true);
-    _archerButton->setContentSize(Size(buttonSize, buttonSize));
+    // 弓箭手按钮 - 使用图片
+    _archerButton = Button::create(
+        "units/archer_select_button_active.png",
+        "units/archer_select_button_active.png",
+        "units/archer_select_button_active.png"
+    );
+    _archerButton->setScale(0.8f);
     _archerButton->setPosition(Vec2(startX + buttonSpacing, buttonY));
     _archerButton->setVisible(false);
     _archerButton->addClickEventListener([this](Ref*) {
@@ -220,12 +223,13 @@ void BattleScene::setupTroopButtons()
     _archerCountLabel->setVisible(false);
     this->addChild(_archerCountLabel, 100);
     
-    // 巨人按钮
-    _giantButton = Button::create();
-    _giantButton->setTitleText("巨人");
-    _giantButton->setTitleFontSize(18);
-    _giantButton->setScale9Enabled(true);
-    _giantButton->setContentSize(Size(buttonSize, buttonSize));
+    // 巨人按钮 - 使用图片
+    _giantButton = Button::create(
+        "units/giant_select_button_active.png",
+        "units/giant_select_button_active.png",
+        "units/giant_select_button_active.png"
+    );
+    _giantButton->setScale(0.8f);
     _giantButton->setPosition(Vec2(startX + buttonSpacing * 2, buttonY));
     _giantButton->setVisible(false);
     _giantButton->addClickEventListener([this](Ref*) {
@@ -282,16 +286,31 @@ void BattleScene::deployUnit(UnitType type, const cocos2d::Vec2& position)
         return;
     }
     
+    // 🆕 从士兵库存消耗士兵
+    auto& troopInv = TroopInventory::getInstance();
+    if (!troopInv.consumeTroops(type, 1))
+    {
+        CCLOG("⚠️ 无法从库存中消耗士兵！");
+        return;
+    }
+    
     // 创建士兵
     Unit* unit = Unit::create(type);
     if (!unit)
     {
         CCLOG("❌ Failed to create unit!");
+        // 部署失败，退还士兵
+        troopInv.addTroops(type, 1);
         return;
     }
     
     unit->setPosition(position);
-    _mapSprite->addChild(unit, 100);
+    // 🎨 根据 Y 坐标设置初始 Z-Order（Y 越大，Z-Order 越小，渲染在越前面）
+    // 使用一个基准值（10000）减去 Y 坐标，确保 Z-Order 始终为正数
+    // 例如：Y=100 -> ZOrder=9900, Y=200 -> ZOrder=9800
+    // 这样 Y 大的对象 ZOrder 小，但都是正数，确保在地图上方渲染
+    int zOrder = 10000 - static_cast<int>(position.y);
+    _mapSprite->addChild(unit, zOrder);
     _deployedUnits.push_back(unit);
     
     (*count)--;
@@ -367,6 +386,15 @@ void BattleScene::startBattle()
     _destructionLabel->setVisible(true);
     _endBattleButton->setVisible(true);
     
+    // 🆕 从士兵库存读取可用士兵数量
+    auto& troopInv = TroopInventory::getInstance();
+    _barbarianCount = troopInv.getTroopCount(UnitType::kBarbarian);
+    _archerCount = troopInv.getTroopCount(UnitType::kArcher);
+    _giantCount = troopInv.getTroopCount(UnitType::kGiant);
+    
+    CCLOG("📦 可用士兵：野蛮人=%d，弓箭手=%d，巨人=%d", 
+          _barbarianCount, _archerCount, _giantCount);
+    
     // ⭐ 显示士兵部署按钮
     _barbarianButton->setVisible(true);
     _archerButton->setVisible(true);
@@ -374,6 +402,9 @@ void BattleScene::startBattle()
     _barbarianCountLabel->setVisible(true);
     _archerCountLabel->setVisible(true);
     _giantCountLabel->setVisible(true);
+    
+    // 更新士兵数量显示
+    updateTroopCounts();
     
     // 获取敌方建筑列表并计算总血量
     if (_buildingManager)
@@ -419,6 +450,33 @@ void BattleScene::updateBattleState(float dt)
     }
 
     updateTimer();
+
+    // 🎨 动态更新所有士兵的 Z-Order（根据 Y 坐标实现2.5D深度排序）
+    // 规则：Y 坐标越大（越靠屏幕下方），Z-Order 越小，渲染在越前面
+    // 使用 10000 - Y 作为基准，确保所有 Z-Order 都是正数
+    for (auto* unit : _deployedUnits)
+    {
+        if (unit && !unit->IsDead())
+        {
+            // 使用 10000 - Y 作为 Z-Order
+            // 例如：Y=100 -> ZOrder=9900, Y=200 -> ZOrder=9800
+            // ZOrder 越大越在前面，所以 9900 > 9800，Y=100 的对象在前面
+            // 但我们希望 Y 大的在前面，所以这个公式是对的
+            int newZOrder = 10000 - static_cast<int>(unit->getPositionY());
+            unit->setLocalZOrder(newZOrder);
+        }
+    }
+    
+    // 🎨 建筑的 Z-Order 也需要动态更新
+    // 每帧更新一次以确保与士兵的深度关系正确
+    for (auto* building : _enemyBuildings)
+    {
+        if (building && !building->isDestroyed())
+        {
+            int newZOrder = 10000 - static_cast<int>(building->getPositionY());
+            building->setLocalZOrder(newZOrder);
+        }
+    }
 
     // ⭐ 更新所有士兵的 AI
     updateUnitAI(dt);
@@ -525,6 +583,11 @@ void BattleScene::endBattle(bool surrender)
 
     calculateBattleResult();
     showBattleResult();
+
+    // 🆕 保存更新后的游戏数据（包括士兵库存）
+    auto& accountMgr = AccountManager::getInstance();
+    accountMgr.saveGameStateToFile();
+    CCLOG("💾 战斗结束，已保存游戏数据（包括剩余士兵）");
 
     // 上传战斗结果（可选）
     uploadBattleResult();
@@ -774,7 +837,11 @@ void BattleScene::updateUnitAI(float dt)
         {
             // 寻找最近的建筑作为目标
             BaseBuilding* closestBuilding = nullptr;
+            BaseBuilding* closestDefenseBuilding = nullptr;  // 巨人优先目标
+            BaseBuilding* closestResourceBuilding = nullptr;  // 哥布林优先目标
             float closestDistance = 99999.0f;
+            float closestDefenseDistance = 99999.0f;
+            float closestResourceDistance = 99999.0f;
             
             Vec2 unitWorldPos = unit->getParent()->convertToWorldSpace(unit->getPosition());
             
@@ -783,37 +850,74 @@ void BattleScene::updateUnitAI(float dt)
                 if (!building || building->isDestroyed())
                     continue;
                 
-                // 根据士兵类型选择目标
-                CombatStats& unitStats = unit->getCombatStats();
-                
-                // 巨人优先攻击防御建筑
-                if (unit->GetType() == UnitType::kGiant)
-                {
-                    if (!building->isDefenseBuilding())
-                        continue;
-                }
-                
-                // 哥布林优先攻击资源建筑
-                if (unit->GetType() == UnitType::kGoblin)
-                {
-                    if (building->getBuildingType() != BuildingType::kResource)
-                        continue;
-                }
-                
                 Vec2 buildingWorldPos = building->getParent()->convertToWorldSpace(building->getPosition());
                 float distance = unitWorldPos.distance(buildingWorldPos);
                 
+                // 记录最近的任意建筑（备用）
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
                     closestBuilding = building;
                 }
+                
+                // 巨人：记录最近的防御建筑
+                if (unit->GetType() == UnitType::kGiant && building->isDefenseBuilding())
+                {
+                    if (distance < closestDefenseDistance)
+                    {
+                        closestDefenseDistance = distance;
+                        closestDefenseBuilding = building;
+                    }
+                }
+                
+                // 哥布林：记录最近的资源建筑
+                if (unit->GetType() == UnitType::kGoblin && building->getBuildingType() == BuildingType::kResource)
+                {
+                    if (distance < closestResourceDistance)
+                    {
+                        closestResourceDistance = distance;
+                        closestResourceBuilding = building;
+                    }
+                }
             }
             
-            if (closestBuilding)
+            // 根据兵种类型选择目标（带降级逻辑）
+            BaseBuilding* selectedTarget = nullptr;
+            
+            if (unit->GetType() == UnitType::kGiant)
             {
-                unit->setTarget(closestBuilding);
-                target = closestBuilding;
+                // 巨人：优先攻击防御建筑，找不到就攻击任意建筑
+                selectedTarget = closestDefenseBuilding ? closestDefenseBuilding : closestBuilding;
+                
+                if (selectedTarget)
+                {
+                    CCLOG("🎯 Giant target: %s (isDefense=%d)", 
+                          closestDefenseBuilding ? "Defense Building" : "Any Building",
+                          selectedTarget->isDefenseBuilding() ? 1 : 0);
+                }
+            }
+            else if (unit->GetType() == UnitType::kGoblin)
+            {
+                // 哥布林：优先攻击资源建筑，找不到就攻击任意建筑
+                selectedTarget = closestResourceBuilding ? closestResourceBuilding : closestBuilding;
+            }
+            else
+            {
+                // 其他兵种：攻击最近的建筑
+                selectedTarget = closestBuilding;
+            }
+            
+            if (selectedTarget)
+            {
+                unit->setTarget(selectedTarget);
+                target = selectedTarget;
+            }
+            else
+            {
+                if (unit->GetType() == UnitType::kGiant)
+                {
+                    CCLOG("⚠️ Giant: No target found! Total buildings: %zu", _enemyBuildings.size());
+                }
             }
         }
         

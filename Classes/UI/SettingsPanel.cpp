@@ -6,7 +6,7 @@
 #include "SettingsPanel.h"
 #include "AccountManager.h"
 #include "ResourceManager.h"
-#include "audio/include/AudioEngine.h"
+#include "Managers/GlobalAudioManager.h"
 
 USING_NS_CC;
 using namespace ui;
@@ -72,40 +72,168 @@ void SettingsPanel::setupUI()
 
 void SettingsPanel::setupVolumeControls(float startY)
 {
+    // ==================== 音乐音量 ====================
     auto musicLabel = Label::createWithSystemFont("🎵 音乐音量:", "Microsoft YaHei", 24);
-    musicLabel->setPosition(Vec2(120, startY));
+    musicLabel->setPosition(Vec2(100, startY));
     musicLabel->setAnchorPoint(Vec2(0, 0.5f));
     _panel->addChild(musicLabel);
     
+    // 🎨 创建自定义滑动条背景（使用纯色 LayerColor）
+    auto musicBarBg = LayerColor::create(Color4B(80, 80, 80, 255), 250, 10);
+    musicBarBg->setPosition(Vec2(280, startY - 5));
+    _panel->addChild(musicBarBg);
+    
+    // 🎨 创建进度条
+    auto musicBarProgress = LayerColor::create(Color4B(50, 205, 50, 255), 250, 10);
+    musicBarProgress->setPosition(Vec2(280, startY - 5));
+    musicBarProgress->setName("musicProgress");
+    _panel->addChild(musicBarProgress);
+    
+    // 🎨 创建滑块（圆形按钮）
+    auto musicThumb = LayerColor::create(Color4B(255, 255, 255, 255), 20, 20);
+    musicThumb->setPosition(Vec2(530, startY - 10));
+    musicThumb->setName("musicThumb");
+    _panel->addChild(musicThumb);
+    
+    // 🎮 创建透明的触摸响应层（覆盖整个滑动条区域）
+    auto musicTouchLayer = LayerColor::create(Color4B(0, 0, 0, 1), 250, 30);  // 几乎透明
+    musicTouchLayer->setPosition(Vec2(280, startY - 15));
+    _panel->addChild(musicTouchLayer, 10);
+    
+    // 添加触摸监听器
+    auto musicTouchListener = EventListenerTouchOneByOne::create();
+    musicTouchListener->setSwallowTouches(true);
+    musicTouchListener->onTouchBegan = [this, musicBarProgress, musicThumb, musicTouchLayer](Touch* touch, Event* event) {
+        Vec2 localPos = musicTouchLayer->convertToNodeSpace(touch->getLocation());
+        Rect rect(Vec2::ZERO, musicTouchLayer->getContentSize());
+        if (rect.containsPoint(localPos))
+        {
+            // 计算百分比
+            float percent = (localPos.x / 250.0f) * 100.0f;
+            percent = std::max(0.0f, std::min(100.0f, percent));
+            
+            // 更新进度条
+            musicBarProgress->setContentSize(Size(250 * percent / 100.0f, 10));
+            musicThumb->setPositionX(280 + 250 * percent / 100.0f - 10);
+            _musicValueLabel->setString(StringUtils::format("%.0f%%", percent));
+            
+            // 🎵 设置音乐音量（通过全局管理器）
+            GlobalAudioManager::getInstance().setMusicVolume(percent / 100.0f);
+            
+            return true;
+        }
+        return false;
+    };
+    musicTouchListener->onTouchMoved = [this, musicBarProgress, musicThumb, musicTouchLayer](Touch* touch, Event* event) {
+        Vec2 localPos = musicTouchLayer->convertToNodeSpace(touch->getLocation());
+        
+        // 计算百分比（允许超出范围但限制在0-100）
+        float percent = (localPos.x / 250.0f) * 100.0f;
+        percent = std::max(0.0f, std::min(100.0f, percent));
+        
+        // 更新进度条
+        musicBarProgress->setContentSize(Size(250 * percent / 100.0f, 10));
+        musicThumb->setPositionX(280 + 250 * percent / 100.0f - 10);
+        _musicValueLabel->setString(StringUtils::format("%.0f%%", percent));
+        
+        // 🎵 设置音乐音量
+        GlobalAudioManager::getInstance().setMusicVolume(percent / 100.0f);
+    };
+    musicTouchListener->onTouchEnded = [this](Touch* touch, Event* event) {
+        saveVolumeSettings();
+    };
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(musicTouchListener, musicTouchLayer);
+    
+    // 保存slider的百分比（用于加载设置）
     _musicSlider = Slider::create();
-    _musicSlider->loadBarTexture("ui/slider_back.png");
-    _musicSlider->loadSlidBallTextures("ui/slider_thumb.png", "ui/slider_thumb.png", "");
-    _musicSlider->loadProgressBarTexture("ui/slider_progress.png");
-    _musicSlider->setPosition(Vec2(380, startY));
     _musicSlider->setPercent(100);
-    _musicSlider->addEventListener(CC_CALLBACK_2(SettingsPanel::onMusicVolumeChanged, this));
+    _musicSlider->setVisible(false);  // 隐藏，只用于存储值
     _panel->addChild(_musicSlider);
     
     _musicValueLabel = Label::createWithSystemFont("100%", "Arial", 20);
-    _musicValueLabel->setPosition(Vec2(530, startY));
+    _musicValueLabel->setPosition(Vec2(550, startY));
     _panel->addChild(_musicValueLabel);
     
+    // ==================== 音效音量 ====================
     auto sfxLabel = Label::createWithSystemFont("🔊 音效音量:", "Microsoft YaHei", 24);
-    sfxLabel->setPosition(Vec2(120, startY - 70));
+    sfxLabel->setPosition(Vec2(100, startY - 70));
     sfxLabel->setAnchorPoint(Vec2(0, 0.5f));
     _panel->addChild(sfxLabel);
     
+    // 🎨 创建自定义滑动条背景
+    auto sfxBarBg = LayerColor::create(Color4B(80, 80, 80, 255), 250, 10);
+    sfxBarBg->setPosition(Vec2(280, startY - 75));
+    _panel->addChild(sfxBarBg);
+    
+    // 🎨 创建进度条
+    auto sfxBarProgress = LayerColor::create(Color4B(30, 144, 255, 255), 250, 10);
+    sfxBarProgress->setPosition(Vec2(280, startY - 75));
+    sfxBarProgress->setName("sfxProgress");
+    _panel->addChild(sfxBarProgress);
+    
+    // 🎨 创建滑块
+    auto sfxThumb = LayerColor::create(Color4B(255, 255, 255, 255), 20, 20);
+    sfxThumb->setPosition(Vec2(530, startY - 80));
+    sfxThumb->setName("sfxThumb");
+    _panel->addChild(sfxThumb);
+    
+    // 🎮 创建透明的触摸响应层（音效）
+    auto sfxTouchLayer = LayerColor::create(Color4B(0, 0, 0, 1), 250, 30);
+    sfxTouchLayer->setPosition(Vec2(280, startY - 85));
+    _panel->addChild(sfxTouchLayer, 10);
+    
+    // 添加触摸监听器
+    auto sfxTouchListener = EventListenerTouchOneByOne::create();
+    sfxTouchListener->setSwallowTouches(true);
+    sfxTouchListener->onTouchBegan = [this, sfxBarProgress, sfxThumb, sfxTouchLayer](Touch* touch, Event* event) {
+        Vec2 localPos = sfxTouchLayer->convertToNodeSpace(touch->getLocation());
+        Rect rect(Vec2::ZERO, sfxTouchLayer->getContentSize());
+        if (rect.containsPoint(localPos))
+        {
+            // 计算百分比
+            float percent = (localPos.x / 250.0f) * 100.0f;
+            percent = std::max(0.0f, std::min(100.0f, percent));
+            
+            // 更新进度条
+            sfxBarProgress->setContentSize(Size(250 * percent / 100.0f, 10));
+            sfxThumb->setPositionX(280 + 250 * percent / 100.0f - 10);
+            _sfxValueLabel->setString(StringUtils::format("%.0f%%", percent));
+            
+            // 🔊 设置音效音量（通过全局管理器）
+            GlobalAudioManager::getInstance().setEffectVolume(percent / 100.0f);
+            
+            return true;
+        }
+        return false;
+    };
+    sfxTouchListener->onTouchMoved = [this, sfxBarProgress, sfxThumb, sfxTouchLayer](Touch* touch, Event* event) {
+        Vec2 localPos = sfxTouchLayer->convertToNodeSpace(touch->getLocation());
+        
+        // 计算百分比
+        float percent = (localPos.x / 250.0f) * 100.0f;
+        percent = std::max(0.0f, std::min(100.0f, percent));
+        
+        // 更新进度条
+        sfxBarProgress->setContentSize(Size(250 * percent / 100.0f, 10));
+        sfxThumb->setPositionX(280 + 250 * percent / 100.0f - 10);
+        _sfxValueLabel->setString(StringUtils::format("%.0f%%", percent));
+        
+        // 🔊 设置音效音量
+        GlobalAudioManager::getInstance().setEffectVolume(percent / 100.0f);
+    };
+    sfxTouchListener->onTouchEnded = [this](Touch* touch, Event* event) {
+        saveVolumeSettings();
+    };
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(sfxTouchListener, sfxTouchLayer);
+    
+    // 保存slider的百分比
     _sfxSlider = Slider::create();
-    _sfxSlider->loadBarTexture("ui/slider_back.png");
-    _sfxSlider->loadSlidBallTextures("ui/slider_thumb.png", "ui/slider_thumb.png", "");
-    _sfxSlider->loadProgressBarTexture("ui/slider_progress.png");
-    _sfxSlider->setPosition(Vec2(380, startY - 70));
     _sfxSlider->setPercent(100);
-    _sfxSlider->addEventListener(CC_CALLBACK_2(SettingsPanel::onSFXVolumeChanged, this));
+    _sfxSlider->setVisible(false);
     _panel->addChild(_sfxSlider);
     
     _sfxValueLabel = Label::createWithSystemFont("100%", "Arial", 20);
-    _sfxValueLabel->setPosition(Vec2(530, startY - 70));
+    _sfxValueLabel->setPosition(Vec2(550, startY - 70));
     _panel->addChild(_sfxValueLabel);
 }
 
@@ -184,25 +312,29 @@ void SettingsPanel::onLogoutClicked()
 
 void SettingsPanel::onFullResourceClicked()
 {
+    CCLOG("📊 点击了资源全满按钮");
+    
+    // 调用 ResourceManager 的新方法
     auto& resMgr = ResourceManager::getInstance();
-    resMgr.addResource(ResourceType::kGold, 100000);
-    resMgr.addResource(ResourceType::kElixir, 100000);
-    resMgr.addResource(ResourceType::kGem, 1000);
+    resMgr.fillAllResourcesMax();
     
-    CCLOG("✅ Resources filled to maximum!");
-    
-    auto hint = Label::createWithSystemFont("资源已全满！", "Microsoft YaHei", 24);
+    // 显示提示信息
+    auto hint = Label::createWithSystemFont("✅ 资源已全满！", "Microsoft YaHei", 24);
     hint->setPosition(Vec2(300, 50));
     hint->setTextColor(Color4B::GREEN);
+    hint->setOpacity(0);
     _panel->addChild(hint);
     
+    // 播放提示动画
     hint->runAction(Sequence::create(
         FadeIn::create(0.2f),
-        DelayTime::create(1.5f),
+        DelayTime::create(2.0f),
         FadeOut::create(0.3f),
         RemoveSelf::create(),
         nullptr
     ));
+    
+    CCLOG("✅ 资源全满提示已显示");
 }
 
 void SettingsPanel::onMapSwitchClicked()
@@ -337,30 +469,51 @@ void SettingsPanel::showMapSelectionPanel()
 
 void SettingsPanel::loadVolumeSettings()
 {
-    auto userDefault = UserDefault::getInstance();
-    int musicVolume = userDefault->getIntegerForKey("MusicVolume", 100);
-    int sfxVolume = userDefault->getIntegerForKey("SFXVolume", 100);
+    // 从全局音频管理器读取音量
+    auto& audioMgr = GlobalAudioManager::getInstance();
+    float musicVolume = audioMgr.getMusicVolume() * 100.0f;
+    float sfxVolume = audioMgr.getEffectVolume() * 100.0f;
     
     if (_musicSlider)
     {
-        _musicSlider->setPercent(musicVolume);
-        _musicValueLabel->setString(StringUtils::format("%d%%", musicVolume));
-        AudioEngine::setVolume(AudioEngine::INVALID_AUDIO_ID, musicVolume / 100.0f);
+        _musicSlider->setPercent(static_cast<int>(musicVolume));
+        _musicValueLabel->setString(StringUtils::format("%.0f%%", musicVolume));
+        
+        // 更新视觉效果
+        auto musicProgress = _panel->getChildByName("musicProgress");
+        auto musicThumb = _panel->getChildByName("musicThumb");
+        if (musicProgress)
+        {
+            dynamic_cast<LayerColor*>(musicProgress)->setContentSize(Size(250 * musicVolume / 100.0f, 10));
+        }
+        if (musicThumb)
+        {
+            musicThumb->setPositionX(280 + 250 * musicVolume / 100.0f - 10);
+        }
     }
     
     if (_sfxSlider)
     {
-        _sfxSlider->setPercent(sfxVolume);
-        _sfxValueLabel->setString(StringUtils::format("%d%%", sfxVolume));
+        _sfxSlider->setPercent(static_cast<int>(sfxVolume));
+        _sfxValueLabel->setString(StringUtils::format("%.0f%%", sfxVolume));
+        
+        // 更新视觉效果
+        auto sfxProgress = _panel->getChildByName("sfxProgress");
+        auto sfxThumb = _panel->getChildByName("sfxThumb");
+        if (sfxProgress)
+        {
+            dynamic_cast<LayerColor*>(sfxProgress)->setContentSize(Size(250 * sfxVolume / 100.0f, 10));
+        }
+        if (sfxThumb)
+        {
+            sfxThumb->setPositionX(280 + 250 * sfxVolume / 100.0f - 10);
+        }
     }
 }
 
 void SettingsPanel::saveVolumeSettings()
 {
-    auto userDefault = UserDefault::getInstance();
-    userDefault->setIntegerForKey("MusicVolume", _musicSlider->getPercent());
-    userDefault->setIntegerForKey("SFXVolume", _sfxSlider->getPercent());
-    userDefault->flush();
+    // 全局音频管理器会自动保存设置
 }
 
 void SettingsPanel::showAccountList()

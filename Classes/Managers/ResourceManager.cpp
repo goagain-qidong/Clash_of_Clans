@@ -155,3 +155,38 @@ bool ResourceManager::addTroops(int count)
     setResourceCount(kTroopPopulation, current + count);
     return true;
 }
+void ResourceManager::fillAllResourcesMax()
+{
+    CCLOG("\n========================================");
+    CCLOG("💰 执行资源全满命令");
+    CCLOG("========================================");
+    
+    // 需要填满的资源类型（不包括人口）
+    // 🎯 修复：移除 kTroopPopulation，人口不应该被一键填满
+    std::vector<ResourceType> resourceTypes = {
+        ResourceType::kGold,
+        ResourceType::kElixir,
+        ResourceType::kGem,
+        ResourceType::kBuilder
+    };
+    
+    // 逐个资源填满到上限
+    for (auto type : resourceTypes) {
+        int capacity = getResourceCapacity(type);
+        
+        // 容量为0时跳过
+        if (capacity <= 0) {
+            CCLOG("  ⊘ 资源类型 %d：容量为0，跳过", (int)type);
+            continue;
+        }
+        
+        int oldAmount = getResourceCount(type);
+        setResourceCount(type, capacity);
+        int newAmount = getResourceCount(type);
+        
+        CCLOG("  ✓ 资源类型 %d：%d -> %d", (int)type, oldAmount, newAmount);
+    }
+    
+    CCLOG("✅ 资源全满完成！（人口不受影响）");
+    CCLOG("========================================\n");
+}

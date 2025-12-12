@@ -237,8 +237,8 @@ float ResourceBuilding::getUpgradeTime() const
     // 升级时间表（16级）- 单位：秒
     static const int times[] = {
         0,        // Level 0 (无效)
-        5,        // Level 1 -> 2: 5秒
-        15,       // Level 2 -> 3: 15秒
+        15,        // Level 1 -> 2: 15秒
+        30,       // Level 2 -> 3: 30秒
         60,       // Level 3 -> 4: 1分钟
         120,      // Level 4 -> 5: 2分钟
         300,      // Level 5 -> 6: 5分钟
@@ -340,24 +340,54 @@ void ResourceBuilding::tick(float dt)
 
 int ResourceBuilding::collect()
 {
+    // 如果没有资源可收集
+    if (_currentStorage <= 0) return 0;
+
+    int buildingCapacity = getStorageCapacity();  // 建筑内部容量
+    auto& rm = ResourceManager::getInstance();
+    int currentPlayerResource = rm.getResourceCount(_resourceType);  // 玩家当前资源
+    int playerCapacity = rm.getResourceCapacity(_resourceType);      // 玩家容量上限
+
     int collected = _currentStorage;
-    if (collected <= 0) return 0;
 
-    // 清空库存
+    // ========== 关键改动：资源满仓时直接达到上限 =========
+    // 当建筑已满仓时，计算所需的资源量，使玩家资源直接达到容量上限
+    
+    if (_currentStorage >= buildingCapacity)
+    {
+        // 满仓状态：直接达到玩家容量上限
+        // 需要收集的数量 = 容量上限 - 当前数量
+        collected = playerCapacity - currentPlayerResource;
+        
+        // 确保不为负数
+        if (collected < 0) {
+            collected = 0;
+        }
+        
+        CCLOG("💎 %s 满仓收集：当前资源 %d, 目标上限 %d, 需要收集 %d", 
+              getDisplayName().c_str(), currentPlayerResource, playerCapacity, collected);
+    }
+    else
+    {
+        // 未满仓：收集当前积累的资源
+        CCLOG("💰 %s 部分收集：获得 %d", 
+              getDisplayName().c_str(), collected);
+    }
+
+    // 清空库存（准备下一个生产周期）
     _currentStorage = 0;
-
-    // 🔴 关键修复2：收集后，将生产计时器重置为 0，立即开始新的生产周期。
-    // 这确保了收集完成后，下次生产是在 15 秒后，而不是剩余的几秒后。
     _productionAccumulator = 0.0f;
 
-    // 获取并更新收集UI (清空图标)
+    // 更新 UI 状态
     auto collectionUI = getCollectionUI();
     if (collectionUI)
     {
-        collectionUI->updateReadyStatus(0); // 设置为 0，隐藏图标
+        collectionUI->updateReadyStatus(0);  // 隐藏收集图标
     }
 
-    // ... (播放动画、日志等保持不变) ...
+    // 记录日志
+    CCLOG("✅ %s 收集完成，返回给玩家：%d 资源", 
+          getDisplayName().c_str(), collected);
 
     return collected;
 }

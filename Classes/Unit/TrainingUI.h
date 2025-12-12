@@ -43,6 +43,11 @@ public:
      * @brief 隐藏UI
      */
     void hide();
+    
+    /**
+     * @brief 每帧更新（用于实时同步人口显示）
+     */
+    virtual void update(float dt) override;
 
 private:
     /**
@@ -87,4 +92,8 @@ private:
     cocos2d::ui::Layout* _panel = nullptr;      // 背景面板
     cocos2d::Label* _titleLabel = nullptr;      // 标题
     cocos2d::ui::Button* _closeButton = nullptr; // 关闭按钮
+    
+    // 🆕 用于检测人口变化的缓存值
+    int _lastTroopCount = 0;
+    int _lastTroopCapacity = 0;
 };
