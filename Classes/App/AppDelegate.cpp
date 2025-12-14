@@ -67,11 +67,11 @@ bool AppDelegate::applicationDidFinishLaunching()
     {
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
         // Android 平台：使用 GLViewImpl::create
-        glview = GLViewImpl::create("My Clash Game");
+        glview = GLViewImpl::create("部落冲突(同济大学版)");
         director->setOpenGLView(glview);
 #elif (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX) || (CC_TARGET_PLATFORM == CC_PLATFORM_MAC)
         // Windows/Linux/Mac 平台：使用 createWithRect 支持自定义窗口尺寸
-        glview = GLViewImpl::createWithRect("My Clash Game",        // 标题
+        glview = GLViewImpl::createWithRect("部落冲突(同济大学版)",        // 标题
                                             Rect(0, 0, 2560, 1440), // 初始位置和大小(2K)
                                             1.0f,                   // 缩放系数
                                             true                    // 设为 true 表示可以用鼠标拉伸窗口
@@ -79,7 +79,7 @@ bool AppDelegate::applicationDidFinishLaunching()
         director->setOpenGLView(glview);
 #else
         // 其他平台：使用默认创建方式
-        glview = GLView::create("My Clash Game");
+        glview = GLView::create("部落冲突(同济大学版)");
         director->setOpenGLView(glview);
 #endif
     }

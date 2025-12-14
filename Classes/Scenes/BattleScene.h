@@ -20,6 +20,7 @@
 #include "UI/BattleUI.h"
 #include <string>
 #include <vector>
+#include <map> // ✅ 新增
 
 // Forward declarations
 class BuildingManager;
@@ -101,6 +102,11 @@ private:
     bool _isDragging = false;
     float _timeScale = 1.0f;
     
+    // 🆕 多点触控缩放
+    std::map<int, cocos2d::Vec2> _activeTouches;
+    bool _isPinching = false;
+    float _prevPinchDistance = 0.0f;
+
     // ==================== 士兵部署数据 ====================
     UnitType _selectedUnitType = UnitType::kBarbarian;
     
@@ -118,6 +124,7 @@ private:
     cocos2d::Rect _mapBoundary;
     void updateBoundary();
     void ensureMapInBoundary();
+
     // ==================== 🆕 战斗模式血条管理 ====================
     /**
      * @brief 启用所有防御建筑的战斗模式和血条显示

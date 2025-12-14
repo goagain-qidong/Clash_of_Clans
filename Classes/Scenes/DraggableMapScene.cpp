@@ -29,6 +29,7 @@
 #include "UI/PlayerListLayer.h"
 #include "Unit/unit.h"
 #include "ui/CocosGUI.h"
+#include "Managers/MusicManager.h" // ✅ 新增
 #include <ctime>
 
 USING_NS_CC;
@@ -98,6 +99,13 @@ bool DraggableMapScene::init()
     }, 0.5f, "check_defense_logs_on_init");
 
     return true;
+}
+
+void DraggableMapScene::onEnter()
+{
+    Scene::onEnter();
+    // 🎵 播放背景音乐
+    MusicManager::getInstance().playMusic(MusicType::BATTLE_PREPARING);
 }
 
 void DraggableMapScene::initializeManagers()
@@ -207,6 +215,7 @@ void DraggableMapScene::loadGameState()
 bool DraggableMapScene::onTouchBegan(Touch* touch, Event* event)
 {
     Vec2 touchPos = touch->getLocation();
+    _activeTouches[touch->getID()] = touchPos; // ✅ 记录触摸点，支持多点触控
 
     if (_collectionMgr && _collectionMgr->handleTouch(touchPos))
     {
@@ -220,7 +229,10 @@ bool DraggableMapScene::onTouchBegan(Touch* touch, Event* event)
         Rect bbox = _currentUpgradeUI->getBoundingBox();
         bbox.origin = Vec2::ZERO;
         if (bbox.containsPoint(localPos))
+        {
+            // _activeTouches[touch->getID()] = touchPos; // 已在开头记录
             return true;
+        }
         else
         {
             hideUpgradeUI();
@@ -236,6 +248,7 @@ bool DraggableMapScene::onTouchBegan(Touch* touch, Event* event)
         if (!_buildingManager->isDraggingBuilding() && !_buildingManager->isWaitingConfirm())
         {
             _buildingManager->onTouchBegan(touchPos);
+            // _activeTouches[touch->getID()] = touchPos; // 已在开头记录
             return true;
         }
     }
@@ -249,16 +262,69 @@ bool DraggableMapScene::onTouchBegan(Touch* touch, Event* event)
             _touchBeganPos = touchPos;
             _touchBeganTime = Director::getInstance()->getTotalFrames() / 60.0f;
             _hasMoved = false;
+            // _activeTouches[touch->getID()] = touchPos; // 已在开头记录
             return true;
         }
     }
 
     _clickedBuilding = nullptr;
+    // _activeTouches[touch->getID()] = touchPos; // 已在开头记录
     return true;
 }
 
 void DraggableMapScene::onTouchMoved(Touch* touch, Event* event)
 {
+    if (_activeTouches.find(touch->getID()) != _activeTouches.end())
+    {
+        _activeTouches[touch->getID()] = touch->getLocation();
+    }
+
+    // 🆕 多点触控缩放
+    if (_activeTouches.size() >= 2)
+    {
+        _isPinching = true;
+        
+        // 获取前两个触摸点
+        auto it = _activeTouches.begin();
+        Vec2 p1 = it->second;
+        it++;
+        Vec2 p2 = it->second;
+        
+        float currentDist = p1.distance(p2);
+        
+        if (_prevPinchDistance <= 0.0f)
+        {
+            _prevPinchDistance = currentDist;
+        }
+        else
+        {
+            if (currentDist > 10.0f)
+            {
+                // 计算缩放因子
+                float zoomFactor = currentDist / _prevPinchDistance;
+                // 限制单帧缩放幅度，防止跳变
+                zoomFactor = std::max(0.9f, std::min(zoomFactor, 1.1f));
+                
+                Vec2 center = (p1 + p2) / 2;
+                _mapController->zoomMap(zoomFactor, center);
+                
+                _prevPinchDistance = currentDist;
+            }
+        }
+        
+        // 缩放时取消点击和拖动状态
+        _clickedBuilding = nullptr;
+        _hasMoved = true; // 防止触发点击
+        return;
+    }
+    else
+    {
+        // 如果手指减少，重置缩放状态，但保持 _isPinching 为 true 直到所有手指抬起？
+        // 或者允许单指继续拖动。
+        // 这里简单处理：如果不是多指，就重置距离，允许拖动
+        _prevPinchDistance = 0.0f;
+    }
+
     Vec2 currentPos = touch->getLocation();
     Vec2 previousPos = touch->getPreviousLocation();
     Vec2 delta = currentPos - previousPos;
@@ -290,7 +356,7 @@ void DraggableMapScene::onTouchMoved(Touch* touch, Event* event)
         return;
     }
 
-    if (!_clickedBuilding || _hasMoved)
+    if ((!_clickedBuilding || _hasMoved) && !_isPinching)
     {
         _mapController->moveMap(delta);
     }
@@ -298,6 +364,22 @@ void DraggableMapScene::onTouchMoved(Touch* touch, Event* event)
 
 void DraggableMapScene::onTouchEnded(Touch* touch, Event* event)
 {
+    _activeTouches.erase(touch->getID());
+    
+    if (_activeTouches.size() < 2)
+    {
+        _prevPinchDistance = 0.0f;
+    }
+    
+    if (_isPinching)
+    {
+        if (_activeTouches.empty())
+        {
+            _isPinching = false;
+        }
+        return; // 缩放操作结束，不处理点击
+    }
+
     Vec2 worldPos = touch->getLocation();
 
     if (ResourceCollectionManager::getInstance()->handleTouch(worldPos))
@@ -338,6 +420,19 @@ void DraggableMapScene::onTouchEnded(Touch* touch, Event* event)
         return;
     }
 
+    _clickedBuilding = nullptr;
+    _hasMoved = false;
+}
+
+// 🆕 添加 onTouchCancelled 处理
+void DraggableMapScene::onTouchCancelled(Touch* touch, Event* event)
+{
+    _activeTouches.erase(touch->getID());
+    if (_activeTouches.size() < 2)
+    {
+        _prevPinchDistance = 0.0f;
+        if (_activeTouches.empty()) _isPinching = false;
+    }
     _clickedBuilding = nullptr;
     _hasMoved = false;
 }
@@ -739,6 +834,14 @@ DraggableMapScene::~DraggableMapScene()
 void DraggableMapScene::onSceneResume()
 {
     CCLOG("🔄 Scene resumed, refreshing ArmyCamp displays...");
+    
+    // 重置触摸状态
+    _activeTouches.clear();
+    _isPinching = false;
+    _prevPinchDistance = 0.0f;
+    
+    // 🎵 恢复背景音乐
+    MusicManager::getInstance().playMusic(MusicType::BATTLE_PREPARING);
     
     // 重新加载士兵库存
     TroopInventory::getInstance().load();

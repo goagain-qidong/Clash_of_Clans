@@ -158,8 +158,8 @@ void SettingsPanel::setupVolumeControls(float startY)
     _musicSlider->setVisible(false);  // 隐藏，只用于存储值
     _panel->addChild(_musicSlider);
     
-    _musicValueLabel = Label::createWithSystemFont("100%", "Arial", 20);
-    _musicValueLabel->setPosition(Vec2(550, startY));
+    _musicValueLabel = Label::createWithSystemFont("100%", "Arial", 12);
+    _musicValueLabel->setPosition(Vec2(560, startY));
     _panel->addChild(_musicValueLabel);
     
     // ==================== 音效音量 ====================
@@ -240,8 +240,8 @@ void SettingsPanel::setupVolumeControls(float startY)
     _sfxSlider->setVisible(false);
     _panel->addChild(_sfxSlider);
     
-    _sfxValueLabel = Label::createWithSystemFont("100%", "Arial", 20);
-    _sfxValueLabel->setPosition(Vec2(550, startY - 70));
+    _sfxValueLabel = Label::createWithSystemFont("100%", "Arial", 12);
+    _sfxValueLabel->setPosition(Vec2(560, startY - 70));
     _panel->addChild(_sfxValueLabel);
 }
 

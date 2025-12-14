@@ -14,6 +14,7 @@
 
 #include "cocos2d.h"
 #include <string>
+#include <map> // ✅ 新增
 
 // 前向声明
 class MapController;
@@ -36,6 +37,7 @@ public:
     virtual bool init() override;
     virtual ~DraggableMapScene();
     virtual void update(float dt) override;
+    virtual void onEnter() override; // ✅ 新增
 
     CREATE_FUNC(DraggableMapScene);
     
@@ -69,6 +71,11 @@ private:
     float _touchBeganTime = 0.0f;
     bool _hasMoved = false;
     
+    // ==================== 多点触控缩放 ====================
+    std::map<int, cocos2d::Vec2> _activeTouches;
+    bool _isPinching = false;
+    float _prevPinchDistance = 0.0f;
+
     // ==================== 初始化 ====================
     void initializeManagers();
     void setupCallbacks();
@@ -80,6 +87,7 @@ private:
     bool onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event);
     void onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event);
     void onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event);
+    void onTouchCancelled(cocos2d::Touch* touch, cocos2d::Event* event); // ✅ 新增
     void onMouseScroll(float scrollY, cocos2d::Vec2 mousePos);
     void onKeyPressed(cocos2d::EventKeyboard::KeyCode keyCode);
     

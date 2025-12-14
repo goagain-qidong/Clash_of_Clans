@@ -445,12 +445,61 @@ void BattleScene::setupTouchListeners()
         if (_battleManager && _battleManager->getState() == BattleManager::BattleState::FINISHED)
             return false;
             
+        _activeTouches[touch->getID()] = touch->getLocation(); // ✅ 提前记录触摸点
+
         _lastTouchPos = touch->getLocation();
         _isDragging = false;
         return true;
     };
     
     touchListener->onTouchMoved = [this](Touch* touch, Event* event) {
+        if (_activeTouches.find(touch->getID()) != _activeTouches.end())
+        {
+            _activeTouches[touch->getID()] = touch->getLocation();
+        }
+
+        // 🆕 多点触控缩放
+        if (_activeTouches.size() >= 2)
+        {
+            _isPinching = true;
+            _isDragging = false; // 取消拖动标记
+            
+            auto it = _activeTouches.begin();
+            Vec2 p1 = it->second;
+            it++;
+            Vec2 p2 = it->second;
+            
+            float currentDist = p1.distance(p2);
+            
+            if (_prevPinchDistance <= 0.0f)
+            {
+                _prevPinchDistance = currentDist;
+            }
+            else
+            {
+                if (currentDist > 10.0f && _mapSprite)
+                {
+                    float zoomFactor = currentDist / _prevPinchDistance;
+                    // 限制单帧缩放
+                    zoomFactor = std::max(0.9f, std::min(zoomFactor, 1.1f));
+                    
+                    float newScale = _mapSprite->getScale() * zoomFactor;
+                    newScale = std::max(0.9f, std::min(newScale, 2.0f));
+                    _mapSprite->setScale(newScale);
+                    
+                    updateBoundary();
+                    ensureMapInBoundary();
+                    
+                    _prevPinchDistance = currentDist;
+                }
+            }
+            return;
+        }
+        else
+        {
+            _prevPinchDistance = 0.0f;
+        }
+
         Vec2 currentPos = touch->getLocation();
         Vec2 delta = currentPos - touch->getPreviousLocation();
         
@@ -459,7 +508,7 @@ void BattleScene::setupTouchListeners()
             _isDragging = true;
         }
         
-        if (_mapSprite && _isDragging)
+        if (_mapSprite && _isDragging && !_isPinching)
         {
             Vec2 newPos = _mapSprite->getPosition() + delta;
             _mapSprite->setPosition(newPos);
@@ -468,14 +517,21 @@ void BattleScene::setupTouchListeners()
     };
     
     touchListener->onTouchEnded = [this](Touch* touch, Event* event) {
-        if (!_isDragging && _battleManager && _battleManager->getState() == BattleManager::BattleState::READY)
+        _activeTouches.erase(touch->getID());
+        if (_activeTouches.size() < 2)
         {
-            // Start battle on first click if ready? 
-            // Actually logic was: if READY, deploy unit -> becomes FIGHTING.
-            // But wait, startBattle() sets state to READY.
-            // So we can deploy.
+            _prevPinchDistance = 0.0f;
         }
         
+        if (_isPinching)
+        {
+            if (_activeTouches.empty())
+            {
+                _isPinching = false;
+            }
+            return;
+        }
+
         if (!_isDragging && _battleManager && 
             (_battleManager->getState() == BattleManager::BattleState::READY || 
              _battleManager->getState() == BattleManager::BattleState::FIGHTING))
@@ -483,6 +539,16 @@ void BattleScene::setupTouchListeners()
             Vec2 touchPos = touch->getLocation();
             Vec2 mapLocalPos = _mapSprite->convertToNodeSpace(touchPos);
             _battleManager->deployUnit(_selectedUnitType, mapLocalPos);
+        }
+        _isDragging = false;
+    };
+    
+    touchListener->onTouchCancelled = [this](Touch* touch, Event* event) {
+        _activeTouches.erase(touch->getID());
+        if (_activeTouches.size() < 2)
+        {
+            _prevPinchDistance = 0.0f;
+            if (_activeTouches.empty()) _isPinching = false;
         }
         _isDragging = false;
     };

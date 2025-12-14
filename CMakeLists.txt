@@ -31,57 +31,10 @@ if(APPLE OR WINDOWS)
 endif()
 
 # ---- 按照 Classes 目录组织自动收集文件 ----
-file(GLOB_RECURSE APP_SRC        "${CMAKE_CURRENT_SOURCE_DIR}/Classes/App/*.cpp")
-file(GLOB_RECURSE APP_HDR        "${CMAKE_CURRENT_SOURCE_DIR}/Classes/App/*.h")
+# 暴力扫描 Classes 目录下所有的 .cpp 和 .h 文件（包含所有子文件夹）
+file(GLOB_RECURSE GAME_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/Classes/*.cpp")
+file(GLOB_RECURSE GAME_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/Classes/*.h")
 
-file(GLOB_RECURSE SCENES_SRC     "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Scenes/*.cpp")
-file(GLOB_RECURSE SCENES_HDR     "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Scenes/*.h")
-
-file(GLOB_RECURSE MANAGERS_SRC   "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Managers/*.cpp")
-file(GLOB_RECURSE MANAGERS_HDR   "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Managers/*.h")
-
-file(GLOB_RECURSE MODELS_SRC     "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Models/*.cpp")
-file(GLOB_RECURSE MODELS_HDR     "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Models/*.h")
-
-file(GLOB_RECURSE GRIDMAP_SRC    "${CMAKE_CURRENT_SOURCE_DIR}/Classes/GridMap/*.cpp")
-file(GLOB_RECURSE GRIDMAP_HDR    "${CMAKE_CURRENT_SOURCE_DIR}/Classes/GridMap/*.h")
-
-file(GLOB_RECURSE BUILDINGS_SRC  "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Buildings/*.cpp")
-file(GLOB_RECURSE BUILDINGS_HDR  "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Buildings/*.h")
-
-file(GLOB_RECURSE UNIT_SRC       "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Unit/*.cpp")
-file(GLOB_RECURSE UNIT_HDR       "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Unit/*.h")
-
-file(GLOB_RECURSE UI_SRC         "${CMAKE_CURRENT_SOURCE_DIR}/Classes/UI/*.cpp")
-file(GLOB_RECURSE UI_HDR         "${CMAKE_CURRENT_SOURCE_DIR}/Classes/UI/*.h")
-
-file(GLOB_RECURSE SERVICES_SRC   "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Services/*.cpp")
-file(GLOB_RECURSE SERVICES_HDR   "${CMAKE_CURRENT_SOURCE_DIR}/Classes/Services/*.h")
-
-list(APPEND GAME_SOURCE
-    ${APP_SRC}
-    ${SCENES_SRC}
-    ${MANAGERS_SRC}
-    ${MODELS_SRC}
-    ${GRIDMAP_SRC}
-    ${BUILDINGS_SRC}
-    ${UNIT_SRC}
-    ${UI_SRC}
-    ${SERVICES_SRC}
-)
-list(APPEND GAME_HEADER
-    ${APP_HDR}
-    ${SCENES_HDR}
-    ${MANAGERS_HDR}
-    ${MODELS_HDR}
-    ${GRIDMAP_HDR}
-    ${BUILDINGS_HDR}
-    ${UNIT_HDR}
-    ${UI_HDR}
-    ${SERVICES_HDR}
-)
-
-# ---- ƽ̨ ض  ----
 if(ANDROID)
     set(APP_NAME MyGame)
     list(APPEND GAME_SOURCE proj.android/app/jni/hellocpp/main.cpp)
