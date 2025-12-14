@@ -95,66 +95,73 @@ struct CombatStats
  */
 namespace UnitConfig
 {
-    // 野蛮人配置
+    // 野蛮人配置（根据官方数据调整）
     inline CombatStats getBarbarian(int level)
     {
         CombatStats stats;
-        stats.maxHitpoints = 45 + (level - 1) * 5;      // 等级1: 45HP
+        // 等级1数据：DPS 9, 每次伤害 9, HP 45
+        stats.maxHitpoints = 45;
         stats.currentHitpoints = stats.maxHitpoints;
-        stats.damage = 8 + (level - 1) * 2;              // 等级1: 8 DPS
-        stats.attackSpeed = 1.0f;                        // 1秒攻击一次
-        stats.attackRange = 50.0f;                       // 近战范围
+        stats.damage = 9;
+        stats.attackSpeed = 1.0f;  // 1秒攻击一次
+        stats.attackRange = 50.0f;  // 近战范围
         stats.preferredTarget = CombatStats::TargetType::kAny;
         return stats;
     }
     
-    // 弓箭手配置
+    // 弓箭手配置（根据官方数据）
     inline CombatStats getArcher(int level)
     {
         CombatStats stats;
-        stats.maxHitpoints = 20 + (level - 1) * 3;
+        // 等级1数据：DPS 8, 每次伤害 8, HP 22
+        stats.maxHitpoints = 22;
         stats.currentHitpoints = stats.maxHitpoints;
-        stats.damage = 7 + (level - 1) * 2;
-        stats.attackSpeed = 1.0f;
-        stats.attackRange = 200.0f;                      // 远程攻击
+        stats.damage = 8;
+        stats.attackSpeed = 1.0f;  // 1秒攻击一次
+        stats.attackRange = 200.0f;  // 远程攻击
         stats.preferredTarget = CombatStats::TargetType::kAny;
         return stats;
     }
     
-    // 巨人配置
+    // 巨人配置（根据官方数据）
     inline CombatStats getGiant(int level)
     {
         CombatStats stats;
-        stats.maxHitpoints = 300 + (level - 1) * 40;     // 血厚
+        // 等级1数据：DPS 12, 每次伤害 24, HP 400, 攻速 2秒/次
+        // 特点：血厚、攻击力高、攻速慢、优先攻击防御建筑
+        stats.maxHitpoints = 400;
         stats.currentHitpoints = stats.maxHitpoints;
-        stats.damage = 11 + (level - 1) * 3;
-        stats.attackSpeed = 2.0f;                        // 攻击慢
+        stats.damage = 24;
+        stats.attackSpeed = 2.0f;  // 2秒攻击一次
         stats.attackRange = 50.0f;
         stats.preferredTarget = CombatStats::TargetType::kDefense; // 优先打防御
         return stats;
     }
     
-    // 哥布林配置
+    // 哥布林配置（根据官方数据）
     inline CombatStats getGoblin(int level)
     {
         CombatStats stats;
-        stats.maxHitpoints = 25 + (level - 1) * 3;
+        // 等级1数据：DPS 11, 每次伤害 11, HP 25
+        // 特点：优先攻击资源建筑，对资源建筑造成2倍伤害（22）
+        stats.maxHitpoints = 25;
         stats.currentHitpoints = stats.maxHitpoints;
-        stats.damage = 11 + (level - 1) * 2;
-        stats.attackSpeed = 1.0f;
+        stats.damage = 11;
+        stats.attackSpeed = 1.0f;  // 1秒攻击一次
         stats.attackRange = 50.0f;
         stats.preferredTarget = CombatStats::TargetType::kResource; // 优先打资源
         return stats;
     }
     
-    // 炸弹人配置
+    // 炸弹人配置（调整为合理数值）
     inline CombatStats getWallBreaker(int level)
     {
         CombatStats stats;
-        stats.maxHitpoints = 20 + (level - 1) * 4;
+        // 炸弹人特点：血少、自爆伤害极高、专门炸城墙
+        stats.maxHitpoints = 20;
         stats.currentHitpoints = stats.maxHitpoints;
-        stats.damage = 150 + (level - 1) * 50;           // 自爆伤害高
-        stats.attackSpeed = 0.0f;                        // 自爆型
+        stats.damage = 150;  // 自爆伤害高
+        stats.attackSpeed = 0.0f;  // 自爆型
         stats.attackRange = 30.0f;
         stats.preferredTarget = CombatStats::TargetType::kWalls;
         return stats;
@@ -166,29 +173,65 @@ namespace UnitConfig
  */
 namespace DefenseConfig
 {
-    // 加农炮配置
+    // 加农炮配置（根据官方数据调整，最高14级）
     inline CombatStats getCannon(int level)
     {
         CombatStats stats;
-        stats.maxHitpoints = 380 + (level - 1) * 60;
+        
+        // 生命值配置（等级1-14）
+        const int hitpointsTable[] = {
+            300,  360,  420,  500,  600,  660,  730,  800,
+            880,  960,  1060, 1160, 1260, 1380
+        };
+        
+        // 每次伤害配置（等级1-14）
+        const float damageTable[] = {
+            5.6f,  8.0f,  10.4f, 13.6f, 18.4f, 24.0f, 32.0f, 38.4f,
+            44.8f, 51.2f, 59.2f, 68.0f, 76.0f, 80.0f
+        };
+        
+        // 限制等级范围 1-14
+        int actualLevel = level;
+        if (actualLevel < 1) actualLevel = 1;
+        if (actualLevel > 14) actualLevel = 14;
+        
+        stats.maxHitpoints = hitpointsTable[actualLevel - 1];
         stats.currentHitpoints = stats.maxHitpoints;
-        stats.damage = 9 + (level - 1) * 2;
-        stats.attackSpeed = 0.8f;
-        stats.attackRange = 250.0f;
-        stats.preferredTarget = CombatStats::TargetType::kGround;
+        stats.damage = static_cast<int>(damageTable[actualLevel - 1]);
+        stats.attackSpeed = 0.8f;  // 固定0.8秒攻击一次
+        stats.attackRange = 250.0f;  // 攻击范围250像素
+        stats.preferredTarget = CombatStats::TargetType::kGround;  // 只攻击地面目标
         return stats;
     }
     
-    // 箭塔配置
+    // 箭塔配置（根据官方数据调整）
     inline CombatStats getArcherTower(int level)
     {
         CombatStats stats;
-        stats.maxHitpoints = 380 + (level - 1) * 60;
+        
+        // 生命值配置（等级1-14）
+        const int hitpointsTable[] = {
+            380,  420,  460,  500,  540,  580,  630,  
+            690,  750,  810,  890,  970,  1050, 1130
+        };
+        
+        // 每次伤害配置（等级1-14）
+        const float damageTable[] = {
+            5.5f,  7.5f,  9.5f,  12.5f, 15.0f, 17.5f, 21.0f,
+            24.0f, 28.0f, 31.5f, 35.0f, 37.0f, 39.0f, 41.0f
+        };
+        
+        // 限制等级范围 1-14
+        int actualLevel = level;
+        if (actualLevel < 1) actualLevel = 1;
+        if (actualLevel > 14) actualLevel = 14;
+        
+        stats.maxHitpoints = hitpointsTable[actualLevel - 1];
         stats.currentHitpoints = stats.maxHitpoints;
-        stats.damage = 11 + (level - 1) * 3;
-        stats.attackSpeed = 1.0f;
-        stats.attackRange = 300.0f;
-        stats.preferredTarget = CombatStats::TargetType::kAny; // 可打空中和地面
+        stats.damage = static_cast<int>(damageTable[actualLevel - 1]);
+        stats.attackSpeed = 0.5f;  // 固定0.5秒攻击一次
+        stats.attackRange = 300.0f;  // 攻击范围300像素（比加农炮远）
+        stats.preferredTarget = CombatStats::TargetType::kAny;  // 可攻击空中和地面目标
         return stats;
     }
     
