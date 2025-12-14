@@ -1,4 +1,12 @@
-﻿#include "MusicManager.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     MusicManager.cpp
+ * File Function: 音乐管理器实现
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "MusicManager.h"
 #include "cocos2d.h"
 
 using namespace cocos2d;

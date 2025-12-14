@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     MapController.h
+ * File Function: 地图控制器 - 管理游戏中的地图切换、缩放和移动
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#pragma once
 #ifndef __MAP_CONTROLLER_H__
 #define __MAP_CONTROLLER_H__
 

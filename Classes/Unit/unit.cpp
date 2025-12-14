@@ -1,4 +1,12 @@
-﻿#include "unit.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:
+ * File Function:
+ * Author:        
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "unit.h"
 
 USING_NS_CC; // 使用 Cocos2d 命名空间，免去每次写 cocos2d::
 
@@ -140,9 +148,7 @@ bool Unit::init(UnitType type)
         cocos2d::log("Error: Failed to create sprite. Check plist path.");
     }
 
-    // 5. 【关键】开启 update 调度
-    // 这行代码告诉引擎：“请每一帧调用一次我的 update(float dt) 函数”
-    this->scheduleUpdate();
+    // 5. 【关键】移除自动 update 调度，改为由 BattleScene 手动调用 tick
 
     return true;
 }
@@ -604,7 +610,7 @@ void Unit::MoveTo(const Vec2& target_pos)
 // 帧循环：每一帧都会被引擎调用 (例如 60FPS 则每秒调用 60 次)
 // dt (Delta Time): 距离上一帧过去的时间 (秒)，例如 0.016s
 // --------------------------------------------------------------------------
-void Unit::update(float dt)
+void Unit::tick(float dt)
 {
     if (!is_moving_)
         return; // 如果没在移动，直接跳过
@@ -762,4 +768,22 @@ bool Unit::isInAttackRange(const cocos2d::Vec2& targetPos) const
 {
     float distance = this->getPosition().distance(targetPos);
     return distance <= combat_stats_.attackRange;
+}
+
+void Unit::updateAttackCooldown(float dt)
+{
+    if (attack_cooldown_ > 0.0f)
+    {
+        attack_cooldown_ -= dt;
+    }
+}
+
+bool Unit::isAttackReady() const
+{
+    return attack_cooldown_ <= 0.0f;
+}
+
+void Unit::resetAttackCooldown()
+{
+    attack_cooldown_ = combat_stats_.attackSpeed;
 }

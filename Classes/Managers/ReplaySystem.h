@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     ReplaySystem.h
+ * File Function: 回放系统 - 负责游戏的回放录制和回放
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#pragma once
 #ifndef __REPLAY_SYSTEM_H__
 #define __REPLAY_SYSTEM_H__
 
@@ -23,7 +31,7 @@ enum class ReplayEventType {
  * @brief 单个回放事件
  */
 struct ReplayEvent {
-    float timestamp;        // 事件发生的时间（相对于战斗开始）
+    unsigned int frameIndex; // 事件发生的帧数（相对于战斗开始）
     ReplayEventType type;   // 事件类型
     int unitType;           // 士兵类型 (如果是部署事件)
     float x;                // X坐标
@@ -71,12 +79,12 @@ public:
     /**
      * @brief 记录部署士兵事件
      */
-    void recordDeployUnit(float timestamp, UnitType unitType, const cocos2d::Vec2& position);
+    void recordDeployUnit(unsigned int frameIndex, UnitType unitType, const cocos2d::Vec2& position);
     
     /**
      * @brief 记录战斗结束事件
      */
-    void recordEndBattle(float timestamp);
+    void recordEndBattle(unsigned int frameIndex);
     
     /**
      * @brief 停止录制并获取序列化数据
@@ -96,9 +104,9 @@ public:
     void loadReplay(const std::string& replayDataStr);
     
     /**
-     * @brief 更新回放逻辑（在 update 中调用）
+     * @brief 更新回放逻辑（在 fixedUpdate 中调用）
      */
-    void update(float dt);
+    void updateFrame(unsigned int currentFrame);
     
     /**
      * @brief 设置部署士兵的回调
@@ -150,7 +158,6 @@ private:
     bool _isReplaying = false;
     
     ReplayData _currentReplayData;
-    float _replayTime = 0.0f;
     size_t _nextEventIndex = 0;
     
     std::function<void(UnitType, const cocos2d::Vec2&)> _deployUnitCallback;

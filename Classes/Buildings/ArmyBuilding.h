@@ -2,7 +2,7 @@
  * Project Name:  Clash_of_Clans
  * File Name:     ArmyBuilding.h
  * File Function: 军事建筑类（兵营、训练营等）
- * Author:        赵崇治
+ * Author:        
  * Update Date:   2025/11/29
  * License:       MIT License
  ****************************************************************/

@@ -1,7 +1,11 @@
-﻿/**
- * @file BuildingManager.cpp
- * @brief 建筑管理器实现
- */
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     BuildingManager.cpp
+ * File Function: 建筑管理器实现
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
 #include "BuildingManager.h"
 #include "Managers/UpgradeManager.h" // 引入头文件
 #include "Managers/TroopInventory.h"  // 🆕 引入士兵库存管理

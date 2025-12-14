@@ -1,4 +1,12 @@
-﻿#include "MapController.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     MapController.cpp
+ * File Function: 地图控制器 - 管理游戏中的地图切换、缩放和移动
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "MapController.h"
 #include "GridMap.h"
 
 USING_NS_CC;

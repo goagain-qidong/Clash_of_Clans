@@ -22,6 +22,9 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\AccountManager.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BattleManager.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BuildingCapacityManager.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
@@ -136,6 +139,9 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ArmySelectionUI.cpp">
       <Filter>Source Files\Classes\UI</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\BattleUI.cpp">
+      <Filter>Source Files\Classes\UI</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\PlayerListLayer.cpp">
       <Filter>Source Files\Classes\UI</Filter>
     </ClCompile>
@@ -175,6 +181,9 @@
       <Filter>Source Files\Classes\Scenes</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\AccountManager.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BattleManager.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\BuildingCapacityManager.h">
@@ -298,6 +307,9 @@
       <Filter>Source Files\Classes\Unit</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ArmySelectionUI.h">
+      <Filter>Source Files\Classes\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\BattleUI.h">
       <Filter>Source Files\Classes\UI</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\PlayerListLayer.h">
@@ -536,6 +548,15 @@
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\buildings\BaseCamp\town-hall-9.png">
       <Filter>Resources\buildings\BaseCamp</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\buildings\Broken\broken1x1.png">
+      <Filter>Resources\buildings\Broken</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\buildings\Broken\broken2x2.png">
+      <Filter>Resources\buildings\Broken</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\buildings\Broken\broken3x3.png">
+      <Filter>Resources\buildings\Broken</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\buildings\BuildersHut\Builders_Hut1.png">
       <Filter>Resources\buildings\BuildersHut</Filter>
@@ -996,349 +1017,7 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\res\.gitkeep">
       <Filter>Resources\res</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\Thumbs.db">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer.plist">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer.tps">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Export\archer\archer.ExportJson">
-      <Filter>Resources\units\archer\archer\Export\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Export\archer\archer.plist">
-      <Filter>Resources\units\archer\archer\Export\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Export\archer\archer.png">
-      <Filter>Resources\units\archer\archer\Export\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\Thumbs.db">
-      <Filter>Resources\units\archer\archer\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer.plist">
-      <Filter>Resources\units\archer\archer\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer.png">
-      <Filter>Resources\units\archer\archer\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer1.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer10.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer11.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer12.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer13.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer14.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer15.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer16.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer17.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer18.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer19.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer2.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer20.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer21.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer22.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer23.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer24.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer25.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer26.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer27.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer28.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer29.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer3.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer30.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer31.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer32.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer33.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer34.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer35.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer36.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer37.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer38.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer39.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer4.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer40.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer41.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer42.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer43.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer44.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer45.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer46.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer47.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer48.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer49.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer5.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer50.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer51.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer52.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer53.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer54.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer6.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer7.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer8.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Resources\archer_PList.Dir\archer9.0.png">
-      <Filter>Resources\units\archer\archer\Resources\archer_PList.Dir</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\Ruler\archer.xml">
-      <Filter>Resources\units\archer\archer\Ruler</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer\archer.xml.animation">
-      <Filter>Resources\units\archer\archer</Filter>
-    </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer0.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer1.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer10.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer11.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer12.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer13.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer14.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer15.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer16.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer17.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer18.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer19.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer2.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer20.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer21.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer22.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer23.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer24.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer25.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer26.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer27.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer28.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer29.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer3.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer30.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer31.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer32.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer33.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer34.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer35.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer36.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer37.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer38.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer39.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer4.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer40.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer41.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer42.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer43.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer44.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer45.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer46.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer47.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer48.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer49.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer5.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer50.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer51.0.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer52.0.png">
       <Filter>Resources\units\archer</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer53.0.png">
@@ -1347,22 +1026,163 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer54.0.png">
       <Filter>Resources\units\archer</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer6.0.png">
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_01.png">
       <Filter>Resources\units\archer</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer7.0.png">
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_02.png">
       <Filter>Resources\units\archer</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer8.0.png">
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_03.png">
       <Filter>Resources\units\archer</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer9.0.png">
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_04.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_05.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_06.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_07.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_08.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_09.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_attack_10.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_walk_01.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_walk_02.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_walk_03.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_walk_04.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_walk_05.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_walk_06.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_walk_07.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_side_walk_08.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_attack_01.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_attack_02.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_attack_03.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_attack_04.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_attack_05.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_attack_06.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_attack_07.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_attack_08.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_attack_09.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_walk_01.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_walk_02.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_walk_03.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_walk_04.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_walk_05.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_walk_06.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_walk_07.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_under_walk_08.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_attack_01.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_attack_02.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_attack_03.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_attack_04.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_attack_05.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_attack_06.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_attack_07.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_attack_08.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_attack_09.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_walk_01.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_walk_02.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_walk_03.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_walk_04.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_walk_05.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_walk_06.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_walk_07.png">
+      <Filter>Resources\units\archer</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\archer_upper_walk_08.png">
       <Filter>Resources\units\archer</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\shadow.png">
-      <Filter>Resources\units\archer</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer\分类.txt">
       <Filter>Resources\units\archer</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\units\archer_select_button_active.png">
@@ -2617,6 +2437,9 @@
     <Filter Include="Resources\buildings\BaseCamp">
       <UniqueIdentifier>{7B9229E3-138B-3F2E-A7E8-4225EC262215}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resources\buildings\Broken">
+      <UniqueIdentifier>{A5C55595-5245-3E8E-A769-AC82DB91EE7F}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Resources\buildings\BuildersHut">
       <UniqueIdentifier>{BC2E9C5B-5C8D-3020-BB50-1F7ED613E421}</UniqueIdentifier>
     </Filter>
@@ -2661,24 +2484,6 @@
     </Filter>
     <Filter Include="Resources\units\archer">
       <UniqueIdentifier>{97754AFB-113E-3ECB-B608-B4FF1F0E60CA}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources\units\archer\archer">
-      <UniqueIdentifier>{93D9900C-C27C-3DF2-AC35-246B8D3ABD88}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources\units\archer\archer\Export">
-      <UniqueIdentifier>{26BA32D4-BE42-368B-AD7E-A8B944BF531C}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources\units\archer\archer\Export\archer">
-      <UniqueIdentifier>{F8B1397E-1A61-3CB7-B169-907BB4232970}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources\units\archer\archer\Resources">
-      <UniqueIdentifier>{2BFEC965-AC41-3C19-85BA-24D1C0F915EC}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources\units\archer\archer\Resources\archer_PList.Dir">
-      <UniqueIdentifier>{B8FA14F3-E563-3BE9-AB09-B7A0C160D8B6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources\units\archer\archer\Ruler">
-      <UniqueIdentifier>{ACDA671D-7290-3D48-A5D4-7FA6E0C3909F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\units\barbarian">
       <UniqueIdentifier>{F0617DD7-ED41-3F1D-B2CB-D16DA3F73D8D}</UniqueIdentifier>

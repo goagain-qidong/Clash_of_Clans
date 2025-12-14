@@ -1,4 +1,12 @@
-﻿#include "BattleScene.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     BattleScene.cpp
+ * File Function: 战斗场景
+ * Author:        赵崇治、薛毓哲
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "BattleScene.h"
 #include "DraggableMapScene.h"
 #include "AccountManager.h"
 #include "BuildingManager.h"
@@ -6,9 +14,10 @@
 #include "ResourceManager.h"
 #include "Buildings/BaseBuilding.h"
 #include "Buildings/DefenseBuilding.h"
-#include "Managers/DefenseLogSystem.h"  // 🔴 添加防守日志系统头文件
-#include "Managers/TroopInventory.h"  // 🆕 添加士兵库存管理
-#include <ctime>  // 🔴 添加time头文件
+#include "Managers/DefenseLogSystem.h"
+#include "Managers/TroopInventory.h"
+#include "Managers/MusicManager.h"
+#include <ctime>
 
 USING_NS_CC;
 using namespace ui;
@@ -22,7 +31,6 @@ Scene* BattleScene::createScene()
 
 BattleScene* BattleScene::createWithEnemyData(const AccountGameData& enemyData)
 {
-    // Keep for backward compatibility if needed, or redirect
     return createWithEnemyData(enemyData, "Enemy");
 }
 
@@ -50,6 +58,16 @@ BattleScene* BattleScene::createWithReplayData(const std::string& replayDataStr)
     return nullptr;
 }
 
+BattleScene::BattleScene()
+{
+    _battleManager = new BattleManager();
+}
+
+BattleScene::~BattleScene()
+{
+    CC_SAFE_DELETE(_battleManager);
+}
+
 // ==================== 初始化 ====================
 
 bool BattleScene::init()
@@ -64,9 +82,10 @@ bool BattleScene::init()
     setupMap();
     setupUI();
 
-    // 显示提示：需要传入敌方数据
-    _statusLabel->setString("错误：未加载敌方基地数据！");
-    _statusLabel->setTextColor(Color4B::RED);
+    if (_battleUI)
+    {
+        _battleUI->updateStatus("错误：未加载敌方基地数据！", Color4B::RED);
+    }
 
     return true;
 }
@@ -84,15 +103,103 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
     }
 
     _visibleSize = Director::getInstance()->getVisibleSize();
-    _enemyGameData = enemyData;
-    _enemyUserId = enemyUserId;
-    _enemyTownHallLevel = enemyData.townHallLevel;
-    _isReplayMode = false; // 正常模式
 
     setupMap();
     setupUI();
-    setupTouchListeners();  // ✅ 新增：设置触摸监听
-    loadEnemyBase();
+    setupTouchListeners();
+    
+    // Initialize Manager
+    if (_battleManager)
+    {
+        _battleManager->init(_mapSprite, enemyData, enemyUserId, false);
+        
+        // Setup callbacks
+        _battleManager->setUIUpdateCallback([this]() {
+            if (_battleUI && _battleManager)
+            {
+                _battleUI->updateTimer(static_cast<int>(_battleManager->getRemainingTime()));
+                _battleUI->updateStars(_battleManager->getStars());
+                _battleUI->updateDestruction(_battleManager->getDestructionPercent());
+            }
+        });
+        
+        _battleManager->setBattleEndCallback([this]() {
+            if (_battleUI && _battleManager)
+            {
+                int trophyChange = _battleManager->getStars() * 10 - (3 - _battleManager->getStars()) * 3;
+                _battleUI->showResultPanel(
+                    _battleManager->getStars(),
+                    _battleManager->getDestructionPercent(),
+                    _battleManager->getGoldLooted(),
+                    _battleManager->getElixirLooted(),
+                    trophyChange,
+                    _battleManager->isReplayMode()
+                );
+            }
+        });
+        
+        _battleManager->setTroopDeployCallback([this](UnitType type, int count) {
+            if (_battleUI && _battleManager)
+            {
+                _battleUI->updateTroopCounts(
+                    _battleManager->getTroopCount(UnitType::kBarbarian),
+                    _battleManager->getTroopCount(UnitType::kArcher),
+                    _battleManager->getTroopCount(UnitType::kGiant)
+                );
+            }
+        });
+    }
+    
+    // Load Buildings
+    if (_buildingManager && !enemyData.buildings.empty())
+    {
+        CCLOG("🏰 Loading enemy base with %zu buildings...", enemyData.buildings.size());
+        _buildingManager->loadBuildingsFromData(enemyData.buildings, true);
+        
+        // Pass buildings to manager
+        if (_battleManager)
+        {
+            const auto& buildings = _buildingManager->getBuildings();
+            // Convert list<BaseBuilding*> to vector<BaseBuilding*>
+            std::vector<BaseBuilding*> buildingVec(buildings.begin(), buildings.end());
+            _battleManager->setBuildings(buildingVec);
+        }
+
+        if (_battleUI)
+        {
+            _battleUI->updateStatus(StringUtils::format("攻击 %s 的村庄 (大本营 Lv.%d)", 
+                                                      enemyUserId.c_str(), 
+                                                      enemyData.townHallLevel), Color4B::GREEN);
+        }
+    }
+    else
+    {
+        if (_battleUI) _battleUI->updateStatus("错误：无法加载敌方基地！", Color4B::RED);
+        CCLOG("❌ Failed to load enemy base: no buildings data");
+    }
+
+    // 🎵 播放准备音乐
+    MusicManager::getInstance().playMusic(MusicType::BATTLE_PREPARING);
+
+    // Delay start battle
+    this->scheduleOnce([this](float dt) {
+        if (_battleManager) _battleManager->startBattle();
+        if (_battleUI)
+        {
+            _battleUI->updateStatus("部署你的士兵进行攻击！", Color4B::YELLOW);
+            _battleUI->showBattleHUD(true);
+            _battleUI->showTroopButtons(true);
+            // Initial troop counts update
+            if (_battleManager)
+            {
+                _battleUI->updateTroopCounts(
+                    _battleManager->getTroopCount(UnitType::kBarbarian),
+                    _battleManager->getTroopCount(UnitType::kArcher),
+                    _battleManager->getTroopCount(UnitType::kGiant)
+                );
+            }
+        }
+    }, 1.0f, "start_battle_delay");
 
     scheduleUpdate();
 
@@ -107,14 +214,12 @@ bool BattleScene::initWithReplayData(const std::string& replayDataStr)
     }
 
     _visibleSize = Director::getInstance()->getVisibleSize();
-    _isReplayMode = true; // 回放模式
 
     // 加载回放数据
     auto& replaySystem = ReplaySystem::getInstance();
     replaySystem.loadReplay(replayDataStr);
     
-    // 从回放数据中恢复敌方信息
-    _enemyUserId = replaySystem.getReplayEnemyUserId();
+    std::string enemyUserId = replaySystem.getReplayEnemyUserId();
     std::string enemyJson = replaySystem.getReplayEnemyGameDataJson();
     
     if (enemyJson.empty())
@@ -123,45 +228,85 @@ bool BattleScene::initWithReplayData(const std::string& replayDataStr)
         return false;
     }
     
-    _enemyGameData = AccountGameData::fromJson(enemyJson);
-    _enemyTownHallLevel = _enemyGameData.townHallLevel;
+    AccountGameData enemyData = AccountGameData::fromJson(enemyJson);
     
-    // 设置随机种子（如果有随机逻辑）
-    // srand(replaySystem.getReplaySeed());
+    // 设置随机种子
+    srand(replaySystem.getReplaySeed());
 
     setupMap();
     setupUI();
-    // 回放模式下不需要触摸监听来部署士兵，但可能需要拖动地图
     setupTouchListeners(); 
-    loadEnemyBase();
+    
+    // Initialize Manager
+    if (_battleManager)
+    {
+        _battleManager->init(_mapSprite, enemyData, enemyUserId, true);
+        
+        // Setup callbacks (same as above)
+        _battleManager->setUIUpdateCallback([this]() {
+            if (_battleUI && _battleManager)
+            {
+                _battleUI->updateTimer(static_cast<int>(_battleManager->getRemainingTime()));
+                _battleUI->updateStars(_battleManager->getStars());
+                _battleUI->updateDestruction(_battleManager->getDestructionPercent());
+            }
+        });
+        
+        _battleManager->setBattleEndCallback([this]() {
+            if (_battleUI && _battleManager)
+            {
+                int trophyChange = _battleManager->getStars() * 10 - (3 - _battleManager->getStars()) * 3;
+                _battleUI->showResultPanel(
+                    _battleManager->getStars(),
+                    _battleManager->getDestructionPercent(),
+                    _battleManager->getGoldLooted(),
+                    _battleManager->getElixirLooted(),
+                    trophyChange,
+                    true
+                );
+            }
+        });
+    }
+    
+    // Load Buildings
+    if (_buildingManager && !enemyData.buildings.empty())
+    {
+        _buildingManager->loadBuildingsFromData(enemyData.buildings, true);
+        
+        if (_battleManager)
+        {
+            const auto& buildings = _buildingManager->getBuildings();
+            std::vector<BaseBuilding*> buildingVec(buildings.begin(), buildings.end());
+            _battleManager->setBuildings(buildingVec);
+        }
+    }
+
+    // 🎵 回放模式直接播放战斗音乐
+    MusicManager::getInstance().playMusic(MusicType::BATTLE_GOING);
 
     scheduleUpdate();
     
     // 设置回放回调
     replaySystem.setDeployUnitCallback([this](UnitType type, const Vec2& pos) {
-        // 在回放模式下，直接部署，不检查库存
-        deployUnit(type, pos);
+        if (_battleManager) _battleManager->deployUnit(type, pos);
     });
     
     replaySystem.setEndBattleCallback([this]() {
-        endBattle(false);
+        if (_battleManager) _battleManager->endBattle(false);
     });
     
-    // 隐藏部署按钮
-    _barbarianButton->setVisible(false);
-    _archerButton->setVisible(false);
-    _giantButton->setVisible(false);
-    _barbarianCountLabel->setVisible(false);
-    _archerCountLabel->setVisible(false);
-    _giantCountLabel->setVisible(false);
+    // UI Setup for Replay
+    if (_battleUI)
+    {
+        _battleUI->showTroopButtons(false);
+        _battleUI->updateStatus("🔴 战斗回放中", Color4B::RED);
+        _battleUI->setEndBattleButtonText("退出回放");
+        _battleUI->setReplayMode(true);
+        _battleUI->showBattleHUD(true);
+    }
     
-    // 显示回放提示
-    auto replayLabel = Label::createWithSystemFont("🔴 战斗回放中", "Arial", 32);
-    replayLabel->setPosition(Vec2(_visibleSize.width / 2, 100));
-    replayLabel->setTextColor(Color4B::RED);
-    replayLabel->runAction(RepeatForever::create(Sequence::create(
-        FadeOut::create(1.0f), FadeIn::create(1.0f), nullptr)));
-    this->addChild(replayLabel, 1000);
+    // Start Battle immediately for replay
+    if (_battleManager) _battleManager->startBattle();
 
     return true;
 }
@@ -192,391 +337,47 @@ void BattleScene::setupMap()
         _buildingManager = BuildingManager::create();
         this->addChild(_buildingManager);
         _buildingManager->setup(_mapSprite, _gridMap);
+        
+        updateBoundary(); // 初始化边界
     }
 }
 
 void BattleScene::setupUI()
 {
-    // ==================== 顶部状态栏 ====================
-    
-    // 状态标签
-    _statusLabel = Label::createWithSystemFont("正在加载敌方基地...", "Arial", 24);
-    _statusLabel->setAnchorPoint(Vec2(0.5f, 1.0f));
-    _statusLabel->setPosition(Vec2(_visibleSize.width / 2, _visibleSize.height - 10));
-    _statusLabel->setTextColor(Color4B::YELLOW);
-    this->addChild(_statusLabel, 100);
+    _battleUI = BattleUI::create();
+    this->addChild(_battleUI, 100);
 
-    // 计时器
-    _timerLabel = Label::createWithSystemFont("3:00", "Arial", 48);
-    _timerLabel->setPosition(Vec2(_visibleSize.width / 2, _visibleSize.height - 60));
-    _timerLabel->setTextColor(Color4B::WHITE);
-    _timerLabel->setVisible(false);
-    this->addChild(_timerLabel, 100);
-
-    // 星数显示
-    _starsLabel = Label::createWithSystemFont("☆☆☆", "Arial", 36);
-    _starsLabel->setPosition(Vec2(100, _visibleSize.height - 60));
-    _starsLabel->setTextColor(Color4B::GRAY);
-    _starsLabel->setVisible(false);
-    this->addChild(_starsLabel, 100);
-
-    // 摧毁百分比
-    _destructionLabel = Label::createWithSystemFont("0%", "Arial", 28);
-    _destructionLabel->setPosition(Vec2(_visibleSize.width - 100, _visibleSize.height - 60));
-    _destructionLabel->setTextColor(Color4B::WHITE);
-    _destructionLabel->setVisible(false);
-    this->addChild(_destructionLabel, 100);
-
-    // ==================== 底部按钮 ====================
-
-    // 结束战斗按钮
-    _endBattleButton = Button::create();
-    _endBattleButton->setTitleText("结束战斗");
-    _endBattleButton->setTitleFontSize(24);
-    _endBattleButton->setPosition(Vec2(_visibleSize.width - 100, 60));
-    _endBattleButton->setVisible(false);
-    _endBattleButton->addClickEventListener([this](Ref*) {
-        if (_isReplayMode) {
+    _battleUI->setEndBattleCallback([this]() {
+        if (_battleManager && _battleManager->isReplayMode()) {
             returnToMainScene();
-        } else {
-            endBattle(true);  // 投降
+        } else if (_battleManager) {
+            _battleManager->endBattle(true);  // 投降
         }
     });
-    this->addChild(_endBattleButton, 100);
 
-    // 🆕 速度控制按钮 (仅回放模式)
-    if (_isReplayMode)
-    {
-        _speedButton = Button::create();
-        _speedButton->setTitleText("x1");
-        _speedButton->setTitleFontSize(32);
-        _speedButton->setPosition(Vec2(_visibleSize.width - 200, 60));
-        _speedButton->addClickEventListener([this](Ref*) {
-            toggleSpeed();
-        });
-        this->addChild(_speedButton, 100);
-    }
-
-    // 返回按钮（战斗结束后显示）
-    _returnButton = Button::create();
-    _returnButton->setTitleText("返回主场景");
-    _returnButton->setTitleFontSize(24);
-    _returnButton->setPosition(Vec2(_visibleSize.width / 2, 60));
-    _returnButton->setVisible(false);
-    _returnButton->addClickEventListener([this](Ref*) {
+    _battleUI->setReturnCallback([this]() {
         returnToMainScene();
     });
-    this->addChild(_returnButton, 100);
-    
-    // ==================== ⭐ 设置士兵部署按钮 ====================
-    setupTroopButtons();
+
+    _battleUI->setTroopSelectionCallback([this](UnitType type) {
+        onTroopSelected(type);
+    });
 }
 
-// ==================== ⭐ 新增：设置士兵部署按钮 ====================
-void BattleScene::setupTroopButtons()
-{
-    float buttonY = 150;
-    float buttonSize = 80;
-    float buttonSpacing = 100;
-    float startX = (_visibleSize.width - buttonSpacing * 2) / 2;
-    
-    // 野蛮人按钮 - 使用图片
-    _barbarianButton = Button::create(
-        "units/barbarian_select_button_active.png",    // 正常状态
-        "units/barbarian_select_button_active.png",    // 按下状态
-        "units/barbarian_select_button_active.png"     // 禁用状态
-    );
-    _barbarianButton->setScale(0.8f);  // 调整大小
-    _barbarianButton->setPosition(Vec2(startX, buttonY));
-    _barbarianButton->setVisible(false);
-    _barbarianButton->addClickEventListener([this](Ref*) {
-        onTroopButtonClicked(UnitType::kBarbarian);
-    });
-    this->addChild(_barbarianButton, 100);
-    
-    _barbarianCountLabel = Label::createWithSystemFont("20", "Arial", 24);
-    _barbarianCountLabel->setPosition(Vec2(startX, buttonY - 50));
-    _barbarianCountLabel->setTextColor(Color4B::WHITE);
-    _barbarianCountLabel->setVisible(false);
-    this->addChild(_barbarianCountLabel, 100);
-    
-    // 弓箭手按钮 - 使用图片
-    _archerButton = Button::create(
-        "units/archer_select_button_active.png",
-        "units/archer_select_button_active.png",
-        "units/archer_select_button_active.png"
-    );
-    _archerButton->setScale(0.8f);
-    _archerButton->setPosition(Vec2(startX + buttonSpacing, buttonY));
-    _archerButton->setVisible(false);
-    _archerButton->addClickEventListener([this](Ref*) {
-        onTroopButtonClicked(UnitType::kArcher);
-    });
-    this->addChild(_archerButton, 100);
-    
-    _archerCountLabel = Label::createWithSystemFont("20", "Arial", 24);
-    _archerCountLabel->setPosition(Vec2(startX + buttonSpacing, buttonY - 50));
-    _archerCountLabel->setTextColor(Color4B::WHITE);
-    _archerCountLabel->setVisible(false);
-    this->addChild(_archerCountLabel, 100);
-    
-    // 巨人按钮 - 使用图片
-    _giantButton = Button::create(
-        "units/giant_select_button_active.png",
-        "units/giant_select_button_active.png",
-        "units/giant_select_button_active.png"
-    );
-    _giantButton->setScale(0.8f);
-    _giantButton->setPosition(Vec2(startX + buttonSpacing * 2, buttonY));
-    _giantButton->setVisible(false);
-    _giantButton->addClickEventListener([this](Ref*) {
-        onTroopButtonClicked(UnitType::kGiant);
-    });
-    this->addChild(_giantButton, 100);
-    
-    _giantCountLabel = Label::createWithSystemFont("5", "Arial", 24);
-    _giantCountLabel->setPosition(Vec2(startX + buttonSpacing * 2, buttonY - 50));
-    _giantCountLabel->setTextColor(Color4B::WHITE);
-    _giantCountLabel->setVisible(false);
-    this->addChild(_giantCountLabel, 100);
-    
-    // 添加触摸监听器，用于部署士兵
-    // 🔴 修复：回放模式下禁用部署触摸监听
-    if (!_isReplayMode)
-    {
-        auto touchListener = EventListenerTouchOneByOne::create();
-        touchListener->onTouchBegan = [this](Touch* touch, Event* event) {
-            if (_state != BattleState::READY && _state != BattleState::FIGHTING)
-                return false;
-            
-            Vec2 touchPos = touch->getLocation();
-            Vec2 mapLocalPos = _mapSprite->convertToNodeSpace(touchPos);
-            
-            // 部署士兵
-            deployUnit(_selectedUnitType, mapLocalPos);
-            return true;
-        };
-        
-        _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
-    }
-}
-
-// ==================== ⭐ 新增：士兵部署逻辑 ====================
-void BattleScene::deployUnit(UnitType type, const cocos2d::Vec2& position)
-{
-    int* count = nullptr;
-    
-    switch (type)
-    {
-    case UnitType::kBarbarian:
-        count = &_barbarianCount;
-        break;
-    case UnitType::kArcher:
-        count = &_archerCount;
-        break;
-    case UnitType::kGiant:
-        count = &_giantCount;
-        break;
-    default:
-        return;
-    }
-    
-    // 在非回放模式下检查库存
-    if (!_isReplayMode)
-    {
-        if (*count <= 0)
-        {
-            CCLOG("⚠️ No more units of this type!");
-            return;
-        }
-        
-        // 🆕 从士兵库存消耗士兵
-        auto& troopInv = TroopInventory::getInstance();
-        if (!troopInv.consumeTroops(type, 1))
-        {
-            CCLOG("⚠️ 无法从库存中消耗士兵！");
-            return;
-        }
-        
-        (*count)--;
-        updateTroopCounts();
-        
-        // 🎥 录制部署事件
-        ReplaySystem::getInstance().recordDeployUnit(_elapsedTime, type, position);
-    }
-    
-    // 创建士兵
-    Unit* unit = Unit::create(type);
-    if (!unit)
-    {
-        CCLOG("❌ Failed to create unit!");
-        if (!_isReplayMode)
-        {
-            // 部署失败，退还士兵
-            TroopInventory::getInstance().addTroops(type, 1);
-        }
-        return;
-    }
-    
-    unit->setPosition(position);
-    // 🎨 根据 Y 坐标设置初始 Z-Order（Y 越大，Z-Order 越小，渲染在越前面）
-    // 使用一个基准值（10000）减去 Y 坐标，确保 Z-Order 始终为正数
-    // 例如：Y=100 -> ZOrder=9900, Y=200 -> ZOrder=9800
-    // 这样 Y 大的对象 ZOrder 小，但都是正数，确保在地图上方渲染
-    int zOrder = 10000 - static_cast<int>(position.y);
-    _mapSprite->addChild(unit, zOrder);
-    _deployedUnits.push_back(unit);
-    
-    // 开始战斗（第一个士兵部署时）
-    if (_state == BattleState::READY)
-    {
-        _state = BattleState::FIGHTING;
-        activateDefenseBuildings();
-    }
-    
-    CCLOG("✅ Deployed unit at (%.1f, %.1f)", position.x, position.y);
-}
-
-void BattleScene::onTroopButtonClicked(UnitType type)
+void BattleScene::onTroopSelected(UnitType type)
 {
     _selectedUnitType = type;
-    
-    // 高亮选中的按钮
-    _barbarianButton->setScale(type == UnitType::kBarbarian ? 1.1f : 1.0f);
-    _archerButton->setScale(type == UnitType::kArcher ? 1.1f : 1.0f);
-    _giantButton->setScale(type == UnitType::kGiant ? 1.1f : 1.0f);
-    
-    CCLOG("Selected unit type: %d", static_cast<int>(type));
-}
-
-void BattleScene::updateTroopCounts()
-{
-    _barbarianCountLabel->setString(StringUtils::format("%d", _barbarianCount));
-    _archerCountLabel->setString(StringUtils::format("%d", _archerCount));
-    _giantCountLabel->setString(StringUtils::format("%d", _giantCount));
-}
-
-// ==================== 加载敌方基地 ====================
-
-void BattleScene::loadEnemyBase()
-{
-    if (!_buildingManager || _enemyGameData.buildings.empty())
-    {
-        _statusLabel->setString("错误：无法加载敌方基地！");
-        _statusLabel->setTextColor(Color4B::RED);
-        CCLOG("❌ Failed to load enemy base: no buildings data");
-        return;
-    }
-
-    CCLOG("🏰 Loading enemy base with %zu buildings...", _enemyGameData.buildings.size());
-
-    // 以只读模式加载敌方建筑（不允许升级）
-    _buildingManager->loadBuildingsFromData(_enemyGameData.buildings, true);
-
-    _statusLabel->setString(StringUtils::format("攻击 %s 的村庄 (大本营 Lv.%d)", 
-                                                  _enemyUserId.c_str(), 
-                                                  _enemyTownHallLevel));
-    _statusLabel->setTextColor(Color4B::GREEN);
-
-    // 延迟1秒后开始战斗
-    this->scheduleOnce([this](float dt) {
-        startBattle();
-    }, 1.0f, "start_battle_delay");
+    if (_battleUI) _battleUI->highlightTroopButton(type);
 }
 
 // ==================== 战斗逻辑 ====================
 
-void BattleScene::startBattle()
-{
-    _state = BattleState::READY;
-    _elapsedTime = 0.0f;
-
-    _statusLabel->setString("部署你的士兵进行攻击！");
-    _timerLabel->setVisible(true);
-    _starsLabel->setVisible(true);
-    _destructionLabel->setVisible(true);
-    _endBattleButton->setVisible(true);
-    
-    if (!_isReplayMode)
-    {
-        // 🆕 从士兵库存读取可用士兵数量
-        auto& troopInv = TroopInventory::getInstance();
-        _barbarianCount = troopInv.getTroopCount(UnitType::kBarbarian);
-        _archerCount = troopInv.getTroopCount(UnitType::kArcher);
-        _giantCount = troopInv.getTroopCount(UnitType::kGiant);
-        
-        CCLOG("📦 可用士兵：野蛮人=%d，弓箭手=%d，巨人=%d", 
-              _barbarianCount, _archerCount, _giantCount);
-        
-        // ⭐ 显示士兵部署按钮
-        _barbarianButton->setVisible(true);
-        _archerButton->setVisible(true);
-        _giantButton->setVisible(true);
-        _barbarianCountLabel->setVisible(true);
-        _archerCountLabel->setVisible(true);
-        _giantCountLabel->setVisible(true);
-        
-        // 更新士兵数量显示
-        updateTroopCounts();
-        
-        // 🎥 开始录制
-        // 使用当前时间作为随机种子
-        unsigned int seed = static_cast<unsigned int>(time(nullptr));
-        srand(seed);
-        ReplaySystem::getInstance().startRecording(_enemyUserId, _enemyGameData.toJson(), seed);
-    }
-    else
-    {
-        // 回放模式下隐藏按钮
-        _barbarianButton->setVisible(false);
-        _archerButton->setVisible(false);
-        _giantButton->setVisible(false);
-        _barbarianCountLabel->setVisible(false);
-        _archerCountLabel->setVisible(false);
-        _giantCountLabel->setVisible(false);
-        
-        _statusLabel->setString("正在回放战斗...");
-        _endBattleButton->setTitleText("退出回放"); // 🆕 更新按钮文本
-    }
-    
-    // 获取敌方建筑列表并计算总血量
-    if (_buildingManager)
-    {
-        const auto& buildings = _buildingManager->getBuildings();
-        _enemyBuildings.clear();
-        _enemyBuildings.assign(buildings.begin(), buildings.end());
-        
-        _totalBuildingHP = 0;
-        _destroyedBuildingHP = 0;
-        
-        for (auto* building : _enemyBuildings)
-        {
-            if (building)
-            {
-                _totalBuildingHP += building->getMaxHitpoints();
-            }
-        }
-        
-        CCLOG("📊 Total buildings: %zu, Total HP: %d", _enemyBuildings.size(), _totalBuildingHP);
-    }
-
-    CCLOG("⚔️ Battle started! Click on map to deploy troops!");
-}
-
 void BattleScene::update(float dt)
 {
-    // 🆕 应用时间缩放
     float scaledDt = dt * _timeScale;
-
-    if (_state == BattleState::READY || _state == BattleState::FIGHTING)
+    if (_battleManager)
     {
-        updateBattleState(scaledDt);
-        
-        // 🎥 更新回放系统
-        if (_isReplayMode)
-        {
-            ReplaySystem::getInstance().update(scaledDt);
-        }
+        _battleManager->update(scaledDt);
     }
 }
 
@@ -587,288 +388,9 @@ void BattleScene::toggleSpeed()
     } else {
         _timeScale *= 2.0f;
     }
-    
-    if (_speedButton) {
-        _speedButton->setTitleText(StringUtils::format("x%.0f", _timeScale));
-    }
 }
 
-void BattleScene::updateBattleState(float dt)
-{
-    _elapsedTime += dt;
-    float remainingTime = _battleTime - _elapsedTime;
-
-    if (remainingTime <= 0)
-    {
-        remainingTime = 0;
-        endBattle(false);  // 时间耗尽，自动结束
-    }
-
-    updateTimer();
-
-    // 🎨 动态更新所有士兵的 Z-Order（根据 Y 坐标实现2.5D深度排序）
-    // 规则：Y 坐标越大（越靠屏幕下方），Z-Order 越小，渲染在越前面
-    // 使用 10000 - Y 作为基准，确保所有 Z-Order 都是正数
-    for (auto* unit : _deployedUnits)
-    {
-        if (unit && !unit->IsDead())
-        {
-            // 使用 10000 - Y 作为 Z-Order
-            // 例如：Y=100 -> ZOrder=9900, Y=200 -> ZOrder=9800
-            // ZOrder 越大越在前面，所以 9900 > 9800，Y=100 的对象在前面
-            // 但我们希望 Y 大的在前面，所以这个公式是对的
-            int newZOrder = 10000 - static_cast<int>(unit->getPositionY());
-            unit->setLocalZOrder(newZOrder);
-        }
-    }
-    
-    // 🎨 建筑的 Z-Order 也需要动态更新
-    // 每帧更新一次以确保与士兵的深度关系正确
-    for (auto* building : _enemyBuildings)
-    {
-        if (building && !building->isDestroyed())
-        {
-            int newZOrder = 10000 - static_cast<int>(building->getPositionY());
-            building->setLocalZOrder(newZOrder);
-        }
-    }
-
-    // ⭐ 更新所有士兵的 AI
-    updateUnitAI(dt);
-    
-    // ⭐ 更新防御建筑的攻击逻辑
-    for (auto* building : _enemyBuildings)
-    {
-        if (building && building->isDefenseBuilding())
-        {
-            auto* defenseBuilding = dynamic_cast<DefenseBuilding*>(building);
-            if (defenseBuilding)
-            {
-                defenseBuilding->tick(dt);
-                defenseBuilding->detectEnemies(_deployedUnits);
-            }
-        }
-    }
-    
-    // ⭐ 计算摧毁百分比
-    _destroyedBuildingHP = 0;
-    int destroyedCount = 0;
-    
-    for (auto* building : _enemyBuildings)
-    {
-        if (building)
-        {
-            int lostHP = building->getMaxHitpoints() - building->getHitpoints();
-            _destroyedBuildingHP += lostHP;
-            
-            if (building->isDestroyed())
-            {
-                destroyedCount++;
-            }
-        }
-    }
-    
-    if (_totalBuildingHP > 0)
-    {
-        int newDestruction = (_destroyedBuildingHP * 100) / _totalBuildingHP;
-        if (newDestruction != _destructionPercent)
-        {
-            updateDestruction(newDestruction);
-        }
-    }
-    
-    // 检查是否所有建筑被摧毁
-    if (destroyedCount == _enemyBuildings.size() && !_enemyBuildings.empty())
-    {
-        CCLOG("🎉 All buildings destroyed!");
-        endBattle(false);
-    }
-}
-
-void BattleScene::updateTimer()
-{
-    float remainingTime = _battleTime - _elapsedTime;
-    int minutes = static_cast<int>(remainingTime) / 60;
-    int seconds = static_cast<int>(remainingTime) % 60;
-    _timerLabel->setString(StringUtils::format("%d:%02d", minutes, seconds));
-
-    // 时间快用完时变红
-    if (remainingTime < 30)
-    {
-        _timerLabel->setTextColor(Color4B::RED);
-    }
-}
-
-void BattleScene::updateStars(int stars)
-{
-    _starsEarned = std::min(stars, 3);
-
-    std::string starsStr = "";
-    for (int i = 0; i < 3; i++)
-    {
-        starsStr += (i < _starsEarned) ? "★" : "☆";
-    }
-    _starsLabel->setString(starsStr);
-    _starsLabel->setTextColor(_starsEarned > 0 ? Color4B::YELLOW : Color4B::GRAY);
-}
-
-void BattleScene::updateDestruction(int percent)
-{
-    _destructionPercent = std::min(percent, 100);
-    _destructionLabel->setString(StringUtils::format("%d%%", _destructionPercent));
-
-    // 根据摧毁百分比更新星数
-    int stars = 0;
-    if (_destructionPercent >= 50) stars = 1;
-    if (_destructionPercent >= 70) stars = 2;
-    if (_destructionPercent == 100) stars = 3;
-
-    if (stars > _starsEarned)
-    {
-        updateStars(stars);
-    }
-}
-
-void BattleScene::endBattle(bool surrender)
-{
-    if (_state == BattleState::FINISHED)
-        return;
-
-    _state = BattleState::FINISHED;
-    
-    // 🎥 记录结束事件
-    if (!_isReplayMode)
-    {
-        ReplaySystem::getInstance().recordEndBattle(_elapsedTime);
-    }
-
-    calculateBattleResult();
-    showBattleResult();
-
-    if (!_isReplayMode)
-    {
-        // 🆕 保存更新后的游戏数据（包括士兵库存）
-        auto& accountMgr = AccountManager::getInstance();
-        accountMgr.saveGameStateToFile();
-        CCLOG("💾 战斗结束，已保存游戏数据（包括剩余士兵）");
-
-        // 上传战斗结果（可选）
-        uploadBattleResult();
-    }
-
-    CCLOG("⚔️ Battle ended! Stars: %d, Destruction: %d%%, Gold: %d, Elixir: %d",
-          _starsEarned, _destructionPercent, _goldLooted, _elixirLooted);
-}
-
-void BattleScene::calculateBattleResult()
-{
-    // 简化计算：基于摧毁百分比和敌方资源
-    int maxGold = _enemyGameData.gold;
-    int maxElixir = _enemyGameData.elixir;
-
-    // 掠夺量 = 敌方资源 * (摧毁百分比 / 100) * 掠夺率
-    float lootRate = 0.3f;  // 最多掠夺30%
-    _goldLooted = static_cast<int>(maxGold * (_destructionPercent / 100.0f) * lootRate);
-    _elixirLooted = static_cast<int>(maxElixir * (_destructionPercent / 100.0f) * lootRate);
-
-    // 更新本地资源
-    auto& resMgr = ResourceManager::getInstance();
-    resMgr.addResource(ResourceType::kGold, _goldLooted);
-    resMgr.addResource(ResourceType::kElixir, _elixirLooted);
-}
-
-void BattleScene::showBattleResult()
-{
-    // 隐藏战斗UI
-    _timerLabel->setVisible(false);
-    _starsLabel->setVisible(false);
-    _destructionLabel->setVisible(false);
-    _endBattleButton->setVisible(false);
-
-    // 创建结果面板
-    auto panel = LayerColor::create(Color4B(0, 0, 0, 220));
-    panel->setContentSize(Size(500, 400));
-    panel->setPosition(Vec2((_visibleSize.width - 500) / 2, (_visibleSize.height - 400) / 2));
-    panel->setName("result_panel");
-    this->addChild(panel, 200);
-
-    // 标题
-    std::string titleText = _isReplayMode ? "回放结束" : "战斗结束!";
-    auto title = Label::createWithSystemFont(titleText, "Arial", 42);
-    title->setPosition(Vec2(250, 360));
-    title->setTextColor(Color4B::YELLOW);
-    panel->addChild(title);
-
-    // 星数
-    std::string starsStr = "";
-    for (int i = 0; i < 3; i++)
-    {
-        starsStr += (i < _starsEarned) ? "★ " : "☆ ";
-    }
-    auto starsLabel = Label::createWithSystemFont(starsStr, "Arial", 56);
-    starsLabel->setPosition(Vec2(250, 280));
-    starsLabel->setTextColor(Color4B::YELLOW);
-    panel->addChild(starsLabel);
-
-    // 摧毁百分比
-    auto destructionLabel = Label::createWithSystemFont(
-        StringUtils::format("摧毁: %d%%", _destructionPercent), "Arial", 32);
-    destructionLabel->setPosition(Vec2(250, 220));
-    panel->addChild(destructionLabel);
-
-    // 掠夺信息
-    std::string lootText;
-    Color4B lootColor;
-    
-    if (_isReplayMode)
-    {
-        // 回放模式（防守方视角）：显示损失
-        lootText = StringUtils::format("损失金币: -%d\n损失圣水: -%d", _goldLooted, _elixirLooted);
-        lootColor = Color4B::RED;
-    }
-    else
-    {
-        // 进攻模式：显示掠夺
-        lootText = StringUtils::format("掠夺金币: +%d\n掠夺圣水: +%d", _goldLooted, _elixirLooted);
-        lootColor = Color4B::GREEN;
-    }
-    
-    auto lootLabel = Label::createWithSystemFont(lootText, "Arial", 28);
-    lootLabel->setPosition(Vec2(250, 150));
-    lootLabel->setAlignment(TextHAlignment::CENTER);
-    lootLabel->setTextColor(lootColor);
-    panel->addChild(lootLabel);
-
-    // 奖杯变化（简化计算）
-    int trophyChange = _starsEarned * 10 - (3 - _starsEarned) * 3;
-    std::string trophyText;
-    Color4B trophyColor;
-    
-    if (_isReplayMode)
-    {
-        // 回放模式：显示奖杯变化（防守方相反）
-        // 进攻方赢了(正分)，防守方输了(负分)
-        int defenderTrophyChange = -trophyChange;
-        trophyText = StringUtils::format("奖杯: %s%d", defenderTrophyChange >= 0 ? "+" : "", defenderTrophyChange);
-        trophyColor = defenderTrophyChange >= 0 ? Color4B::GREEN : Color4B::RED;
-    }
-    else
-    {
-        trophyText = StringUtils::format("奖杯: %s%d", trophyChange >= 0 ? "+" : "", trophyChange);
-        trophyColor = trophyChange >= 0 ? Color4B::GREEN : Color4B::RED;
-    }
-    
-    auto trophyLabel = Label::createWithSystemFont(trophyText, "Arial", 26);
-    trophyLabel->setPosition(Vec2(250, 80));
-    trophyLabel->setTextColor(trophyColor);
-    panel->addChild(trophyLabel);
-
-    // 显示返回按钮
-    _statusLabel->setString("点击返回按钮回到主场景");
-    _returnButton->setVisible(true);
-}
-
-// ==================== ✅ 新增：触摸监听器设置 ====================
+// ==================== 触摸监听器设置 ====================
 
 void BattleScene::setupTouchListeners()
 {
@@ -876,7 +398,7 @@ void BattleScene::setupTouchListeners()
     touchListener->setSwallowTouches(true);
     
     touchListener->onTouchBegan = [this](Touch* touch, Event* event) {
-        if (_state == BattleState::FINISHED)
+        if (_battleManager && _battleManager->getState() == BattleManager::BattleState::FINISHED)
             return false;
             
         _lastTouchPos = touch->getLocation();
@@ -888,33 +410,41 @@ void BattleScene::setupTouchListeners()
         Vec2 currentPos = touch->getLocation();
         Vec2 delta = currentPos - touch->getPreviousLocation();
         
-        // 检测是否移动了足够距离
         if (currentPos.distance(_lastTouchPos) > 10.0f)
         {
             _isDragging = true;
         }
         
-        // 平移地图
         if (_mapSprite && _isDragging)
         {
             Vec2 newPos = _mapSprite->getPosition() + delta;
             _mapSprite->setPosition(newPos);
+            ensureMapInBoundary();
         }
     };
     
     touchListener->onTouchEnded = [this](Touch* touch, Event* event) {
-        if (!_isDragging && _state == BattleState::READY)
+        if (!_isDragging && _battleManager && _battleManager->getState() == BattleManager::BattleState::READY)
         {
-            // TODO: 部署士兵逻辑
+            // Start battle on first click if ready? 
+            // Actually logic was: if READY, deploy unit -> becomes FIGHTING.
+            // But wait, startBattle() sets state to READY.
+            // So we can deploy.
+        }
+        
+        if (!_isDragging && _battleManager && 
+            (_battleManager->getState() == BattleManager::BattleState::READY || 
+             _battleManager->getState() == BattleManager::BattleState::FIGHTING))
+        {
             Vec2 touchPos = touch->getLocation();
-            CCLOG("🎯 Touch at: (%.1f, %.1f) - Deploy troops here", touchPos.x, touchPos.y);
+            Vec2 mapLocalPos = _mapSprite->convertToNodeSpace(touchPos);
+            _battleManager->deployUnit(_selectedUnitType, mapLocalPos);
         }
         _isDragging = false;
     };
     
     _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
     
-    // ✅ 添加鼠标滚轮缩放支持
     auto mouseListener = EventListenerMouse::create();
     mouseListener->onMouseScroll = [this](Event* event) {
         EventMouse* mouseEvent = static_cast<EventMouse*>(event);
@@ -924,8 +454,11 @@ void BattleScene::setupTouchListeners()
         {
             float zoomFactor = scrollY < 0 ? 1.1f : 0.9f;
             float newScale = _mapSprite->getScale() * zoomFactor;
-            newScale = std::max(0.7f, std::min(newScale, 2.0f)); // 限制缩放范围
+            newScale = std::max(0.9f, std::min(newScale, 2.0f));
             _mapSprite->setScale(newScale);
+            
+            updateBoundary();
+            ensureMapInBoundary();
         }
     };
     
@@ -934,281 +467,34 @@ void BattleScene::setupTouchListeners()
 
 void BattleScene::returnToMainScene()
 {
-    // ✅ 正确：使用 popScene 返回到之前的 DraggableMapScene
+    MusicManager::getInstance().stopMusic();
     Director::getInstance()->popScene();
-    
-    // ✅ 延迟通知主场景刷新（确保已经切换回主场景）
     Director::getInstance()->getScheduler()->performFunctionInCocosThread([](){
         Director::getInstance()->getEventDispatcher()->dispatchCustomEvent("scene_resume");
-        CCLOG("✅ Dispatched scene_resume event");
     });
-    
-    CCLOG("✅ Returned to main scene");
 }
 
-void BattleScene::uploadBattleResult()
+void BattleScene::updateBoundary()
 {
-    // 🔴 修复：实际提交战斗结果
-    auto& accMgr = AccountManager::getInstance();
-    const auto* currentAccount = accMgr.getCurrentAccount();
-    if (!currentAccount)
-    {
-        CCLOG("❌ No current account, cannot upload battle result");
-        return;
-    }
-
-    // 创建防守日志并添加到被攻击者的日志中
-    DefenseLog defenseLog;
-    defenseLog.attackerId = currentAccount->userId;
-    defenseLog.attackerName = currentAccount->username;
-    defenseLog.starsLost = _starsEarned;
-    defenseLog.goldLost = _goldLooted;
-    defenseLog.elixirLost = _elixirLooted;
-    defenseLog.trophyChange = -(_starsEarned * 10 - (3 - _starsEarned) * 3); // 被攻击者的奖杯变化是负值
-    defenseLog.timestamp = getCurrentTimestamp();
-    defenseLog.isViewed = false;
-    
-    // 🎥 获取回放数据
-    defenseLog.replayData = ReplaySystem::getInstance().stopRecording();
-
-    // 🔴 关键修复：直接将防守日志添加到被攻击者账号的日志系统
-    // 切换到被攻击者帳號 -> 添加日志 -> 切换回来
-    std::string attackerUserId = currentAccount->userId;
-    
-    // 使用 silent=true 防止弹出日志UI
-    if (accMgr.switchAccount(_enemyUserId, true))
-    {
-        DefenseLogSystem::getInstance().load(); // 加载被攻击者的日志
-        DefenseLogSystem::getInstance().addDefenseLog(defenseLog);
-        CCLOG("🛡️ Defense log added to defender %s: attacked by %s, stars=%d, gold=%d, elixir=%d",
-              _enemyUserId.c_str(), attackerUserId.c_str(), 
-              _starsEarned, _goldLooted, _elixirLooted);
-        
-        // 切换回攻击者账号，同样使用 silent=true
-        accMgr.switchAccount(attackerUserId, true);
-        DefenseLogSystem::getInstance().load(); // 重新加载攻击者的日志
-    }
-    else
-    {
-        CCLOG("❌ Failed to switch to defender account %s to add defense log", _enemyUserId.c_str());
-    }
-
-    CCLOG("📤 Battle result recorded: Stars=%d, Gold=%d, Elixir=%d",
-          _starsEarned, _goldLooted, _elixirLooted);
+    if (!_mapSprite) return;
+    auto mapSize = _mapSprite->getContentSize() * _mapSprite->getScale();
+    float minX = _visibleSize.width - mapSize.width / 2;
+    float maxX = mapSize.width / 2;
+    float minY = _visibleSize.height - mapSize.height / 2;
+    float maxY = mapSize.height / 2;
+    if (mapSize.width <= _visibleSize.width) minX = maxX = _visibleSize.width / 2;
+    if (mapSize.height <= _visibleSize.height) minY = maxY = _visibleSize.height / 2;
+    _mapBoundary = Rect(minX, minY, maxX - minX, maxY - minY);
 }
 
-std::string BattleScene::getCurrentTimestamp()
+void BattleScene::ensureMapInBoundary()
 {
-    time_t now = time(nullptr);
-    struct tm tmv;
-#ifdef _WIN32
-    localtime_s(&tmv, &now);
-#else
-    localtime_r(&now, &tmv);
-#endif
-    char buf[64];
-    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tmv);
-    return std::string(buf);
-}
-
-// ==================== ⭐ 新增：士兵 AI 更新逻辑 ====================
-void BattleScene::updateUnitAI(float dt)
-{
-    for (auto it = _deployedUnits.begin(); it != _deployedUnits.end();)
-    {
-        Unit* unit = *it;
-        
-        // 移除已死亡的士兵
-        if (!unit || unit->IsDead())
-        {
-            it = _deployedUnits.erase(it);
-            continue;
-        }
-        
-        // 如果士兵没有目标，寻找最近的建筑
-        BaseBuilding* target = unit->getTarget();
-        
-        if (!target || target->isDestroyed())
-        {
-            // 寻找最近的建筑作为目标
-            BaseBuilding* closestBuilding = nullptr;
-            BaseBuilding* closestDefenseBuilding = nullptr;  // 巨人优先目标
-            BaseBuilding* closestResourceBuilding = nullptr;  // 哥布林优先目标
-            float closestDistance = 99999.0f;
-            float closestDefenseDistance = 99999.0f;
-            float closestResourceDistance = 99999.0f;
-            
-            Vec2 unitWorldPos = unit->getParent()->convertToWorldSpace(unit->getPosition());
-            
-            for (auto* building : _enemyBuildings)
-            {
-                if (!building || building->isDestroyed())
-                    continue;
-                
-                Vec2 buildingWorldPos = building->getParent()->convertToWorldSpace(building->getPosition());
-                float distance = unitWorldPos.distance(buildingWorldPos);
-                
-                // 记录最近的任意建筑（备用）
-                if (distance < closestDistance)
-                {
-                    closestDistance = distance;
-                    closestBuilding = building;
-                }
-                
-                // 巨人：记录最近的防御建筑
-                if (unit->GetType() == UnitType::kGiant && building->isDefenseBuilding())
-                {
-                    if (distance < closestDefenseDistance)
-                    {
-                        closestDefenseDistance = distance;
-                        closestDefenseBuilding = building;
-                    }
-                }
-                
-                // 哥布林：记录最近的资源建筑
-                if (unit->GetType() == UnitType::kGoblin && building->getBuildingType() == BuildingType::kResource)
-                {
-                    if (distance < closestResourceDistance)
-                    {
-                        closestResourceDistance = distance;
-                        closestResourceBuilding = building;
-                    }
-                }
-            }
-            
-            // 根据兵种类型选择目标（带降级逻辑）
-            BaseBuilding* selectedTarget = nullptr;
-            
-            if (unit->GetType() == UnitType::kGiant)
-            {
-                // 巨人：优先攻击防御建筑，找不到就攻击任意建筑
-                selectedTarget = closestDefenseBuilding ? closestDefenseBuilding : closestBuilding;
-                
-                if (selectedTarget)
-                {
-                    CCLOG("🎯 Giant target: %s (isDefense=%d)", 
-                          closestDefenseBuilding ? "Defense Building" : "Any Building",
-                          selectedTarget->isDefenseBuilding() ? 1 : 0);
-                }
-            }
-            else if (unit->GetType() == UnitType::kGoblin)
-            {
-                // 哥布林：优先攻击资源建筑，找不到就攻击任意建筑
-                selectedTarget = closestResourceBuilding ? closestResourceBuilding : closestBuilding;
-            }
-            else
-            {
-                // 其他兵种：攻击最近的建筑
-                selectedTarget = closestBuilding;
-            }
-            
-            if (selectedTarget)
-            {
-                unit->setTarget(selectedTarget);
-                target = selectedTarget;
-            }
-            else
-            {
-                if (unit->GetType() == UnitType::kGiant)
-                {
-                    CCLOG("⚠️ Giant: No target found! Total buildings: %zu", _enemyBuildings.size());
-                }
-            }
-        }
-        
-        // 如果有目标，移动并攻击
-        if (target && !target->isDestroyed())
-        {
-            Vec2 unitPos = unit->getPosition();
-            Vec2 targetPos = target->getPosition();
-            
-            // 如果在攻击范围内，攻击
-            if (unit->isInAttackRange(targetPos))
-            {
-                // 攻击冷却
-                static std::map<Unit*, float> attackCooldowns;
-                
-                if (attackCooldowns.find(unit) == attackCooldowns.end())
-                {
-                    attackCooldowns[unit] = 0.0f;
-                }
-                
-                attackCooldowns[unit] -= dt;
-                
-                if (attackCooldowns[unit] <= 0.0f)
-                {
-                    // 播放攻击动画
-                    unit->Attack(false);
-                    
-                    // 对建筑造成伤害
-                    target->takeDamage(unit->getDamage());
-                    
-                    // 重置冷却时间
-                    attackCooldowns[unit] = unit->getCombatStats().attackSpeed;
-                    
-                    CCLOG("⚔️ Unit attacks building! Damage: %d, Building HP: %d/%d",
-                          unit->getDamage(),
-                          target->getHitpoints(),
-                          target->getMaxHitpoints());
-                    
-                    // 如果建筑被摧毁，清除目标
-                    if (target->isDestroyed())
-                    {
-                        unit->clearTarget();
-                        CCLOG("💥 Building destroyed!");
-                    }
-                }
-            }
-            else
-            {
-                // 🔧 修复：只在士兵没有移动时才调用 MoveTo()
-                // 避免每帧都调用导致动画被重复中断
-                static std::map<Unit*, Vec2> lastTargets;
-                
-                // 检查目标是否改变或士兵是否已停止移动
-                bool needsNewPath = false;
-                if (lastTargets.find(unit) == lastTargets.end())
-                {
-                    needsNewPath = true;
-                }
-                else
-                {
-                    Vec2 lastTarget = lastTargets[unit];
-                    float targetMoved = lastTarget.distance(targetPos);
-                    // 如果目标移动超过一定距离，或者士兵已经到达上一个目标点
-                    if (targetMoved > 50.0f || unitPos.distance(lastTarget) < 10.0f)
-                    {
-                        needsNewPath = true;
-                    }
-                }
-                
-                if (needsNewPath)
-                {
-                    unit->MoveTo(targetPos);
-                    lastTargets[unit] = targetPos;
-                }
-            }
-        }
-        
-        ++it;
-    }
-}
-
-// ==================== ⭐ 新增：激活防御建筑 ====================
-void BattleScene::activateDefenseBuildings()
-{
-    CCLOG("🏹 Activating defense buildings...");
-    
-    for (auto* building : _enemyBuildings)
-    {
-        if (building && building->isDefenseBuilding())
-        {
-            auto* defenseBuilding = dynamic_cast<DefenseBuilding*>(building);
-            if (defenseBuilding)
-            {
-                defenseBuilding->setBattleMode(true);
-                CCLOG("✅ Activated: %s", defenseBuilding->getDisplayName().c_str());
-            }
-        }
-    }
+    if (!_mapSprite) return;
+    Vec2 currentPos = _mapSprite->getPosition();
+    Vec2 newPos = currentPos;
+    if (currentPos.x < _mapBoundary.getMinX()) newPos.x = _mapBoundary.getMinX();
+    else if (currentPos.x > _mapBoundary.getMaxX()) newPos.x = _mapBoundary.getMaxX();
+    if (currentPos.y < _mapBoundary.getMinY()) newPos.y = _mapBoundary.getMinY();
+    else if (currentPos.y > _mapBoundary.getMaxY()) newPos.y = _mapBoundary.getMaxY();
+    if (newPos != currentPos) _mapSprite->setPosition(newPos);
 }

@@ -1,8 +1,11 @@
-﻿/**
- * @file GlobalAudioManager.h
- * @brief 全局音频管理器 - 单例模式，管理所有音乐和音效
- */
-
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     GlobalAudioManager.h
+ * File Function: 全局音频管理器头文件
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
 #pragma once
 #include "cocos2d.h"
 #include "audio/include/AudioEngine.h"

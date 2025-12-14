@@ -1,4 +1,12 @@
-﻿#include "NetworkManager.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     NetworkManager.cpp
+ * File Function: 网络管理器实现
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "NetworkManager.h"
 
 
 

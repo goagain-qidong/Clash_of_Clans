@@ -1,8 +1,11 @@
-﻿/**
- * @file GlobalAudioManager.cpp
- * @brief 全局音频管理器实现
- */
-
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     GlobalAudioManager.cpp
+ * File Function: 全局音频管理器实现
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
 #include "GlobalAudioManager.h"
 
 USING_NS_CC;

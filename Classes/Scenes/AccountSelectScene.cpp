@@ -1,4 +1,12 @@
-﻿#include "AccountSelectScene.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     AccountSelectScene.cpp
+ * File Function: 负责账号选择界面
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "AccountSelectScene.h"
 
 #include "DraggableMapScene.h"
 #include "Managers/AccountManager.h"

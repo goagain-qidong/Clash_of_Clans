@@ -1,12 +1,16 @@
-﻿/**
- * @file SettingsPanel.cpp
- * @brief 游戏设置面板实现
- */
-
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     SettingsPanel.cpp
+ * File Function: 负责游戏设置面板
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
 #include "SettingsPanel.h"
 #include "AccountManager.h"
 #include "ResourceManager.h"
 #include "Managers/GlobalAudioManager.h"
+#include "Managers/MusicManager.h" // 🆕 引入 MusicManager
 
 USING_NS_CC;
 using namespace ui;
@@ -119,6 +123,8 @@ void SettingsPanel::setupVolumeControls(float startY)
             
             // 🎵 设置音乐音量（通过全局管理器）
             GlobalAudioManager::getInstance().setMusicVolume(percent / 100.0f);
+            // 🆕 同步设置 MusicManager 音量
+            MusicManager::getInstance().setVolume(percent / 100.0f);
             
             return true;
         }
@@ -138,6 +144,8 @@ void SettingsPanel::setupVolumeControls(float startY)
         
         // 🎵 设置音乐音量
         GlobalAudioManager::getInstance().setMusicVolume(percent / 100.0f);
+        // 🆕 同步设置 MusicManager 音量
+        MusicManager::getInstance().setVolume(percent / 100.0f);
     };
     musicTouchListener->onTouchEnded = [this](Touch* touch, Event* event) {
         saveVolumeSettings();
@@ -473,6 +481,9 @@ void SettingsPanel::loadVolumeSettings()
     auto& audioMgr = GlobalAudioManager::getInstance();
     float musicVolume = audioMgr.getMusicVolume() * 100.0f;
     float sfxVolume = audioMgr.getEffectVolume() * 100.0f;
+    
+    // 🆕 确保 MusicManager 音量与全局设置同步
+    MusicManager::getInstance().setVolume(audioMgr.getMusicVolume());
     
     if (_musicSlider)
     {

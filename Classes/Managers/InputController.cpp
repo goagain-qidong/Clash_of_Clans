@@ -1,4 +1,12 @@
-﻿#include "InputController.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     InputController.cpp
+ * File Function: 输入控制器实现
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "InputController.h"
 
 USING_NS_CC;
 

@@ -152,6 +152,11 @@ void DraggableMapScene::setupCallbacks()
     _uiController->setOnAccountSwitched([this]() { onAccountSwitched(); });
     _uiController->setOnLogout([this]() { onLogout(); });
     _uiController->setOnMapChanged([this](const std::string& newMap) { onMapChanged(newMap); });
+    
+    // 🆕 防守日志按钮回调
+    _uiController->setOnDefenseLogClicked([this]() {
+        DefenseLogSystem::getInstance().showDefenseLogUI();
+    });
 
     // 建筑管理器回调
     _buildingManager->setOnBuildingPlaced([this](BaseBuilding* building) { onBuildingPlaced(building); });

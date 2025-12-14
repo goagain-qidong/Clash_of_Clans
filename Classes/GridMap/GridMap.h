@@ -1,8 +1,11 @@
-﻿/**
- * @file GridMap.h
- * @brief 等距菱形网格地图类，用于管理建筑放置和碰撞检测
- */
-
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     GridMap.h
+ * File Function: 等距菱形网格地图类，支持网格显示、建筑放置、碰撞检测等功能
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
 #pragma once
 
 #include "cocos2d.h"

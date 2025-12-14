@@ -1,4 +1,12 @@
-﻿#include "SocketClient.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     SocketClient.cpp
+ * File Function: 负责客户端与服务器的网络通信
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "SocketClient.h"
 #include <algorithm>
 #include <sstream>
 // ==================== AttackResult 序列化 ====================

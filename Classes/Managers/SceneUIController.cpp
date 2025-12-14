@@ -1,4 +1,12 @@
-﻿#include "SceneUIController.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     SceneUIController.cpp
+ * File Function: 场景UI控制器 - 负责管理游戏场景中的UI元素
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "SceneUIController.h"
 #include "../UI/SettingsPanel.h"
 
 USING_NS_CC;
@@ -23,47 +31,64 @@ void SceneUIController::setupMainButtons()
     float resourceXPos = 30;
     float buildButtonY = _visibleSize.height - 230;
     
-    // Shop 按钮
-    _shopButton = Button::create();
-    _shopButton->setTitleText("Shop");
-    _shopButton->setTitleFontSize(24);
-    _shopButton->setContentSize(Size(100, 50));
-    _shopButton->setPosition(Vec2(resourceXPos + 70, buildButtonY));
-    _shopButton->addClickEventListener([this](Ref*) {
+    // Shop 按钮 (绿色)
+    _shopButton = createFlatButton("Shop", Size(100, 50), Color3B(50, 150, 50), [this](Ref*) {
         if (_onShopClicked) _onShopClicked();
     });
+    _shopButton->setPosition(Vec2(resourceXPos + 70, buildButtonY));
     this->addChild(_shopButton, 10);
     
-    // Settings 按钮 (齿轮图标)
-    _settingsButton = Button::create();
-    _settingsButton->setTitleText("\xE2\x9A\x99");  // UTF-8编码的 ⚙
-    _settingsButton->setTitleFontSize(46);
-    _settingsButton->setContentSize(Size(68, 68));
-    _settingsButton->setPosition(Vec2(_visibleSize.width - 60, _visibleSize.height - 160));
-    _settingsButton->addClickEventListener([this](Ref*) {
+    // Settings 按钮 (灰色)
+    _settingsButton = createFlatButton("\xE2\x9A\x99", Size(60, 60), Color3B(100, 100, 100), [this](Ref*) {
         onSettingsClicked();
     });
+    _settingsButton->setTitleFontSize(36);
+    _settingsButton->setPosition(Vec2(_visibleSize.width - 60, _visibleSize.height - 160));
     this->addChild(_settingsButton, 10);
     
-    // Attack 按钮
-    _attackButton = Button::create();
-    _attackButton->setTitleText("Attack!");
-    _attackButton->setTitleFontSize(24);
-    _attackButton->setPosition(Vec2(100, 100));
-    _attackButton->addClickEventListener([this](Ref*) {
+    // Attack 按钮 (橙色)
+    _attackButton = createFlatButton("Attack!", Size(120, 60), Color3B(200, 80, 0), [this](Ref*) {
         if (_onAttackClicked) _onAttackClicked();
     });
+    _attackButton->setPosition(Vec2(100, 100));
     this->addChild(_attackButton, 20);
     
-    // Clan 按钮
-    _clanButton = Button::create();
-    _clanButton->setTitleText("Clan");
-    _clanButton->setTitleFontSize(24);
-    _clanButton->setPosition(Vec2(_visibleSize.width - 50, 100));
-    _clanButton->addClickEventListener([this](Ref*) {
+    // Clan 按钮 (蓝色)
+    _clanButton = createFlatButton("Clan", Size(100, 50), Color3B(50, 100, 150), [this](Ref*) {
         if (_onClanClicked) _onClanClicked();
     });
+    _clanButton->setPosition(Vec2(_visibleSize.width - 80, 100));
     this->addChild(_clanButton, 20);
+    
+    // 🆕 Defense Log 按钮 (紫色) - 左下角
+    _defenseLogButton = createFlatButton("Defense Log", Size(140, 50), Color3B(100, 50, 100), [this](Ref*) {
+        if (_onDefenseLogClicked) _onDefenseLogClicked();
+    });
+    _defenseLogButton->setPosition(Vec2(100, 40)); // 左下角，稍微留点边距
+    this->addChild(_defenseLogButton, 20);
+}
+
+cocos2d::ui::Button* SceneUIController::createFlatButton(const std::string& text, const cocos2d::Size& size, const cocos2d::Color3B& color, const std::function<void(cocos2d::Ref*)>& callback)
+{
+    auto button = Button::create();
+    button->setTitleText(text);
+    button->setTitleFontSize(20);
+    button->setTitleColor(Color3B::WHITE);
+    button->setContentSize(size);
+    
+    // 创建纯色背景
+    auto bg = LayerColor::create(Color4B(color), size.width, size.height);
+    bg->setPosition(Vec2::ZERO);
+    // 确保背景在文字后面
+    button->addChild(bg, -1);
+    
+    button->addClickEventListener(callback);
+    
+    // 添加点击缩放效果
+    button->setPressedActionEnabled(true);
+    button->setZoomScale(0.1f);
+    
+    return button;
 }
 
 void SceneUIController::onSettingsClicked()

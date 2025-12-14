@@ -1,6 +1,4 @@
-﻿#include "GameConfig.h"
-#include <vector> 
-/****************************************************************
+﻿/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     WallBuilding.cpp
  * File Function: 游戏配置数据
@@ -8,6 +6,9 @@
  * Update Date:   2025/12/06
  * License:       MIT License
  ****************************************************************/
+#include "GameConfig.h"
+#include <vector> 
+
 GameConfig& GameConfig::getInstance() {
     static GameConfig instance;
     if (instance._buildings.empty()) {
