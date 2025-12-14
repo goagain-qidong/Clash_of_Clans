@@ -118,6 +118,16 @@ private:
     cocos2d::Rect _mapBoundary;
     void updateBoundary();
     void ensureMapInBoundary();
+    // ==================== 🆕 战斗模式血条管理 ====================
+    /**
+     * @brief 启用所有防御建筑的战斗模式和血条显示
+     */
+    void enableAllBuildingsBattleMode();
+
+    /**
+     * @brief 禁用所有防御建筑的战斗模式并重置血量
+     */
+    void disableAllBuildingsBattleMode();
 };
 
 #endif // __BATTLE_SCENE_H__#endif // __BATTLE_SCENE_H__

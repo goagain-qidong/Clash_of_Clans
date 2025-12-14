@@ -341,9 +341,53 @@ void BattleScene::setupMap()
         updateBoundary(); // 初始化边界
     }
 }
+void BattleScene::disableAllBuildingsBattleMode()
+{
+    // 战斗结束时禁用战斗模式
+    if (!_mapSprite)
+        return;
 
+    auto& children = _mapSprite->getChildren();
+    for (auto child : children)
+    {
+        auto* defenseBuilding = dynamic_cast<DefenseBuilding*>(child);
+        if (defenseBuilding)
+        {
+            defenseBuilding->disableBattleMode();
+        }
+    }
+}
+
+void BattleScene::enableAllBuildingsBattleMode()
+{
+    // 遍历所有建筑
+    if (!_buildingManager)
+        return;
+
+    // 需要在 BuildingManager 中实现此方法
+    // 或者直接遍历场景中的建筑
+    auto buildingSprite = _mapSprite;
+    if (!buildingSprite)
+        return;
+
+    auto& children = buildingSprite->getChildren();
+    for (auto child : children)
+    {
+        auto* defenseBuilding = dynamic_cast<DefenseBuilding*>(child);
+        if (defenseBuilding)
+        {
+            defenseBuilding->enableBattleMode();
+        }
+    }
+}
 void BattleScene::setupUI()
 {
+    // 启用所有防御建筑的战斗模式
+    if (_buildingManager)
+    {
+        // 这需要在 BuildingManager 中添加一个方法来启用所有建筑的战斗模式
+        enableAllBuildingsBattleMode();
+    }
     _battleUI = BattleUI::create();
     this->addChild(_battleUI, 100);
 
@@ -468,6 +512,8 @@ void BattleScene::setupTouchListeners()
 void BattleScene::returnToMainScene()
 {
     MusicManager::getInstance().stopMusic();
+    // 禁用所有建筑的战斗模式
+    disableAllBuildingsBattleMode();
     Director::getInstance()->popScene();
     Director::getInstance()->getScheduler()->performFunctionInCocosThread([](){
         Director::getInstance()->getEventDispatcher()->dispatchCustomEvent("scene_resume");
