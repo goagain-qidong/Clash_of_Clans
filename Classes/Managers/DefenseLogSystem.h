@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     DefenseLogSystem.h
+ * File Function: 防守日志系统 - 记录和管理玩家的防守日志
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#pragma once
 #ifndef __DEFENSE_LOG_SYSTEM_H__
 #define __DEFENSE_LOG_SYSTEM_H__
 

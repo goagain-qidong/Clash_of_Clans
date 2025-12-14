@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     InputController.h
+ * File Function: 输入控制器头文件
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#pragma once
 #ifndef __INPUT_CONTROLLER_H__
 #define __INPUT_CONTROLLER_H__
 

@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     SceneUIController.h
+ * File Function: 场景UI控制器 - 负责管理游戏场景中的UI元素
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#pragma once
 #ifndef __SCENE_UI_CONTROLLER_H__
 #define __SCENE_UI_CONTROLLER_H__
 
@@ -44,6 +52,7 @@ public:
     void setOnAccountSwitched(const ButtonCallback& callback) { _onAccountSwitched = callback; }
     void setOnLogout(const ButtonCallback& callback) { _onLogout = callback; }
     void setOnMapChanged(const MapChangedCallback& callback) { _onMapChanged = callback; }
+    void setOnDefenseLogClicked(const ButtonCallback& callback) { _onDefenseLogClicked = callback; } // 🆕 新增
     
     // ==================== 建筑列表 ====================
     
@@ -97,6 +106,7 @@ private:
     cocos2d::ui::Button* _attackButton = nullptr;
     cocos2d::ui::Button* _clanButton = nullptr;
     cocos2d::ui::Button* _settingsButton = nullptr;
+    cocos2d::ui::Button* _defenseLogButton = nullptr; // 🆕 新增
     
     cocos2d::ui::ListView* _buildingListUI = nullptr;
     
@@ -117,6 +127,7 @@ private:
     BuildingCallback _onBuildingSelected;
     ButtonCallback _onConfirmBuilding;
     ButtonCallback _onCancelBuilding;
+    ButtonCallback _onDefenseLogClicked; // 🆕 新增
     
     // ==================== 数据 ====================
     std::vector<BuildingData> _buildingList;
@@ -125,6 +136,9 @@ private:
     void setupMainButtons();
     void createBuildingListUI();
     void onSettingsClicked();
+    
+    // 🆕 辅助方法：创建扁平化按钮
+    cocos2d::ui::Button* createFlatButton(const std::string& text, const cocos2d::Size& size, const cocos2d::Color3B& color, const std::function<void(cocos2d::Ref*)>& callback);
 };
 
 #endif // __SCENE_UI_CONTROLLER_H__

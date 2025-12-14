@@ -2,7 +2,7 @@
  * Project Name:  Clash_of_Clans
  * File Name:     ArmyBuilding.cpp
  * File Function: 军事建筑类实现
- * Author:        赵崇治
+ * Author:        
  * Update Date:   2025/11/29
  * License:       MIT License
  ****************************************************************/

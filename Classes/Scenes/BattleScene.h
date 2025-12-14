@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     BattleScene.h
+ * File Function: 战斗场景
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#pragma once
 #ifndef __BATTLE_SCENE_H__
 #define __BATTLE_SCENE_H__
 
@@ -7,9 +15,12 @@
 #include "AccountManager.h"
 #include "Unit/unit.h"
 #include "Buildings/DefenseBuilding.h"
-#include "Managers/ReplaySystem.h" // 🆕 添加 ReplaySystem 头文件
+#include "Managers/ReplaySystem.h"
+#include "Managers/BattleManager.h" // 🆕 Include BattleManager
+#include "UI/BattleUI.h"
 #include <string>
 #include <vector>
+#include <map> // ✅ 新增
 
 // Forward declarations
 class BuildingManager;
@@ -75,108 +86,44 @@ public:
     virtual void update(float dt) override;
     
 private:
-    BattleScene() = default;
-    ~BattleScene() = default;
-    
-    // ==================== 战斗状态 ====================
-    enum class BattleState {
-        LOADING,        // 加载敌方基地
-        READY,          // 准备部署士兵
-        FIGHTING,       // 战斗中
-        FINISHED        // 战斗结束
-    };
-    
-    BattleState _state = BattleState::LOADING;
-    bool _isReplayMode = false; // 🆕 是否为回放模式
-    
-    // ==================== 敌方数据 ====================
-    AccountGameData _enemyGameData;
-    std::string _enemyUserId;
-    int _enemyTownHallLevel = 1;
-    
-    // ==================== 战斗数据 ====================
-    float _battleTime = 180.0f;          // 3分钟战斗时间
-    float _elapsedTime = 0.0f;
-    int _starsEarned = 0;                // 获得星数 (0-3)
-    int _goldLooted = 0;                 // 掠夺金币
-    int _elixirLooted = 0;               // 掠夺圣水
-    int _destructionPercent = 0;         // 摧毁百分比 (0-100)
+    BattleScene();
+    ~BattleScene();
     
     // ==================== 场景元素 ====================
     cocos2d::Size _visibleSize;
     cocos2d::Sprite* _mapSprite = nullptr;
     GridMap* _gridMap = nullptr;
     BuildingManager* _buildingManager = nullptr;
+    BattleUI* _battleUI = nullptr;
+    BattleManager* _battleManager = nullptr; // 🆕 BattleManager instance
     
-    // ==================== 战斗单位管理 ⭐ 新增 ====================
-    std::vector<Unit*> _deployedUnits;           // 已部署的士兵
-    std::vector<BaseBuilding*> _enemyBuildings;  // 敌方建筑列表
-    int _totalBuildingHP = 0;                    // 总建筑血量
-    int _destroyedBuildingHP = 0;                // 已摧毁建筑血量
-    
-    // ==================== UI 元素 ====================
-    cocos2d::Label* _statusLabel = nullptr;
-    cocos2d::Label* _timerLabel = nullptr;
-    cocos2d::Label* _starsLabel = nullptr;
-    cocos2d::Label* _destructionLabel = nullptr;
-    cocos2d::ui::Button* _endBattleButton = nullptr;
-    cocos2d::ui::Button* _returnButton = nullptr;
-    cocos2d::ui::Button* _speedButton = nullptr; // 🆕 速度控制按钮
-    
-    // ✅ 新增：触摸控制相关
+    // ==================== 触摸控制相关 ====================
     cocos2d::Vec2 _lastTouchPos;
     bool _isDragging = false;
-    float _timeScale = 1.0f; // 🆕 时间缩放比例
+    float _timeScale = 1.0f;
     
-    // ==================== 士兵部署 UI ⭐ 新增 ====================
-    cocos2d::ui::Button* _barbarianButton = nullptr;
-    cocos2d::ui::Button* _archerButton = nullptr;
-    cocos2d::ui::Button* _giantButton = nullptr;
-    cocos2d::Label* _barbarianCountLabel = nullptr;
-    cocos2d::Label* _archerCountLabel = nullptr;
-    cocos2d::Label* _giantCountLabel = nullptr;
-    
-    int _barbarianCount = 20;  // 可用野蛮人数量
-    int _archerCount = 20;     // 可用弓箭手数量
-    int _giantCount = 5;       // 可用巨人数量
-    
-    UnitType _selectedUnitType = UnitType::kBarbarian;  // 当前选中的兵种
+    // 🆕 多点触控缩放
+    std::map<int, cocos2d::Vec2> _activeTouches;
+    bool _isPinching = false;
+    float _prevPinchDistance = 0.0f;
+
+    // ==================== 士兵部署数据 ====================
+    UnitType _selectedUnitType = UnitType::kBarbarian;
     
     // ==================== 初始化方法 ====================
     void setupMap();
     void setupUI();
-    void setupTouchListeners();  // ✅ 新增
-    void loadEnemyBase();
-    void setupTroopButtons();  // ⭐ 新增：设置部署按钮
+    void setupTouchListeners();
     
-    // ==================== 士兵部署与管理 ⭐ 新增 ====================
-    void deployUnit(UnitType type, const cocos2d::Vec2& position);
-    void onTroopButtonClicked(UnitType type);
-    void updateTroopCounts();
-    void updateUnitAI(float dt);  // 更新所有士兵的 AI
-    void activateDefenseBuildings();  // 激活防御建筑
-    
-    // ==================== 战斗逻辑 ====================
-    void startBattle();
-    void endBattle(bool surrender = false);
-    void updateBattleState(float dt);
-    void calculateBattleResult();
-    
-    // ==================== UI 更新 ====================
-    void updateTimer();
-    void updateStars(int stars);
-    void updateDestruction(int percent);
-    void showBattleResult();
-    void toggleSpeed(); // 🆕 切换回放速度
-    
-    // ==================== 返回主场景 ====================
+    // ==================== 交互逻辑 ====================
+    void onTroopSelected(UnitType type);
     void returnToMainScene();
-    
-    // ==================== 网络相关（可选） ====================
-    void uploadBattleResult();
-    
-    // ==================== 🆕 辅助函数 ====================
-    std::string getCurrentTimestamp();
+    void toggleSpeed();
+
+    // ==================== 地图控制 ====================
+    cocos2d::Rect _mapBoundary;
+    void updateBoundary();
+    void ensureMapInBoundary();
 };
 
-#endif // __BATTLE_SCENE_H__
+#endif // __BATTLE_SCENE_H__#endif // __BATTLE_SCENE_H__

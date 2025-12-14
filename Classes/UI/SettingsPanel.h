@@ -1,8 +1,11 @@
-﻿/**
- * @file SettingsPanel.h
- * @brief 游戏设置面板，包含音量控制、账号切换等功能
- */
-
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     SettingsPanel.h
+ * File Function: 游戏设置面板 - 负责管理游戏中的设置相关UI
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
 #ifndef __SETTINGS_PANEL_H__
 #define __SETTINGS_PANEL_H__
 

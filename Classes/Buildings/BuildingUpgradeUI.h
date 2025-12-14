@@ -2,7 +2,7 @@
  * Project Name:  Clash_of_Clans
  * File Name:     BuildingUpgradeUI.h
  * File Function: 通用建筑升级界面
- * Author:        赵崇沛
+ * Author:        
  * Update Date:   2025/11/29
  * License:       MIT License
  ****************************************************************/

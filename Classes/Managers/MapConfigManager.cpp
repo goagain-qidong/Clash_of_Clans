@@ -1,4 +1,12 @@
-﻿#include "MapConfigManager.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     MapConfigManager.cpp
+ * File Function: 地图配置管理器实现
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "MapConfigManager.h"
 #include "ui/CocosGUI.h"
 #include "json/writer.h"
 #include "json/stringbuffer.h"

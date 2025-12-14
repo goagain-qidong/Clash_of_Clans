@@ -1,4 +1,12 @@
-﻿#ifndef UNIT_H
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:
+ * File Function:
+ * Author:        
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#ifndef UNIT_H
 #define UNIT_H
 
 #include "cocos2d.h"
@@ -73,9 +81,9 @@ public:
     // 2. 核心逻辑循环
     // ---------------------------------------------------------
 
-    // 帧更新函数：Cocos2d-x 引擎每帧会自动调用它 (需要在 init 中 scheduleUpdate)
+    // 确定性更新函数：由 BattleScene 在固定时间步长调用
     // 所有的位移逻辑、状态检查都在这里每一帧执行一小步
-    virtual void update(float dt) override;
+    void tick(float dt);
 
     // ---------------------------------------------------------
     // 3. 行为控制接口 (供外部调用)
@@ -170,6 +178,31 @@ public:
      * @brief 获取最大生命值
      */
     int getMaxHP() const { return combat_stats_.maxHitpoints; }
+
+    /**
+     * @brief 更新攻击冷却
+     */
+    void updateAttackCooldown(float dt);
+
+    /**
+     * @brief 检查是否可以攻击
+     */
+    bool isAttackReady() const;
+
+    /**
+     * @brief 重置攻击冷却
+     */
+    void resetAttackCooldown();
+
+    /**
+     * @brief 获取当前移动目标点
+     */
+    const cocos2d::Vec2& getTargetPosition() const { return target_pos_; }
+
+    /**
+     * @brief 是否正在移动
+     */
+    bool isMoving() const { return is_moving_; }
 
 private:
     // ---------------------------------------------------------

@@ -84,7 +84,7 @@ bool AppDelegate::applicationDidFinishLaunching()
 #endif
     }
     // 2. 开启调试数据显示 (FPS等)
-    director->setDisplayStats(true);
+    //director->setDisplayStats(true);
     // 3. 设置帧率
     director->setAnimationInterval(1.0f / 60);
     // 4. 不要用 NO_BORDER，因为你现在允许乱拉窗口了，NO_BORDER 会切掉你的 UI

@@ -1,16 +1,11 @@
-﻿/**
-
- * @file BuildingManager.h
-
- * @brief 建筑管理器 - 管理所有建筑的创建、放置、升级和更新
-
- *
-
- * 管理层(Manager Layer)：负责管理所有建筑的集合、碰撞检测（网格占用）、建造逻辑、升级逻辑。
-
- * 场景层不应该直接操作建筑，而是通过此管理器进行操作。
-
- */
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     BuildingManager.h
+ * File Function: 建筑管理器 - 管理所有建筑的创建、放置、升级和更新
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
 #ifndef BUILDING_MANAGER_H_
 #define BUILDING_MANAGER_H_
 #include "BuildingData.h"

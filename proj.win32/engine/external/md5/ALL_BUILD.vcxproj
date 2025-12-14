@@ -166,6 +166,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\ZERO_CHECK.vcxproj">
       <Project>{E31DC935-4DCB-31F3-B3C2-CCCE2CA1658D}</Project>

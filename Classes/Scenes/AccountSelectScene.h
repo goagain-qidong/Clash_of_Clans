@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     AccountSelectScene.h
+ * File Function: 负责账号选择界面
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/                                                     \
+#pragma once
 
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"

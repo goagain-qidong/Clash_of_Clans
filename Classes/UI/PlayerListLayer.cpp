@@ -1,4 +1,12 @@
-﻿#include "PlayerListLayer.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     PlayerListLayer.cpp
+ * File Function: 负责玩家列表界面
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#include "PlayerListLayer.h"
 
 USING_NS_CC;
 using namespace ui;

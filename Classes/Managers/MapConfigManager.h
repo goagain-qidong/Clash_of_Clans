@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     MapConfigManager.h
+ * File Function: 地图配置管理器头文件
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#pragma once
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
 #include "json/document.h" // 引入 rapidjson
