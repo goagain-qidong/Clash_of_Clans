@@ -117,7 +117,7 @@ bool TownHallBuilding::init(int level)
     
     // 6. 初始化建筑限制管理器
     BuildingLimitManager::getInstance()->updateLimitsFromTownHall(_level);
-
+    initHealthBarUI();
     return true;
 }
 

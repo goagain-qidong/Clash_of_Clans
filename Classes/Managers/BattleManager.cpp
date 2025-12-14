@@ -267,7 +267,7 @@ void BattleManager::deployUnit(UnitType type, const cocos2d::Vec2& position)
     if (_state == BattleState::READY)
     {
         _state = BattleState::FIGHTING;
-        activateDefenseBuildings();
+        activateAllBuildings();
     }
 }
 
@@ -371,14 +371,15 @@ void BattleManager::updateUnitAI(float dt)
     }
 }
 
-void BattleManager::activateDefenseBuildings()
+void BattleManager::activateAllBuildings() 
 {
     for (auto* building : _enemyBuildings)
     {
-        if (building && building->isDefenseBuilding())
+        if (building) // 只要是建筑就执行
         {
-            auto* defenseBuilding = dynamic_cast<DefenseBuilding*>(building);
-            if (defenseBuilding) defenseBuilding->setBattleMode(true);
+            // 尝试直接调用父类的 enableBattleMode
+            // 前提是你已经按第2点将方法移到了 BaseBuilding
+            building->enableBattleMode();
         }
     }
 }

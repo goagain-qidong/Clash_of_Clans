@@ -37,7 +37,12 @@ bool WallBuilding::init(int level)
     
     // 记录城墙建造
     // BuildingLimitManager::getInstance()->recordBuilding("Wall");
-    
+    // ✅ 【新增】将 getHitPoints() 的值赋给父类的 _maxHitpoints
+    // WallBuilding 内部已经有了 getHitPoints() 函数和数据表，直接用！
+    setMaxHitpoints(getHitPoints());
+
+    CCLOG("🧱 %s 初始化 HP: %d", getDisplayName().c_str(), getHitPoints());
+    initHealthBarUI();
     return true;
 }
 
