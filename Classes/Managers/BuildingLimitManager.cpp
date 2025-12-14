@@ -41,7 +41,6 @@ void BuildingLimitManager::reset()
     _limits["Wall"] = 50;                  // 初始上限50（TH Lv.1）
     _limits["Cannon"] = 1;                 // 初始上限1
     _limits["ArcherTower"] = 1;            // 初始上限1
-    _limits["WizardTower"] = 1;            // 初始上限1
     _limits["GoldMine"] = 1;               // 初始上限1
     _limits["ElixirCollector"] = 1;        // 初始上限1
     _limits["GoldStorage"] = 1;            // 初始上限1

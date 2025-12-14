@@ -137,8 +137,8 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data)
     // 将 GameConfig 的建筑名称映射到 BuildingLimitManager 的键
     std::string limitKey = data.name;
 
-    // 名称映射表
-    if (data.name == "Town Hall" || data.name == "大本营")
+    // 名称映射表（支持中英文和多种变体）
+    if (data.name == "Town Hall" || data.name == "大本营" || data.name == "TownHall")
     {
         limitKey = "TownHall";
     }
@@ -146,35 +146,31 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data)
     {
         limitKey = "Wall";
     }
-    else if (data.name == "建筑工人小屋" || data.name == "Builder Hut")
+    else if (data.name == "建筑工人小屋" || data.name == "Builder Hut" || data.name == "BuildersHut" || data.name == "BuilderHut")
     {
         limitKey = "BuildersHut";
     }
-    else if (data.name == "炮塔" || data.name == "Cannon")
+    else if (data.name == "炮塔" || data.name == "Cannon" || data.name == "加农炮")
     {
         limitKey = "Cannon";
     }
-    else if (data.name == "箭塔" || data.name == "ArcherTower")
+    else if (data.name == "箭塔" || data.name == "ArcherTower" || data.name == "Archer Tower")
     {
         limitKey = "ArcherTower";
     }
-    else if (data.name == "法师塔" || data.name == "WizardTower")
-    {
-        limitKey = "WizardTower";
-    }
-    else if (data.name == "金矿" || data.name == "GoldMine")
+    else if (data.name == "金矿" || data.name == "GoldMine" || data.name == "Gold Mine")
     {
         limitKey = "GoldMine";
     }
-    else if (data.name == "圣水收集器" || data.name == "ElixirCollector")
+    else if (data.name == "圣水收集器" || data.name == "ElixirCollector" || data.name == "Elixir Collector")
     {
         limitKey = "ElixirCollector";
     }
-    else if (data.name == "金币仓库" || data.name == "GoldStorage")
+    else if (data.name == "金币仓库" || data.name == "GoldStorage" || data.name == "Gold Storage")
     {
         limitKey = "GoldStorage";
     }
-    else if (data.name == "圣水仓库" || data.name == "ElixirStorage")
+    else if (data.name == "圣水仓库" || data.name == "ElixirStorage" || data.name == "Elixir Storage")
     {
         limitKey = "ElixirStorage";
     }
@@ -182,7 +178,7 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data)
     {
         limitKey = "Barracks";
     }
-    else if (data.name == "军营" || data.name == "ArmyCamp")
+    else if (data.name == "军营" || data.name == "ArmyCamp" || data.name == "Army Camp")
     {
         limitKey = "ArmyCamp";
     }

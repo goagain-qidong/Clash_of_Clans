@@ -16,6 +16,7 @@
 #include "ResourceBuilding.h"
 #include "TownHallBuilding.h"
 #include "WallBuilding.h"
+#include "DefenseBuilding.h"  // ✅ 添加防御建筑头文件
 #include "GameConfig.h"
 #include "BuildingCapacityManager.h"
 #include "UpgradeTimerUI.h"  // 🆕 引入升级倒计时 UI
@@ -221,6 +222,9 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
         int currentCount = limitMgr->getBuildingCount(limitKey);
         int maxCount = limitMgr->getLimit(limitKey);
         showHint(StringUtils::format("已达到建造上限！当前: %d/%d", currentCount, maxCount));
+        
+        // 🔴 修复：达到上限时，清理虚影和建造状态
+        endPlacing();
         return;
     }
     
@@ -232,6 +236,9 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     {
         std::string resName = (costType == ResourceType::kGold) ? "金币" : "圣水";
         showHint(StringUtils::format("%s不足！需要 %d %s", resName.c_str(), cost, resName.c_str()));
+        
+        // 🔴 修复：资源不足时，清理虚影和建造状态，防止卡住
+        endPlacing();
         return;
     }
     // 1. 标记网格被占用
@@ -341,12 +348,22 @@ BaseBuilding* BuildingManager::createBuildingEntity(const BuildingData& building
     {
         return BuildersHutBuilding::create(1);
     }
-    // 防御建筑统一处理
-    else if (buildingData.name == "Archer Tower" || buildingData.name == "箭塔" ||
-        buildingData.name == "Cannon" || buildingData.name == "炮塔")
+    // 🔴 修复：防御建筑创建逻辑
+    else if (buildingData.name == "ArcherTower" || buildingData.name == "Archer Tower" || buildingData.name == "箭塔")
     {
-        // 传递图片路径，以便 ArmyBuilding 知道显示什么
-        return ArmyBuilding::create(1, buildingData.imageFile);
+        return DefenseBuilding::create(DefenseType::kArcherTower, 1, buildingData.imageFile);
+    }
+    else if (buildingData.name == "Cannon" || buildingData.name == "加农炮" || buildingData.name == "炮塔")
+    {
+        return DefenseBuilding::create(DefenseType::kCannon, 1, buildingData.imageFile);
+    }
+    else if (buildingData.name == "WizardTower" || buildingData.name == "Wizard Tower" || buildingData.name == "法师塔")
+    {
+        return DefenseBuilding::create(DefenseType::kWizardTower, 1, buildingData.imageFile);
+    }
+    else if (buildingData.name == "BuilderHut" || buildingData.name == "BuildersHut")
+    {
+        return BuildersHutBuilding::create(1);
     }
     else
     {
@@ -1063,12 +1080,27 @@ BaseBuilding* BuildingManager::createBuildingFromSerialData(const BuildingSerial
     std::string name = data.name;
     int level = data.level;
     
-    // 移除等级后缀
-    size_t lvPos = name.find(" Lv.");
+    // 🔴 修复：移除等级后缀（支持多种格式）
+    // 格式1: "加农炮 (Lv.1)" -> "加农炮"
+    // 格式2: "Gold Mine Lv.2" -> "Gold Mine"
+    size_t lvPos = name.find(" (Lv.");
+    if (lvPos == std::string::npos)
+    {
+        lvPos = name.find(" Lv.");
+    }
     if (lvPos != std::string::npos)
     {
         name = name.substr(0, lvPos);
     }
+    
+    // 额外移除可能的括号残留
+    size_t bracketPos = name.find(" (");
+    if (bracketPos != std::string::npos)
+    {
+        name = name.substr(0, bracketPos);
+    }
+    
+    CCLOG("🔍 反序列化建筑：原始名=%s, 处理后=%s, 等级=%d", data.name.c_str(), name.c_str(), level);
     
     // 根据名称创建建筑
     if (name.find("Town Hall") != std::string::npos || name.find("大本营") != std::string::npos)
@@ -1109,11 +1141,15 @@ BaseBuilding* BuildingManager::createBuildingFromSerialData(const BuildingSerial
     }
     else if (name.find("Archer Tower") != std::string::npos || name.find("箭塔") != std::string::npos)
     {
-        return ArmyBuilding::create(level);
+        return DefenseBuilding::create(DefenseType::kArcherTower, level);
     }
-    else if (name.find("Cannon") != std::string::npos || name.find("炮塔") != std::string::npos)
+    else if (name.find("Cannon") != std::string::npos || name.find("加农炮") != std::string::npos)
     {
-        return ArmyBuilding::create(level);
+        return DefenseBuilding::create(DefenseType::kCannon, level);
+    }
+    else if (name.find("Wizard Tower") != std::string::npos || name.find("法师塔") != std::string::npos)
+    {
+        return DefenseBuilding::create(DefenseType::kWizardTower, level);
     }
     else
     {

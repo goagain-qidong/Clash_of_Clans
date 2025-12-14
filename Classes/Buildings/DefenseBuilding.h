@@ -81,6 +81,25 @@ public:
      */
     bool isBattleModeEnabled() const { return _battleModeEnabled; }
     
+    /**
+     * @brief 显示攻击范围（半透明圆圈）
+     */
+    void showAttackRange();
+    
+    /**
+     * @brief 隐藏攻击范围
+     */
+    void hideAttackRange();
+    
+    /**
+     * @brief 旋转建筑朝向目标
+     */
+    void rotateToTarget(const cocos2d::Vec2& targetPos);
+    
+    /**
+     * @brief 获取防御建筑类型
+     */
+    DefenseType getDefenseType() const { return _defenseType; }
 
 protected:
     virtual bool init(DefenseType defenseType, int level);
@@ -91,11 +110,23 @@ private:
     // ==================== 初始化方法 ====================
     void initCombatStats();
     
+    // ==================== 视觉效果 ====================
+    /**
+     * @brief 创建炮弹精灵（加农炮）
+     */
+    cocos2d::Sprite* createCannonballSprite();
+    
+    /**
+     * @brief 创建箭矢精灵（箭塔）
+     */
+    cocos2d::Sprite* createArrowSprite();
 
     // ==================== 防御建筑属性 ====================
     DefenseType _defenseType;
     std::string _customImagePath;
     std::string _customName;
-
+    
+    // ==================== 攻击范围显示 ====================
+    cocos2d::DrawNode* _rangeCircle = nullptr;  // 攻击范围圆圈
     
 };
