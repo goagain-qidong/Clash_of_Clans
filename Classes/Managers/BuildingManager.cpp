@@ -193,9 +193,6 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     else if (_selectedBuilding.name == "Archer Tower" || _selectedBuilding.name == "箭塔" || _selectedBuilding.name == "ArcherTower") {
         limitKey = "ArcherTower";
     }
-    else if (_selectedBuilding.name == "Wizard Tower" || _selectedBuilding.name == "法师塔" || _selectedBuilding.name == "WizardTower") {
-        limitKey = "WizardTower";
-    }
     else if (_selectedBuilding.name == "Gold Mine" || _selectedBuilding.name == "金矿" || _selectedBuilding.name == "GoldMine") {
         limitKey = "GoldMine";
     }
@@ -356,10 +353,6 @@ BaseBuilding* BuildingManager::createBuildingEntity(const BuildingData& building
     else if (buildingData.name == "Cannon" || buildingData.name == "加农炮" || buildingData.name == "炮塔")
     {
         return DefenseBuilding::create(DefenseType::kCannon, 1, buildingData.imageFile);
-    }
-    else if (buildingData.name == "WizardTower" || buildingData.name == "Wizard Tower" || buildingData.name == "法师塔")
-    {
-        return DefenseBuilding::create(DefenseType::kWizardTower, 1, buildingData.imageFile);
     }
     else if (buildingData.name == "BuilderHut" || buildingData.name == "BuildersHut")
     {
@@ -1162,10 +1155,6 @@ BaseBuilding* BuildingManager::createBuildingFromSerialData(const BuildingSerial
         CCLOG("✅ 创建加农炮：等级=%d", level);
         std::string imagePath = StringUtils::format("buildings/Cannon_Static/Cannon%d.png", level);
         return DefenseBuilding::create(DefenseType::kCannon, level, imagePath);
-    }
-    else if (name.find("Wizard Tower") != std::string::npos || name.find("法师塔") != std::string::npos)
-    {
-        return DefenseBuilding::create(DefenseType::kWizardTower, level);
     }
     else
     {
