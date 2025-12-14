@@ -1,8 +1,8 @@
-/****************************************************************
+ï»¿/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     BuildingLimitManager.h
- * File Function: ½¨ÖşÊıÁ¿ÉÏÏŞ¹ÜÀíÆ÷
- * Author:        ÁõÏà³É
+ * File Function: å»ºç­‘æ•°é‡ä¸Šé™ç®¡ç†å™¨
+ * Author:        åˆ˜ç›¸æˆ
  * Update Date:   2025/12/08
  * License:       MIT License
  ****************************************************************/
@@ -14,12 +14,12 @@
 
 /**
  * @class BuildingLimitManager
- * @brief ¹ÜÀí²»Í¬½¨ÖşÀàĞÍµÄÊıÁ¿ÏŞÖÆ£¨µ¥Àı£©
+ * @brief ç®¡ç†ä¸åŒå»ºç­‘ç±»å‹çš„æ•°é‡é™åˆ¶ï¼ˆå•ä¾‹ï¼‰
  * 
- * ¹æÔò£º
- * - BuildersHut£¨½¨Öş¹¤ÈËĞ¡Îİ£©£ºÎŞÏŞÖÆ
- * - Wall£¨³ÇÇ½£©£º³õÊ¼ÉÏÏŞ10£¬´ó±¾ÓªÃ¿ÉıÒ»¼¶Ôö¼Ó50
- * - ÆäËû½¨Öş£ºÉÏÏŞ = max(1, ´ó±¾ÓªµÈ¼¶)
+ * è§„åˆ™ï¼š
+ * - BuildersHutï¼ˆå»ºç­‘å·¥äººå°å±‹ï¼‰ï¼šæ— é™åˆ¶
+ * - Wallï¼ˆåŸå¢™ï¼‰ï¼šåˆå§‹ä¸Šé™10ï¼Œå¤§æœ¬è¥æ¯å‡ä¸€çº§å¢åŠ 50
+ * - å…¶ä»–å»ºç­‘ï¼šä¸Šé™ = max(1, å¤§æœ¬è¥ç­‰çº§)
  */
 class BuildingLimitManager : public cocos2d::Node
 {
@@ -29,72 +29,72 @@ public:
     virtual bool init() override;
     
     /**
-     * @brief »ñÈ¡Ä³½¨ÖşÀàĞÍµÄµ±Ç°ÉÏÏŞ
-     * @param buildingName ½¨ÖşÃû³Æ£¨Èç "Wall", "Cannon", "BuildersHut" µÈ£©
-     * @return ¸Ã½¨ÖşÀàĞÍÔÊĞí½¨ÔìµÄ×î´óÊıÁ¿£¬-1 ±íÊ¾ÎŞÏŞÖÆ
+     * @brief è·å–æŸå»ºç­‘ç±»å‹çš„å½“å‰ä¸Šé™
+     * @param buildingName å»ºç­‘åç§°ï¼ˆå¦‚ "Wall", "Cannon", "BuildersHut" ç­‰ï¼‰
+     * @return è¯¥å»ºç­‘ç±»å‹å…è®¸å»ºé€ çš„æœ€å¤§æ•°é‡ï¼Œ-1 è¡¨ç¤ºæ— é™åˆ¶
      */
     int getLimit(const std::string& buildingName) const;
     
     /**
-     * @brief Ôö¼ÓÄ³½¨ÖşÀàĞÍµÄÉÏÏŞ
-     * @param buildingName ½¨ÖşÃû³Æ
-     * @param increment Ôö¼ÓÊıÁ¿
+     * @brief å¢åŠ æŸå»ºç­‘ç±»å‹çš„ä¸Šé™
+     * @param buildingName å»ºç­‘åç§°
+     * @param increment å¢åŠ æ•°é‡
      */
     void addLimit(const std::string& buildingName, int increment);
     
     /**
-     * @brief ÉèÖÃÄ³½¨ÖşµÄÉÏÏŞ
-     * @param buildingName ½¨ÖşÃû³Æ
-     * @param newLimit ĞÂµÄÉÏÏŞÊı£¨-1 ±íÊ¾ÎŞÏŞÖÆ£©
+     * @brief è®¾ç½®æŸå»ºç­‘çš„ä¸Šé™
+     * @param buildingName å»ºç­‘åç§°
+     * @param newLimit æ–°çš„ä¸Šé™æ•°ï¼ˆ-1 è¡¨ç¤ºæ— é™åˆ¶ï¼‰
      */
     void setLimit(const std::string& buildingName, int newLimit);
     
     /**
-     * @brief ¸ù¾İ´ó±¾ÓªµÈ¼¶ÖØĞÂ¼ÆËãËùÓĞ½¨ÖşµÄÉÏÏŞ
-     * @param townHallLevel ´ó±¾ÓªµÈ¼¶
+     * @brief æ ¹æ®å¤§æœ¬è¥ç­‰çº§é‡æ–°è®¡ç®—æ‰€æœ‰å»ºç­‘çš„ä¸Šé™
+     * @param townHallLevel å¤§æœ¬è¥ç­‰çº§
      */
     void updateLimitsFromTownHall(int townHallLevel);
     
     /**
-     * @brief ÖØÖÃËùÓĞÏŞÖÆ£¨³¡¾°³õÊ¼»¯Ê±µ÷ÓÃ£©
+     * @brief é‡ç½®æ‰€æœ‰é™åˆ¶ï¼ˆåœºæ™¯åˆå§‹åŒ–æ—¶è°ƒç”¨ï¼‰
      */
     void reset();
     
     /**
-     * @brief »ñÈ¡Ä³½¨ÖşµÄµ±Ç°ÊıÁ¿
-     * @param buildingName ½¨ÖşÃû³Æ
-     * @return ¸Ã½¨Öşµ±Ç°½¨ÔìµÄÊıÁ¿
+     * @brief è·å–æŸå»ºç­‘çš„å½“å‰æ•°é‡
+     * @param buildingName å»ºç­‘åç§°
+     * @return è¯¥å»ºç­‘å½“å‰å»ºé€ çš„æ•°é‡
      */
     int getBuildingCount(const std::string& buildingName) const;
     
     /**
-     * @brief ¼ÇÂ¼½¨Öş½¨Ôì£¨ÊıÁ¿+1£©
-     * @param buildingName ½¨ÖşÃû³Æ
+     * @brief è®°å½•å»ºç­‘å»ºé€ ï¼ˆæ•°é‡+1ï¼‰
+     * @param buildingName å»ºç­‘åç§°
      */
     void recordBuilding(const std::string& buildingName);
     
     /**
-     * @brief ¼ÇÂ¼½¨Öş²ğ³ı£¨ÊıÁ¿-1£©
-     * @param buildingName ½¨ÖşÃû³Æ
+     * @brief è®°å½•å»ºç­‘æ‹†é™¤ï¼ˆæ•°é‡-1ï¼‰
+     * @param buildingName å»ºç­‘åç§°
      */
     void removeBuilding(const std::string& buildingName);
     
     /**
-     * @brief ¼ì²éÊÇ·ñ¿ÉÒÔ½¨Ôì¸Ã½¨Öş
-     * @param buildingName ½¨ÖşÃû³Æ
-     * @return true Èç¹û»¹ÓĞ½¨Ôì¿Õ¼ä
+     * @brief æ£€æŸ¥æ˜¯å¦å¯ä»¥å»ºé€ è¯¥å»ºç­‘
+     * @param buildingName å»ºç­‘åç§°
+     * @return true å¦‚æœè¿˜æœ‰å»ºé€ ç©ºé—´
      */
     bool canBuild(const std::string& buildingName) const;
 
 private:
     BuildingLimitManager();
     
-    // ÉÏÏŞ±í£º½¨ÖşÃû -> ×î´óÊıÁ¿£¨-1 ±íÊ¾ÎŞÏŞÖÆ£©
+    // ä¸Šé™è¡¨ï¼šå»ºç­‘å -> æœ€å¤§æ•°é‡ï¼ˆ-1 è¡¨ç¤ºæ— é™åˆ¶ï¼‰
     std::map<std::string, int> _limits;
     
-    // ¼ÆÊı±í£º½¨ÖşÃû -> µ±Ç°ÊıÁ¿
+    // è®¡æ•°è¡¨ï¼šå»ºç­‘å -> å½“å‰æ•°é‡
     std::map<std::string, int> _buildingCounts;
     
-    // ´ó±¾ÓªµÈ¼¶»º´æ
+    // å¤§æœ¬è¥ç­‰çº§ç¼“å­˜
     int _cachedTownHallLevel = 1;
 };

@@ -67,7 +67,7 @@ private:
     void fixedUpdate();
     void updateBattleState(float dt);
     void updateUnitAI(float dt);
-    void activateDefenseBuildings();
+    void activateAllBuildings();
     void calculateBattleResult();
     void uploadBattleResult();
     std::string getCurrentTimestamp();

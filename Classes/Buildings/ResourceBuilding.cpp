@@ -31,7 +31,14 @@ static const int STORAGE_CAPACITIES[] = {0,      1500,   3000,   6000,   12000, 
 static const int UPGRADE_COSTS[] = {0,     150,   300,    700,    1400,   3000,   7000,    14000,
                                     28000, 56000, 100000, 200000, 400000, 800000, 1500000, 3000000,
                                     6000000, 0};
+// 在文件顶部的常量区域添加 HP 数据表
+// ==================== 生命值数据表 ====================
+// 生产设施 (金矿/圣水收集器) 生命值 (1-15级)
+static const int PRODUCER_HP[] = {0, 400, 450, 500, 550, 600, 640, 680, 720, 780, 840, 900, 960, 1020, 1080, 1180};
 
+// 存储设施 (金库/圣水瓶) 生命值 (1-17级)
+static const int STORAGE_HP[] = {0,    600,  700,  800,  900,  1000, 1200, 1300, 1400,
+                                 1600, 1800, 2100, 2400, 2700, 3000, 3400, 3800, 4200};
 ResourceBuilding::~ResourceBuilding()
 {
     // ✅ 析构时自动从 ResourceCollectionManager 注销
@@ -104,7 +111,25 @@ bool ResourceBuilding::init(int level)
             CCLOG("✅ 为 %s 创建了收集UI", getDisplayName().c_str());
         }
     }
-    
+    // ✅ 【新增】根据建筑类型和等级设置生命值
+    int hp = 400; // 默认值
+
+    if (isProducer())
+    {
+        int idx = std::min(_level, (int)(sizeof(PRODUCER_HP) / sizeof(int) - 1));
+        hp      = PRODUCER_HP[idx];
+    }
+    else if (isStorage())
+    {
+        int idx = std::min(_level, (int)(sizeof(STORAGE_HP) / sizeof(int) - 1));
+        hp      = STORAGE_HP[idx];
+    }
+
+    // 设置最大生命值（这会自动将当前生命值也设为满血）
+    setMaxHitpoints(hp);
+
+    CCLOG("🏗️ %s 初始化完成，HP: %d", getDisplayName().c_str(), hp);
+    initHealthBarUI();
     return true;
 }
 
