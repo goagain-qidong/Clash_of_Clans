@@ -190,7 +190,8 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data)
     auto& config  = GameConfig::getInstance();
     int   thLevel = getCurrentTownHallLevel();
 
-    int         currentCount = getBuildingCount(data.name);
+    // 🔴 修复：直接从 BuildingLimitManager 获取当前数量，而不是通过场景的 getBuildingCount
+    int         currentCount = limitMgr->getBuildingCount(limitKey);
     const auto* cfgItem      = config.getBuildingConfig(data.name);
 
     bool isUnlocked = (thLevel >= cfgItem->unlockTownHallLevel);
