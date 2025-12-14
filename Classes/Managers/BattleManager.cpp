@@ -70,6 +70,16 @@ void BattleManager::startBattle()
     // 🎵 Play music
     MusicManager::getInstance().playMusic(MusicType::BATTLE_GOING);
     
+    // 🔴 修复：启用所有建筑的战斗模式
+    for (auto* building : _enemyBuildings)
+    {
+        if (building)
+        {
+            building->enableBattleMode();
+            CCLOG("⚔️ 启用 %s 战斗模式", building->getDisplayName().c_str());
+        }
+    }
+    
     if (!_isReplayMode)
     {
         // Load troops from inventory

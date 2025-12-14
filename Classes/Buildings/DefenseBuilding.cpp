@@ -290,8 +290,7 @@ void DefenseBuilding::fireProjectile(Unit* target)
     if (!target)
         return;
 
-    // ==================== 🎯 旋转朝向目标 ====================
-    rotateToTarget(target->getPosition());
+    // ==================== 🚀 不再旋转建筑本身，只让炮弹飞向目标 ====================
     
     // ==================== 💥 创建炮弹/箭矢视觉效果 ====================
     Sprite* projectile = nullptr;
@@ -340,13 +339,14 @@ void DefenseBuilding::fireProjectile(Unit* target)
     float distance = startPos.distance(endPos);
     float duration = distance / projectileSpeed;
     
-    // 箭矢需要旋转朝向目标
+    // 箭矢需要旋转朝向目标（只旋转箭矢，不旋转建筑！）
     if (_defenseType == DefenseType::kArcherTower)
     {
         Vec2 direction = endPos - startPos;
         float angle = CC_RADIANS_TO_DEGREES(direction.getAngle());
         projectile->setRotation(-angle);
     }
+    
     
     // 移动到目标位置
     auto moveTo = MoveTo::create(duration, endPos);
@@ -437,15 +437,8 @@ void DefenseBuilding::hideAttackRange()
 
 void DefenseBuilding::rotateToTarget(const cocos2d::Vec2& targetPos)
 {
-    Vec2 myPos = this->getPosition();
-    Vec2 direction = targetPos - myPos;
-    
-    // 计算角度（弧度转角度）
-    float angle = CC_RADIANS_TO_DEGREES(direction.getAngle());
-    
-    // 平滑旋转到目标角度
-    auto rotateTo = RotateTo::create(0.2f, -angle);  // 负号是因为cocos2d-x的旋转方向
-    this->runAction(rotateTo);
+    // 🔴 已废弃：防御建筑不再自己旋转，保持静止即可
+    // 只有炮弹/箭矢会朝向目标飞行
 }
 
 // ==================== 炮弹/箭矢创建 ====================
