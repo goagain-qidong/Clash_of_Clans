@@ -148,27 +148,76 @@ void ClanPanel::setupMemberUI()
     _panelNode->addChild(_memberNode);
     
     // 标题
-    auto title = Label::createWithSystemFont("Clan Members", "Arial", 30);
+    auto title = Label::createWithSystemFont("Online Players", "Arial", 30);
     title->setPosition(0, 170);
     _memberNode->addChild(title);
     
+    // 标签页按钮
+    float tabY = 130;
+    auto tabBg = LayerColor::create(Color4B(40, 40, 60, 255), 560, 40);
+    tabBg->setPosition(-280, tabY - 20);
+    _memberNode->addChild(tabBg);
+    
+    // 在线玩家标签
+    _onlinePlayersTab = Button::create();
+    _onlinePlayersTab->setTitleText("Online Players");
+    _onlinePlayersTab->setTitleFontSize(20);
+    _onlinePlayersTab->setScale9Enabled(true);
+    _onlinePlayersTab->setContentSize(Size(180, 35));
+    _onlinePlayersTab->setPosition(Vec2(-140, tabY));
+    _onlinePlayersTab->addClickEventListener([this](Ref*) {
+        switchToTab(TabType::ONLINE_PLAYERS);
+    });
+    _memberNode->addChild(_onlinePlayersTab);
+    
+    // 部落成员标签
+    _clanMembersTab = Button::create();
+    _clanMembersTab->setTitleText("Clan Members");
+    _clanMembersTab->setTitleFontSize(20);
+    _clanMembersTab->setScale9Enabled(true);
+    _clanMembersTab->setContentSize(Size(180, 35));
+    _clanMembersTab->setPosition(Vec2(0, tabY));
+    _clanMembersTab->addClickEventListener([this](Ref*) {
+        switchToTab(TabType::CLAN_MEMBERS);
+    });
+    _memberNode->addChild(_clanMembersTab);
+    
+    // 部落战标签
+    _clanWarTab = Button::create();
+    _clanWarTab->setTitleText("Clan War");
+    _clanWarTab->setTitleFontSize(20);
+    _clanWarTab->setScale9Enabled(true);
+    _clanWarTab->setContentSize(Size(180, 35));
+    _clanWarTab->setPosition(Vec2(140, tabY));
+    _clanWarTab->addClickEventListener([this](Ref*) {
+        switchToTab(TabType::CLAN_WAR);
+    });
+    _memberNode->addChild(_clanWarTab);
+    
     // 列表
     _memberList = ListView::create();
-    _memberList->setContentSize(Size(560, 320));
-    _memberList->setPosition(Vec2(-280, -160));
+    _memberList->setContentSize(Size(560, 250));
+    _memberList->setPosition(Vec2(-280, -140));
     _memberList->setBackGroundColor(Color3B(60, 60, 80));
     _memberList->setBackGroundColorType(Layout::BackGroundColorType::SOLID);
     _memberList->setItemsMargin(5);
+    _memberList->setScrollBarEnabled(true);
     _memberNode->addChild(_memberList);
     
     // 刷新按钮
     auto refreshBtn = Button::create();
     refreshBtn->setTitleText("Refresh");
+    refreshBtn->setTitleFontSize(20);
+    refreshBtn->setScale9Enabled(true);
+    refreshBtn->setContentSize(Size(120, 40));
     refreshBtn->setPosition(Vec2(0, -180));
     refreshBtn->addClickEventListener([this](Ref*) {
-        requestClanMembers();
+        refreshCurrentTab();
     });
     _memberNode->addChild(refreshBtn);
+    
+    // 默认显示在线玩家
+    switchToTab(TabType::ONLINE_PLAYERS);
 }
 
 void ClanPanel::updateUIState()
@@ -232,6 +281,15 @@ void ClanPanel::show()
 void ClanPanel::hide()
 {
     this->setVisible(false);
+}
+
+void ClanPanel::onExit()
+{
+    Layer::onExit();
+    // Clear callbacks to prevent crash if network returns after panel is closed
+    SocketClient::getInstance().setOnClanList(nullptr);
+    SocketClient::getInstance().setOnClanMembers(nullptr);
+    SocketClient::getInstance().setOnConnected(nullptr);
 }
 
 void ClanPanel::requestClanMembers()
@@ -357,4 +415,163 @@ void ClanPanel::onSpectateClicked(const std::string& memberId)
 {
     // 发送观战请求
     SocketClient::getInstance().requestSpectate(memberId);
+}
+
+void ClanPanel::switchToTab(TabType tabType)
+{
+    _currentTab = tabType;
+    
+    // 更新标签按钮样式
+    _onlinePlayersTab->setBright(tabType != TabType::ONLINE_PLAYERS);
+    _clanMembersTab->setBright(tabType != TabType::CLAN_MEMBERS);
+    _clanWarTab->setBright(tabType != TabType::CLAN_WAR);
+    
+    // 刷新列表
+    refreshCurrentTab();
+}
+
+void ClanPanel::refreshCurrentTab()
+{
+    switch (_currentTab)
+    {
+    case TabType::ONLINE_PLAYERS:
+        requestOnlinePlayers();
+        break;
+    case TabType::CLAN_MEMBERS:
+        requestClanMembers();
+        break;
+    case TabType::CLAN_WAR:
+        requestClanWarInfo();
+        break;
+    }
+}
+
+void ClanPanel::requestOnlinePlayers()
+{
+    SocketClient::getInstance().setOnUserListReceived([this](const std::string& data) {
+        Director::getInstance()->getScheduler()->performFunctionInCocosThread([this, data]() {
+            onUserListReceived(data);
+        });
+    });
+    SocketClient::getInstance().requestUserList();
+}
+
+void ClanPanel::requestClanWarInfo()
+{
+    // TODO: Request clan war status
+    _memberList->removeAllItems();
+    
+    auto infoLabel = Label::createWithSystemFont("Clan War feature coming soon!", "Arial", 24);
+    infoLabel->setTextColor(Color4B::YELLOW);
+    
+    auto item = Layout::create();
+    item->setContentSize(Size(560, 100));
+    item->addChild(infoLabel);
+    infoLabel->setPosition(Vec2(280, 50));
+    
+    _memberList->pushBackCustomItem(item);
+}
+
+void ClanPanel::onUserListReceived(const std::string& data)
+{
+    _memberList->removeAllItems();
+    
+    if (data.empty())
+    {
+        auto infoLabel = Label::createWithSystemFont("No other players online", "Arial", 20);
+        infoLabel->setTextColor(Color4B::GRAY);
+        
+        auto item = Layout::create();
+        item->setContentSize(Size(560, 60));
+        item->addChild(infoLabel);
+        infoLabel->setPosition(Vec2(280, 30));
+        
+        _memberList->pushBackCustomItem(item);
+        return;
+    }
+    
+    // Parse format: userId,username,thLevel,gold,elixir|userId2,username2,...
+    std::istringstream iss(data);
+    std::string playerStr;
+    
+    while (std::getline(iss, playerStr, '|'))
+    {
+        std::istringstream ps(playerStr);
+        std::string userId, username, thLevelStr, goldStr, elixirStr;
+        std::getline(ps, userId, ',');
+        std::getline(ps, username, ',');
+        std::getline(ps, thLevelStr, ',');
+        std::getline(ps, goldStr, ',');
+        std::getline(ps, elixirStr, ',');
+        
+        int thLevel = thLevelStr.empty() ? 1 : std::stoi(thLevelStr);
+        int gold = goldStr.empty() ? 0 : std::stoi(goldStr);
+        int elixir = elixirStr.empty() ? 0 : std::stoi(elixirStr);
+        
+        createOnlinePlayerItem(userId, username, thLevel, gold, elixir);
+    }
+}
+
+void ClanPanel::createOnlinePlayerItem(const std::string& userId, const std::string& username, int thLevel, int gold, int elixir)
+{
+    auto item = Layout::create();
+    item->setContentSize(Size(560, 70));
+    item->setBackGroundColor(Color3B(70, 70, 90));
+    item->setBackGroundColorType(Layout::BackGroundColorType::SOLID);
+    
+    // 玩家名称
+    auto nameLabel = Label::createWithSystemFont(username, "Arial", 22);
+    nameLabel->setAnchorPoint(Vec2::ANCHOR_MIDDLE_LEFT);
+    nameLabel->setPosition(Vec2(20, 45));
+    nameLabel->setTextColor(Color4B::WHITE);
+    item->addChild(nameLabel);
+    
+    // 大本营等级
+    auto thLabel = Label::createWithSystemFont(StringUtils::format("TH %d", thLevel), "Arial", 16);
+    thLabel->setAnchorPoint(Vec2::ANCHOR_MIDDLE_LEFT);
+    thLabel->setPosition(Vec2(20, 20));
+    thLabel->setTextColor(Color4B(200, 200, 200, 255));
+    item->addChild(thLabel);
+    
+    // 金币
+    auto goldLabel = Label::createWithSystemFont(StringUtils::format("💰 %d", gold), "Arial", 16);
+    goldLabel->setPosition(Vec2(250, 45));
+    goldLabel->setTextColor(Color4B(255, 215, 0, 255));
+    item->addChild(goldLabel);
+    
+    // 圣水
+    auto elixirLabel = Label::createWithSystemFont(StringUtils::format("⚗️ %d", elixir), "Arial", 16);
+    elixirLabel->setPosition(Vec2(250, 20));
+    elixirLabel->setTextColor(Color4B(255, 0, 255, 255));
+    item->addChild(elixirLabel);
+    
+    // PVP挑战按钮
+    auto pvpBtn = Button::create();
+    pvpBtn->setTitleText("🎮 PVP");
+    pvpBtn->setTitleFontSize(18);
+    pvpBtn->setScale9Enabled(true);
+    pvpBtn->setContentSize(Size(100, 30));
+    pvpBtn->setPosition(Vec2(380, 45));
+    pvpBtn->addClickEventListener([this, userId, username](Ref*) {
+        CCLOG("⚔️ Requesting PVP with: %s", userId.c_str());
+        SocketClient::getInstance().requestPvp(userId);
+        hide(); // 隐藏面板，准备进入战斗
+    });
+    item->addChild(pvpBtn);
+    
+    // 观战按钮
+    auto spectateBtn = Button::create();
+    spectateBtn->setTitleText("👁 Watch");
+    spectateBtn->setTitleFontSize(18);
+    spectateBtn->setScale9Enabled(true);
+    spectateBtn->setContentSize(Size(100, 30));
+    spectateBtn->setPosition(Vec2(480, 45));
+    spectateBtn->addClickEventListener([this, userId](Ref*) {
+        CCLOG("👁 Requesting spectate: %s", userId.c_str());
+        SocketClient::getInstance().requestSpectate(userId);
+        hide();
+    });
+    item->addChild(spectateBtn);
+    
+    _memberList->pushBackCustomItem(item);
 }

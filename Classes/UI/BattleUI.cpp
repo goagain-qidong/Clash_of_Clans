@@ -1,11 +1,16 @@
-﻿/****************************************************************
- * Project Name:  Clash_of_Clans
- * File Name:     BattleUI.cpp
- * File Function: 战斗界面 - 负责管理游戏中的战斗相关UI
- * Author:        赵崇治
- * Update Date:   2025/12/14
- * License:       MIT License
- ****************************************************************/
+﻿/************************************************************************/
+/* BattleUI.cpp                                                          */
+/*                                                                      */
+/* Implementation of the BattleUI class, responsible for managing the   */
+/* battle-related UI in the game, including troop selection, battle     */
+/* status, and results display.                                           */
+/*                                                                      */
+/* Author: Zhao Chongzhi                                                */
+/* Date: 2025/12/14                                                      */
+/*                                                                      */
+/* License: MIT License                                                 */
+/************************************************************************/
+
 #include "BattleUI.h"
 
 USING_NS_CC;
@@ -362,7 +367,22 @@ void BattleUI::highlightTroopButton(UnitType type)
 
 void BattleUI::setEndBattleButtonText(const std::string& text)
 {
-    if (_endBattleButton) _endBattleButton->setTitleText(text);
+    if (_endBattleButton) 
+    {
+        _endBattleButton->setTitleText(text);
+        
+        // 如果是退出回放，更换按钮背景以避免与 end_battle.png 的文字重叠
+        if (text == "退出回放")
+        {
+            // 使用 return_button.png 作为背景（假设它是一个通用的按钮背景）
+            _endBattleButton->loadTextures("icon/return_button.png", "icon/return_button.png", "");
+            
+            // 调整按钮大小和缩放
+            _endBattleButton->ignoreContentAdaptWithSize(false);
+            _endBattleButton->setContentSize(Size(120, 50));
+            _endBattleButton->setScale(1.0f);
+        }
+    }
 }
 
 void BattleUI::showResultPanel(int stars, int destructionPercent, int goldLooted, int elixirLooted, int trophyChange, bool isReplayMode)

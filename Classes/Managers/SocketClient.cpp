@@ -9,6 +9,10 @@
 #include "SocketClient.h"
 #include <algorithm>
 #include <sstream>
+#include "json/document.h"
+#include "json/writer.h"
+#include "json/stringbuffer.h"
+
 // ==================== AttackResult 序列化 ====================
 std::string AttackResult::serialize() const
 {
@@ -112,21 +116,31 @@ bool SocketClient::connect(const std::string& host, int port)
 }
 void SocketClient::disconnect()
 {
-    if (!_connected)
-    {
-        return;
-    }
+    // 无论当前连接状态如何，都要确保清理资源和线程
     _running = false;
     _connected = false;
+
     if (_socket != INVALID_SOCKET)
     {
+        // 关闭套接字会强制 recv 返回错误，从而退出接收线程循环
         closesocket(_socket);
         _socket = INVALID_SOCKET;
     }
+
+    // 必须等待接收线程结束，否则析构时会导致 abort()
     if (_recvThread.joinable())
     {
-        _recvThread.join();
+        // 防止在接收线程中调用 disconnect 导致死锁（虽然设计上不应发生）
+        if (std::this_thread::get_id() != _recvThread.get_id())
+        {
+            _recvThread.join();
+        }
+        else
+        {
+            _recvThread.detach();
+        }
     }
+
     cocos2d::log("[SocketClient] Disconnected");
     if (_onDisconnected)
     {
@@ -327,9 +341,30 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data)
     case PACKET_CLAN_LIST:
         if (_onClanList)
         {
-            // 简单解析 JSON 数组
             std::vector<ClanInfoClient> clans;
-            // TODO: 使用 rapidjson 解析
+            rapidjson::Document doc;
+            doc.Parse(data.c_str());
+            if (!doc.HasParseError() && doc.IsArray())
+            {
+                for (rapidjson::SizeType i = 0; i < doc.Size(); i++)
+                {
+                    const auto& item = doc[i];
+                    ClanInfoClient clan;
+                    if (item.HasMember("id") && item["id"].IsString())
+                        clan.clanId = item["id"].GetString();
+                    if (item.HasMember("name") && item["name"].IsString())
+                        clan.clanName = item["name"].GetString();
+                    if (item.HasMember("members") && item["members"].IsInt())
+                        clan.memberCount = item["members"].GetInt();
+                    if (item.HasMember("trophies") && item["trophies"].IsInt())
+                        clan.clanTrophies = item["trophies"].GetInt();
+                    if (item.HasMember("required") && item["required"].IsInt())
+                        clan.requiredTrophies = item["required"].GetInt();
+                    if (item.HasMember("open") && item["open"].IsBool())
+                        clan.isOpen = item["open"].GetBool();
+                    clans.push_back(clan);
+                }
+            }
             _onClanList(clans);
         }
         break;

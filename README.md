@@ -1,111 +1,267 @@
-﻿# Clash of Clans - 项目说明
+﻿# Clash of Clans - C++ 联网对战游戏
 
-这是一个基于 `cocos2d-x` 的 C++ 项目，实现了模拟类《部落冲突》风格的城镇构建系统。项目包含建筑管理、网格地图、资源管理、建筑移动/升级、序列化存档等子系统，适合作为学习和二次开发的基础。
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![C++](https://img.shields.io/badge/C%2B%2B-14-green.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android-orange.svg)
 
-## 主要特性
+一个基于 **Cocos2d-x** 引擎的《部落冲突》风格的 C++ 联网对战游戏。该项目实现了完整的客户端-服务器架构，支持实时 PVP、部落系统、部落战争、对战观战等多种游戏玩法。
 
-- 网格化地图与建筑放置系统 (`Classes/Managers/BuildingManager.cpp`)
-- 多种建筑类型：资源建筑、军营、城墙、大本营等（`Classes/Buildings`）
-- 资源与容量管理（`Classes/Managers/ResourceManager.*`）
-- 保存/加载与账号管理（`Classes/Managers/AccountManager.*`）
-- 支持建筑移动、升级倒计时 UI 等功能
-
-## 目录结构（部分）
-
-- `Classes/` - 游戏源码（场景、管理器、建筑等）
-- `proj.win32/` - Windows 平台工程文件（Visual Studio / CMake）
-- `CMakeLists.txt` - CMake 构建脚本
-- `engine/` - 引擎与第三方库（已包含在仓库中）
-
-## 环境与依赖
-
-- `cocos2d-x` (兼容 3.x/4.x 的代码风格；请根据仓库中的 `engine/` 目录确认版本)
-- Windows + Visual Studio 2019/2022 或等效支持 C++ 的 IDE
-- CMake（用于跨平台构建）
-
-## 构建与运行
-
-1. 使用 Visual Studio 打开 `proj.win32` 下的工程，选择 `Debug` 或 `Release` 配置并编译运行。
-
-2. 或使用 CMake（命令行示例）：
-
-   ```bash
-   mkdir build && cd build
-   cmake ..
-   cmake --build . --config Release
-   ```
-
-3. 如果出现资源或引擎路径问题，请确认 `engine/` 目录在仓库中完整，或修改 CMake/工程的引擎引用路径。
-
-## 常见问题
-
-- README 出现乱码：请确保编辑器或 Git 使用 UTF-8 编码保存并查看该文件（推荐 UTF-8 无 BOM 或带 BOM，视您的编辑器而定）。
-- 构建失败：检查 Visual Studio 的 C++ 工作负载是否已安装，确认 CMake 版本匹配。
-
-## 贡献与开发指南
-
-欢迎提交 issue 或 pull request。常见流程：
-
-1. Fork 本仓库并创建功能分支
-2. 实现并通过本地编译与基本测试
-3. 提交 PR，说明更改目的与影响范围
-
-## 许可证
-
-本仓库默认采用 MIT 许可证；如需更改或补充许可证信息，请在根目录添加 `LICENSE` 文件。
+**[ 详细说明文档](#联网对战详细文档) | [ 快速开始](#快速开始) | [ 网络协议](#网络通信)**
 
 ---
 
-# Clash of Clans - Project Description
+##  核心功能
 
-This is a C++ project built on `cocos2d-x`, implementing a town-building system in the style of the simulation game Clash of Clans. The project includes subsystems for building management, grid-based maps, resource management, building movement/upgrades, and serialized saving, making it suitable as a foundation for learning and secondary development.
+### 游戏玩法
 
-## Key Features
+-  **城镇建设系统** - 网格化地图，20+ 种建筑，升级系统
+-  **实时 PVP 对战** - 180 秒战斗，资源掠夺，奖杯系统
+-  **部落系统** - 创建部落，成员管理，权限控制
+-  **部落战争** - 多部落对战，24 小时持续，星数累计
+-  **对战观战** - 实时观看，同步操作，战斗录像
+-  **AI 防守** - 自动反击，目标优先级，伤害计算
 
-- Grid-based map and building placement system (`Classes/Managers/BuildingManager.cpp`)
-- Multiple building types: resource buildings, barracks, walls, Town Hall, etc. (`Classes/Buildings`)
-- Resource and capacity management (`Classes/Managers/ResourceManager.*`)
-- Save/load and account management (`Classes/Managers/AccountManager.*`)
-- Supports building movement, upgrade countdown UI, and more
+### 网络架构
 
-## Directory Structure (Partial)
-
-- `Classes/` - Game source code (scenes, managers, buildings, etc.)
-- `proj.win32/` - Windows platform project files (Visual Studio / CMake)
-- `CMakeLists.txt` - CMake build script
-- `engine/` - Engine and third-party libraries (included in the repository)
-
-## Environment and Dependencies
-
-- `cocos2d-x` (code style compatible with 3.x/4.x; verify version based on the `engine/` directory in the repository)
-- Windows + Visual Studio 2019/2022 or equivalent C++ IDE
-- CMake (for cross-platform builds)
-
-## Build and Run
-
-1. Open the project under `proj.win32` in Visual Studio, select `Debug` or `Release` configuration, then compile and run.
-2. Or use CMake (command line example):
-   ```bash
-   mkdir build && cd build
-   cmake ..
-   cmake --build . --config Release
-   ```
-3. If resource or engine path issues occur, verify the `engine/` directory is intact in the repository or modify the engine reference path in CMake/project.
-
-## Common Issues
-
-- Garbled README: Ensure your editor or Git saves and views the file using UTF-8 encoding (recommended: UTF-8 without BOM or with BOM, depending on your editor).
-- Build failure: Verify the Visual Studio C++ workload is installed and confirm CMake version compatibility.
-
-## Contributing and Development Guide
-
-We welcome issue submissions and pull requests. Standard workflow:
-1. Fork this repository and create a feature branch
-2. Implement changes and verify local compilation with basic tests
-3. Submit a PR with clear descriptions of changes and their scope
-
-## License
-
-This repository defaults to the MIT License. To modify or supplement license information, add a `LICENSE` file to the root directory.
+- **TCP Socket 通信** - 45 种消息类型，完整业务覆盖
+- **匹配系统** - 基于奖杯的动态配对，等待补偿
+- **多线程并发** - 单独线程/连接，Mutex 保护，1000+ 在线
 
 ---
+
+##  项目结构
+
+```
+coc/
+├── proj.win32/                      # Windows 工程
+├── Classes/
+│   ├── Scenes/                      # 游戏场景
+│   ├── Managers/
+│   │   ├── SocketClient.h/cpp       # 网络客户端 
+│   │   ├── BattleManager.h/cpp      # 对战逻辑
+│   │   └── ...
+│   ├── Buildings/                   # 建筑系统
+│   └── UI/                          # 用户界面
+├── Server/
+│   ├── Server.h                     # 服务器主类 
+│   ├── Server.cpp                   # 服务器实现
+│   └── ServerMain.cpp               # 入口
+├── engine/                          # Cocos2d-x 引擎
+├── README.md                        # 本文件
+└── 联网对战使用说明.md              # 详细文档
+```
+
+---
+
+##  快速开始
+
+### 环境要求
+
+| 项目 | 要求 |
+|------|------|
+| 系统 | Windows 7+ 或 Android 5.0+ |
+| 编译器 | Visual Studio 2015+ 或 NDK r21+ |
+| C++ | C++14 标准 |
+| 引擎 | Cocos2d-x 3.17 或 4.x |
+
+### 编译和运行
+
+**1. 服务器**
+
+```bash
+cd proj.win32
+# 在 VS 中打开 Server.vcxproj
+# Release 配置 → Build
+./Server.exe
+# 输出：Server started on port 8888
+```
+
+**2. 客户端**
+
+```bash
+cd proj.win32
+# 在 VS 中打开 HelloCpp.vcxproj
+# Debug 配置 → F5
+```
+
+**3. 配置连接地址**
+
+```cpp
+// 修改客户端代码
+SocketClient::getInstance()->connect("127.0.0.1", 8888);  // 本地
+// 或
+SocketClient::getInstance()->connect("192.168.1.100", 8888);  // 局域网
+```
+
+**4. 运行**
+
+- 启动 2+ 个客户端（不同玩家 ID）
+- 登录游戏
+- 发起对战
+
+---
+
+##  网络通信
+
+### 消息类型汇总
+
+| 类型 | ID | 说明 |
+|------|----|----|
+| 登录 | 1 | 玩家登录 |
+| 地图操作 | 2-3 | 上传/查询地图 |
+| 用户列表 | 5-6 | 获取可攻击玩家 |
+| 匹配 | 10-12 | 请求/取消匹配 |
+| 对战 | 13-15 | 开始/结束对战 |
+| 部落 | 20-25 | 创建/加入/管理部落 |
+| 部落战争 | 30-34 | 搜索/发起/结果 |
+| **PVP** | **40-45** | ** 实时对战系统** |
+
+### PVP 流程
+
+```
+Player A                          Player B
+  │                                  │
+  └─ requestPvp(B) ────────────────>│
+                                    │
+  ─ ATTACK + mapData ─────────────┤
+  ─ DEFEND notify ────────────────┤
+  │                                  │
+  └─ sendPvpAction(...) ─────────────>
+     (下兵操作实时同步)               │
+  │                                  │
+  └─ endPvp() ──────────────────────>
+```
+
+### 客户端 API
+
+```cpp
+auto client = SocketClient::getInstance();
+client->connect("127.0.0.1", 8888);
+client->login("player_001", "MyName", 500);
+
+// 获取玩家列表
+client->requestUserList();
+client->setOnUserListReceived([](const std::string& list) {
+    // 显示玩家列表
+});
+
+// 发起 PVP
+client->requestPvp("opponent_id");
+client->setOnPvpStart([](const std::string& role, 
+                         const std::string& opId, 
+                         const std::string& mapData) {
+    // 进入对战
+});
+
+// 下兵操作
+client->sendPvpAction(UNIT_BARBARIAN, 100.0f, 200.0f);
+
+// 对战结束
+client->endPvp();
+
+// 在 update 中处理回调
+void update(float dt) {
+    client->processCallbacks();
+}
+```
+
+---
+
+##  系统架构
+
+### 客户端层级
+
+```
+┌─ Cocos2d-x App ─────┐
+│ DraggableMapScene   │ - 城镇建设
+│ BattleScene         │ - 对战场景
+│ ClanPanel           │ - 部落管理
+└─────────────────────┘
+         │
+┌─ Game Logic ────────┐
+│ BattleManager       │ - 对战逻辑
+│ BuildingManager     │ - 建筑管理
+│ SocketClient      │ - 网络通信
+└─────────────────────┘
+         │
+┌─ Cocos2d-x Engine ──┐
+│ Rendering/Input/    │
+│ Audio               │
+└─────────────────────┘
+```
+
+### 服务器处理流程
+
+```
+Accept Connection
+       │
+   ┌───▼────┐
+   │ Thread │ (独立线程处理)
+   └───┬────┘
+       │
+   ┌───▼────────────┐
+   │ Parse Packet   │
+   └───┬────────────┘
+       │
+   ┌───▼────────────┐
+   │ Process Logic  │ - 验证、处理、更新
+   │ (Mutex 保护)   │
+   └───┬────────────┘
+       │
+   ┌───▼────────────┐
+   │ Send Response/ │ - 单播或广播
+   │ Broadcast      │
+   └────────────────┘
+```
+
+---
+
+##  功能详解
+
+### 实时 PVP 对战
+
+**特点**：
+-  低延迟（50-100ms）
+-  实时同步单位操作
+-  即时 AI 反击
+-  可被观战
+
+**流程**：
+1. 请求 PVP → 验证在线 → 获取地图
+2. 显示地图 → 玩家下兵 → 实时转发
+3. AI 自动反击 → 伤害计算 → 资源更新
+4. 180 秒结束 → 计算结果 → 奖杯/资源变化
+
+### 部落战争
+
+**特点**：
+-  多个部落参与
+-  24 小时持续
+-  星数累计制
+-  实时状态更新
+
+**阶段**：
+1. 搜索 → 匹配相近奖杯的部落
+2. 确认 → 通知两个部落成员
+3. 对战 → 成员选择对手，发起攻击
+4. 统计 → 每次攻击上报星数，实时更新
+5. 结算 → 24h 后自动结算
+
+### 对战观战
+
+**功能**：
+-  实时观看两名玩家对战
+-  同步显示双方操作
+-  支持回放
+
+**使用**：
+```cpp
+client->requestSpectate("player_id");
+client->setOnSpectateJoin([](bool ok, const std::string& atkId, 
+                             const std::string& defId, 
+                             const std::string& mapData) {
+    if (ok) {
+        // 进入观战模式
+    }
+});
+```

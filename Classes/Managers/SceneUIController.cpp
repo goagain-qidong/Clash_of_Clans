@@ -10,6 +10,7 @@
 #include "../UI/SettingsPanel.h"
 #include "../Managers/SocketClient.h"
 #include "../Scenes/BattleScene.h"
+#include "../Managers/AccountManager.h" // Ensure AccountManager is included
 #include "json/document.h"
 
 USING_NS_CC;
@@ -42,11 +43,26 @@ bool SceneUIController::init()
             return;
         }
         
-        // 解析地图数据
-        AccountGameData enemyData = AccountGameData::fromJson(mapData);
+        AccountGameData battleMapData;
+        
+        if (role == "DEFEND")
+        {
+            // 防守模式：使用自己的数据作为地图
+            auto currentAccount = AccountManager::getInstance().getCurrentAccount();
+            if (currentAccount)
+            {
+                battleMapData = currentAccount->gameData;
+            }
+        }
+        else
+        {
+            // 攻击模式：解析服务器传来的对手地图数据
+            battleMapData = AccountGameData::fromJson(mapData);
+        }
         
         // 创建战斗场景
-        auto scene = BattleScene::createWithEnemyData(enemyData, opponentId);
+        // 注意：如果是防守，opponentId 是攻击者ID；如果是攻击，opponentId 是被攻击者ID
+        auto scene = BattleScene::createWithEnemyData(battleMapData, opponentId);
         auto battleScene = dynamic_cast<BattleScene*>(scene);
         if (battleScene)
         {

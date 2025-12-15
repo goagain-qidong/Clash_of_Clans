@@ -675,32 +675,57 @@ void DraggableMapScene::registerResourceBuilding(ResourceBuilding* building)
 
 void DraggableMapScene::connectToServer()
 {
-    // try to connect to local dev server; non-blocking if fails
     auto& sock = SocketClient::getInstance();
 
-    // set a simple onConnected log
-    sock.setOnConnected([](bool ok){
-        CCLOG("[Socket] onConnected: %d", ok);
+    // 设置连接回调
+    sock.setOnConnected([](bool success) {
+        if (success)
+        {
+            CCLOG("[Socket] ✅ 连接成功！");
+            
+            // 自动登录并上传地图
+            auto& accMgr = AccountManager::getInstance();
+            auto currentAccount = accMgr.getCurrentAccount();
+            if (currentAccount)
+            {
+                // 登录
+                SocketClient::getInstance().login(currentAccount->userId, currentAccount->username, currentAccount->gameData.trophies);
+                CCLOG("[Socket] 📤 Sent login: %s", currentAccount->userId.c_str());
+                
+                // 上传地图数据
+                std::string mapData = currentAccount->gameData.toJson();
+                SocketClient::getInstance().uploadMap(mapData);
+                CCLOG("[Socket] 📤 Uploaded map data (size: %zu bytes)", mapData.size());
+            }
+        }
+        else
+        {
+            CCLOG("[Socket] ❌ 连接失败");
+        }
     });
 
-    // 🔴 Disable auto-connect to allow manual connection via Clan Panel
-    /*
-    // If we have an account, attempt to login after connect
+    // 尝试连接到服务器（使用正确的端口）
     const std::string host = "127.0.0.1";
-    const int port = 12345; // default dev port (adjust if your server uses another)
+    const int port = 8888; // 🔴 修正：使用服务器默认端口 8888
 
     if (!sock.isConnected())
     {
+        CCLOG("[Socket] 🔌 正在连接到服务器 %s:%d...", host.c_str(), port);
         sock.connect(host, port);
     }
-
-    // perform login if we have a current account
-    auto& accMgr = AccountManager::getInstance();
-    if (auto cur = accMgr.getCurrentAccount())
+    else
     {
-        sock.login(cur->userId, cur->username, cur->gameData.trophies);
+        CCLOG("[Socket] ✅ 已连接到服务器");
+        // 如果已连接，直接上传地图
+        auto& accMgr = AccountManager::getInstance();
+        auto currentAccount = accMgr.getCurrentAccount();
+        if (currentAccount)
+        {
+            std::string mapData = currentAccount->gameData.toJson();
+            sock.uploadMap(mapData);
+            CCLOG("[Socket] 📤 Re-uploaded map data");
+        }
     }
-    */
 }
 
 void DraggableMapScene::setupNetworkCallbacks()
@@ -746,8 +771,11 @@ void DraggableMapScene::setupNetworkCallbacks()
 
     // Optionally handle user list (map userId->name) if server returns additional info
     sock.setOnUserListReceived([this](const std::string& data){
-        // Currently we don't parse it here, but could cache names for nicer logs
         CCLOG("[Socket] User list received, len=%zu", data.size());
+        // Ensure UI update runs on main thread
+        Director::getInstance()->getScheduler()->performFunctionInCocosThread([this, data](){
+            showPlayerListFromServerData(data);
+        });
     });
 }
 
@@ -817,6 +845,10 @@ void DraggableMapScene::update(float dt)
 
 DraggableMapScene::~DraggableMapScene()
 {
+    // Clear network callbacks to prevent crash
+    SocketClient::getInstance().setOnAttackResult(nullptr);
+    SocketClient::getInstance().setOnUserListReceived(nullptr);
+
     // 🔧 修复内存泄漏：清理所有 schedule 回调
     this->unscheduleAllCallbacks();
     
@@ -977,7 +1009,7 @@ void DraggableMapScene::showLocalPlayerList()
 
     if (players.empty())
     {
-        _uiController->showHint("暂无可攻击的玩家！请先创建其他账号。");
+        _uiController->showHint("暂无可攻击的玩家！(请确保其他玩家在线且使用不同的账号)");
         return;
     }
 
