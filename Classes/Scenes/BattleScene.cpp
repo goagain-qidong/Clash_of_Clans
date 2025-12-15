@@ -429,6 +429,9 @@ void BattleScene::onTroopSelected(UnitType type)
 
 void BattleScene::update(float dt)
 {
+    // Process network callbacks in main thread
+    SocketClient::getInstance().processCallbacks();
+
     float scaledDt = dt * _timeScale;
     if (_battleManager)
     {

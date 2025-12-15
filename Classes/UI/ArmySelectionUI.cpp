@@ -69,24 +69,6 @@ void ArmySelectionUI::createUI()
     title->setTextColor(Color4B::YELLOW);
     _container->addChild(title);
     
-    // 提示文本
-    auto hint = Label::createWithSystemFont(
-        "准备你的军队进行攻击！\n（当前版本：自动部署所有可用士兵）", 
-        "Arial", 20);
-    hint->setPosition(Vec2(250, 280));
-    hint->setTextColor(Color4B::WHITE);
-    hint->setAlignment(TextHAlignment::CENTER);
-    _container->addChild(hint);
-    
-    // 军队信息占位符（未来可扩展）
-    auto armyInfo = Label::createWithSystemFont(
-        "可用士兵：自动从兵营调取\n可用英雄：暂未实现", 
-        "Arial", 18);
-    armyInfo->setPosition(Vec2(250, 200));
-    armyInfo->setTextColor(Color4B(200, 200, 200, 255));
-    armyInfo->setAlignment(TextHAlignment::CENTER);
-    _container->addChild(armyInfo);
-    
     // 确认按钮
     _confirmBtn = Button::create();
     _confirmBtn->setTitleText("开始攻击！");

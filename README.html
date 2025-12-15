@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>README.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/*
+
+Intellij Idea-like styling (c) Vasily Polovnyov <vast@whiteants.net>
+
+*/
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  color: #000;
+  background: #fff;
+}
+
+.hljs-subst,
+.hljs-title {
+  font-weight: normal;
+  color: #000;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #808080;
+  font-style: italic;
+}
+
+.hljs-meta {
+  color: #808000;
+}
+
+.hljs-tag {
+  background: #efefef;
+}
+
+.hljs-section,
+.hljs-name,
+.hljs-literal,
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-type,
+.hljs-selector-id,
+.hljs-selector-class {
+  font-weight: bold;
+  color: #000080;
+}
+
+.hljs-attribute,
+.hljs-number,
+.hljs-regexp,
+.hljs-link {
+  font-weight: bold;
+  color: #0000ff;
+}
+
+.hljs-number,
+.hljs-regexp,
+.hljs-link {
+  font-weight: normal;
+}
+
+.hljs-string {
+  color: #008000;
+  font-weight: bold;
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-formula {
+  color: #000;
+  background: #d0eded;
+  font-style: italic;
+}
+
+.hljs-doctag {
+  text-decoration: underline;
+}
+
+.hljs-variable,
+.hljs-template-variable {
+  color: #660e7a;
+}
+
+.hljs-addition {
+  background: #baeeba;
+}
+
+.hljs-deletion {
+  background: #ffc8bd;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="clash-of-clans---c-%E8%81%94%E7%BD%91%E5%AF%B9%E6%88%98%E6%B8%B8%E6%88%8F">Clash of Clans - C++ 联网对战游戏</h1>
+<p><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
+<img src="https://img.shields.io/badge/C++-14-green.svg" alt="C++">
+<img src="https://img.shields.io/badge/Platform-Windows | Android-orange.svg" alt="Platform"></p>
+<p>一个基于 <strong>Cocos2d-x</strong> 引擎的《部落冲突》风格的 C++ 联网对战游戏。该项目实现了完整的客户端-服务器架构，支持实时 PVP、部落系统、部落战争、对战观战等多种游戏玩法。</p>
+<p><strong><a href="#%E8%81%94%E7%BD%91%E5%AF%B9%E6%88%98%E8%AF%A6%E7%BB%86%E6%96%87%E6%A1%A3"> 详细说明文档</a> | <a href="#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B"> 快速开始</a> | <a href="#%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1"> 网络协议</a></strong></p>
+<hr>
+<h2 id="%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD">核心功能</h2>
+<h3 id="%E6%B8%B8%E6%88%8F%E7%8E%A9%E6%B3%95">游戏玩法</h3>
+<ul>
+<li><strong>城镇建设系统</strong> - 网格化地图，20+ 种建筑，升级系统</li>
+<li><strong>实时 PVP 对战</strong> - 180 秒战斗，资源掠夺，奖杯系统</li>
+<li><strong>部落系统</strong> - 创建部落，成员管理，权限控制</li>
+<li><strong>部落战争</strong> - 多部落对战，24 小时持续，星数累计</li>
+<li><strong>对战观战</strong> - 实时观看，同步操作，战斗录像</li>
+<li><strong>AI 防守</strong> - 自动反击，目标优先级，伤害计算</li>
+</ul>
+<h3 id="%E7%BD%91%E7%BB%9C%E6%9E%B6%E6%9E%84">网络架构</h3>
+<ul>
+<li><strong>TCP Socket 通信</strong> - 45 种消息类型，完整业务覆盖</li>
+<li><strong>匹配系统</strong> - 基于奖杯的动态配对，等待补偿</li>
+<li><strong>多线程并发</strong> - 单独线程/连接，Mutex 保护，1000+ 在线</li>
+</ul>
+<hr>
+<h2 id="%E9%A1%B9%E7%9B%AE%E7%BB%93%E6%9E%84">项目结构</h2>
+<pre class="hljs"><code><div>coc/
+├── proj.win32/                      # Windows 工程
+├── Classes/
+│   ├── Scenes/                      # 游戏场景
+│   ├── Managers/
+│   │   ├── SocketClient.h/cpp       # 网络客户端 
+│   │   ├── BattleManager.h/cpp      # 对战逻辑
+│   │   └── ...
+│   ├── Buildings/                   # 建筑系统
+│   └── UI/                          # 用户界面
+├── Server/
+│   ├── Server.h                     # 服务器主类 
+│   ├── Server.cpp                   # 服务器实现
+│   └── ServerMain.cpp               # 入口
+├── engine/                          # Cocos2d-x 引擎
+├── README.md                        # 本文件
+└── 联网对战使用说明.md              # 详细文档
+</div></code></pre>
+<hr>
+<h2 id="%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B">快速开始</h2>
+<h3 id="%E7%8E%AF%E5%A2%83%E8%A6%81%E6%B1%82">环境要求</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>系统</td>
+<td>Windows 7+ 或 Android 5.0+</td>
+</tr>
+<tr>
+<td>编译器</td>
+<td>Visual Studio 2015+ 或 NDK r21+</td>
+</tr>
+<tr>
+<td>C++</td>
+<td>C++14 标准</td>
+</tr>
+<tr>
+<td>引擎</td>
+<td>Cocos2d-x 3.17 或 4.x</td>
+</tr>
+</tbody>
+</table>
+<h3 id="%E7%BC%96%E8%AF%91%E5%92%8C%E8%BF%90%E8%A1%8C">编译和运行</h3>
+<p><strong>1. 服务器</strong></p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> proj.win32
+<span class="hljs-comment"># 在 VS 中打开 Server.vcxproj</span>
+<span class="hljs-comment"># Release 配置 → Build</span>
+./Server.exe
+<span class="hljs-comment"># 输出：Server started on port 8888</span>
+</div></code></pre>
+<p><strong>2. 客户端</strong></p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> proj.win32
+<span class="hljs-comment"># 在 VS 中打开 HelloCpp.vcxproj</span>
+<span class="hljs-comment"># Debug 配置 → F5</span>
+</div></code></pre>
+<p><strong>3. 配置连接地址</strong></p>
+<pre class="hljs"><code><div><span class="hljs-comment">// 修改客户端代码</span>
+SocketClient::getInstance()-&gt;connect(<span class="hljs-string">"127.0.0.1"</span>, <span class="hljs-number">8888</span>);  <span class="hljs-comment">// 本地</span>
+<span class="hljs-comment">// 或</span>
+SocketClient::getInstance()-&gt;connect(<span class="hljs-string">"192.168.1.100"</span>, <span class="hljs-number">8888</span>);  <span class="hljs-comment">// 局域网</span>
+</div></code></pre>
+<p><strong>4. 运行</strong></p>
+<ul>
+<li>启动 2+ 个客户端（不同玩家 ID）</li>
+<li>登录游戏</li>
+<li>发起对战</li>
+</ul>
+<hr>
+<h2 id="%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1">网络通信</h2>
+<h3 id="%E6%B6%88%E6%81%AF%E7%B1%BB%E5%9E%8B%E6%B1%87%E6%80%BB">消息类型汇总</h3>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>ID</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>登录</td>
+<td>1</td>
+<td>玩家登录</td>
+</tr>
+<tr>
+<td>地图操作</td>
+<td>2-3</td>
+<td>上传/查询地图</td>
+</tr>
+<tr>
+<td>用户列表</td>
+<td>5-6</td>
+<td>获取可攻击玩家</td>
+</tr>
+<tr>
+<td>匹配</td>
+<td>10-12</td>
+<td>请求/取消匹配</td>
+</tr>
+<tr>
+<td>对战</td>
+<td>13-15</td>
+<td>开始/结束对战</td>
+</tr>
+<tr>
+<td>部落</td>
+<td>20-25</td>
+<td>创建/加入/管理部落</td>
+</tr>
+<tr>
+<td>部落战争</td>
+<td>30-34</td>
+<td>搜索/发起/结果</td>
+</tr>
+<tr>
+<td><strong>PVP</strong></td>
+<td><strong>40-45</strong></td>
+<td>** 实时对战系统**</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pvp-%E6%B5%81%E7%A8%8B">PVP 流程</h3>
+<pre class="hljs"><code><div>Player A                          Player B
+  │                                  │
+  └─ requestPvp(B) ────────────────&gt;│
+                                    │
+  ─ ATTACK + mapData ─────────────┤
+  ─ DEFEND notify ────────────────┤
+  │                                  │
+  └─ sendPvpAction(...) ─────────────&gt;
+     (下兵操作实时同步)               │
+  │                                  │
+  └─ endPvp() ──────────────────────&gt;
+</div></code></pre>
+<h3 id="%E5%AE%A2%E6%88%B7%E7%AB%AF-api">客户端 API</h3>
+<pre class="hljs"><code><div><span class="hljs-keyword">auto</span> client = SocketClient::getInstance();
+client-&gt;connect(<span class="hljs-string">"127.0.0.1"</span>, <span class="hljs-number">8888</span>);
+client-&gt;login(<span class="hljs-string">"player_001"</span>, <span class="hljs-string">"MyName"</span>, <span class="hljs-number">500</span>);
+
+<span class="hljs-comment">// 获取玩家列表</span>
+client-&gt;requestUserList();
+client-&gt;setOnUserListReceived([](<span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; <span class="hljs-built_in">list</span>) {
+    <span class="hljs-comment">// 显示玩家列表</span>
+});
+
+<span class="hljs-comment">// 发起 PVP</span>
+client-&gt;requestPvp(<span class="hljs-string">"opponent_id"</span>);
+client-&gt;setOnPvpStart([](<span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; role, 
+                         <span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; opId, 
+                         <span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; mapData) {
+    <span class="hljs-comment">// 进入对战</span>
+});
+
+<span class="hljs-comment">// 下兵操作</span>
+client-&gt;sendPvpAction(UNIT_BARBARIAN, <span class="hljs-number">100.0f</span>, <span class="hljs-number">200.0f</span>);
+
+<span class="hljs-comment">// 对战结束</span>
+client-&gt;endPvp();
+
+<span class="hljs-comment">// 在 update 中处理回调</span>
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">update</span><span class="hljs-params">(<span class="hljs-keyword">float</span> dt)</span> </span>{
+    client-&gt;processCallbacks();
+}
+</div></code></pre>
+<hr>
+<h2 id="%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84">系统架构</h2>
+<h3 id="%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%B1%82%E7%BA%A7">客户端层级</h3>
+<pre class="hljs"><code><div>┌─ Cocos2d-x App ─────┐
+│ DraggableMapScene   │ - 城镇建设
+│ BattleScene         │ - 对战场景
+│ ClanPanel           │ - 部落管理
+└─────────────────────┘
+         │
+┌─ Game Logic ────────┐
+│ BattleManager       │ - 对战逻辑
+│ BuildingManager     │ - 建筑管理
+│ SocketClient      │ - 网络通信
+└─────────────────────┘
+         │
+┌─ Cocos2d-x Engine ──┐
+│ Rendering/Input/    │
+│ Audio               │
+└─────────────────────┘
+</div></code></pre>
+<h3 id="%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B">服务器处理流程</h3>
+<pre class="hljs"><code><div>Accept Connection
+       │
+   ┌───▼────┐
+   │ Thread │ (独立线程处理)
+   └───┬────┘
+       │
+   ┌───▼────────────┐
+   │ Parse Packet   │
+   └───┬────────────┘
+       │
+   ┌───▼────────────┐
+   │ Process Logic  │ - 验证、处理、更新
+   │ (Mutex 保护)   │
+   └───┬────────────┘
+       │
+   ┌───▼────────────┐
+   │ Send Response/ │ - 单播或广播
+   │ Broadcast      │
+   └────────────────┘
+</div></code></pre>
+<hr>
+<h2 id="%E5%8A%9F%E8%83%BD%E8%AF%A6%E8%A7%A3">功能详解</h2>
+<h3 id="%E5%AE%9E%E6%97%B6-pvp-%E5%AF%B9%E6%88%98">实时 PVP 对战</h3>
+<p><strong>特点</strong>：</p>
+<ul>
+<li>低延迟（50-100ms）</li>
+<li>实时同步单位操作</li>
+<li>即时 AI 反击</li>
+<li>可被观战</li>
+</ul>
+<p><strong>流程</strong>：</p>
+<ol>
+<li>请求 PVP → 验证在线 → 获取地图</li>
+<li>显示地图 → 玩家下兵 → 实时转发</li>
+<li>AI 自动反击 → 伤害计算 → 资源更新</li>
+<li>180 秒结束 → 计算结果 → 奖杯/资源变化</li>
+</ol>
+<h3 id="%E9%83%A8%E8%90%BD%E6%88%98%E4%BA%89">部落战争</h3>
+<p><strong>特点</strong>：</p>
+<ul>
+<li>多个部落参与</li>
+<li>24 小时持续</li>
+<li>星数累计制</li>
+<li>实时状态更新</li>
+</ul>
+<p><strong>阶段</strong>：</p>
+<ol>
+<li>搜索 → 匹配相近奖杯的部落</li>
+<li>确认 → 通知两个部落成员</li>
+<li>对战 → 成员选择对手，发起攻击</li>
+<li>统计 → 每次攻击上报星数，实时更新</li>
+<li>结算 → 24h 后自动结算</li>
+</ol>
+<h3 id="%E5%AF%B9%E6%88%98%E8%A7%82%E6%88%98">对战观战</h3>
+<p><strong>功能</strong>：</p>
+<ul>
+<li>实时观看两名玩家对战</li>
+<li>同步显示双方操作</li>
+<li>支持回放</li>
+</ul>
+<p><strong>使用</strong>：</p>
+<pre class="hljs"><code><div>client-&gt;requestSpectate(<span class="hljs-string">"player_id"</span>);
+client-&gt;setOnSpectateJoin([](<span class="hljs-keyword">bool</span> ok, <span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; atkId, 
+                             <span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; defId, 
+                             <span class="hljs-keyword">const</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>&amp; mapData) {
+    <span class="hljs-keyword">if</span> (ok) {
+        <span class="hljs-comment">// 进入观战模式</span>
+    }
+});
+</div></code></pre>
+
+</body>
+</html>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: {inlineMath: [['$', '$']]}, messageStyle: "none" });
+</script>

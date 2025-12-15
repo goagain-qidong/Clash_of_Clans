@@ -72,9 +72,27 @@ void ShopLayer::initUI()
     title->setPosition(Vec2(_container->getContentSize().width / 2.0f, _container->getContentSize().height - 30.0f));
     _container->addChild(title);
 
-    // 关闭按钮
-    _closeBtn = Button::create("return_button.png");
-    _closeBtn->setScale9Enabled(false);
+    // 关闭按钮 - 使用return_button图标
+    _closeBtn = Button::create("icon/return_button.png");
+    if (_closeBtn->getContentSize().equals(Size::ZERO)) {
+        // 如果图标加载失败，创建默认按钮
+        _closeBtn = Button::create();
+        _closeBtn->ignoreContentAdaptWithSize(false);
+        _closeBtn->setContentSize(Size(60, 60));
+        _closeBtn->setTitleText("X");
+        _closeBtn->setTitleFontSize(32);
+        _closeBtn->setTitleColor(Color3B::WHITE);
+        
+        auto bg = LayerColor::create(Color4B(200, 50, 50, 255), 60, 60);
+        bg->setPosition(Vec2::ZERO);
+        _closeBtn->addChild(bg, -1);
+        
+        if (_closeBtn->getTitleRenderer()) {
+            _closeBtn->getTitleRenderer()->setPosition(Vec2(30, 30));
+        }
+    } else {
+        _closeBtn->setScale(60.0f / _closeBtn->getContentSize().width);
+    }
     _closeBtn->setPosition(
         Vec2(_container->getContentSize().width - 40.0f, _container->getContentSize().height - 30.0f));
     _closeBtn->addClickEventListener([this](Ref*) { hide(); });
@@ -189,7 +207,7 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data)
     auto& config  = GameConfig::getInstance();
     int   thLevel = getCurrentTownHallLevel();
 
-    // 🔴 修复：直接从 BuildingLimitManager 获取当前数量，而不是通过场景的 getBuildingCount 
+    // 直接从 BuildingLimitManager 获取当前数量，而不是通过场景的 getBuildingCount
     int         currentCount = limitMgr->getBuildingCount(limitKey);
     const auto* cfgItem      = config.getBuildingConfig(data.name);
 
