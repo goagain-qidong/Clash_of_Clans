@@ -7,6 +7,7 @@
  * License:       MIT License
  ****************************************************************/
 #include "unit.h"
+#include "UI/UnitHealthBarUI.h"
 
 USING_NS_CC; // 使用 Cocos2d 命名空间，免去每次写 cocos2d::
 
@@ -149,6 +150,9 @@ bool Unit::init(UnitType type)
     }
 
     // 5. 【关键】移除自动 update 调度，改为由 BattleScene 手动调用 tick
+    
+    // 6. 初始化血条UI
+    initHealthBarUI();
 
     return true;
 }
@@ -725,18 +729,18 @@ void Unit::Die()
 
 // ==================== 战斗系统实现 ⭐ 新增 ====================
 
-bool Unit::takeDamage(int damage)
+bool Unit::takeDamage(float damage)
 {
     if (is_dead_) return true;
     
-    int actualDamage = combat_stats_.takeDamage(damage);
+    float actualDamage = combat_stats_.takeDamage(damage);
     
-    CCLOG("Unit took %d damage, HP: %d/%d", 
+    CCLOG("Unit took %.1f damage, HP: %d/%d", 
           actualDamage, 
           combat_stats_.currentHitpoints, 
           combat_stats_.maxHitpoints);
     
-    // TODO: 播放受击效果（红光闪烁）
+    // 播放受击效果（红光闪烁）
     if (sprite_)
     {
         auto tint = TintTo::create(0.1f, 255, 0, 0);
@@ -783,7 +787,51 @@ bool Unit::isAttackReady() const
     return attack_cooldown_ <= 0.0f;
 }
 
+
 void Unit::resetAttackCooldown()
 {
     attack_cooldown_ = combat_stats_.attackSpeed;
 }
+
+// ==================== 血条UI实现 ⭐ 新增 ====================
+
+void Unit::initHealthBarUI()
+{
+    // 创建血条UI并添加到单位上
+    auto* healthBarUI = UnitHealthBarUI::create(this);
+    if (healthBarUI)
+    {
+        this->addChild(healthBarUI, 1000); // 高Z-Order确保显示在最上面
+        _healthBarUI = healthBarUI;
+
+        CCLOG("✅ Unit 血条UI初始化完成");
+    }
+}
+
+void Unit::enableBattleMode()
+{
+    _battleModeEnabled = true;
+
+    // 启用血条始终显示
+    if (_healthBarUI)
+    {
+        _healthBarUI->setAlwaysVisible(true);
+        _healthBarUI->show();
+    }
+
+    CCLOG("⚔️ Unit 进入战斗模式");
+}
+
+void Unit::disableBattleMode()
+{
+    _battleModeEnabled = false;
+
+    // 禁用血条始终显示，恢复自动隐藏
+    if (_healthBarUI)
+    {
+        _healthBarUI->setAlwaysVisible(false);
+    }
+
+    CCLOG("🛡️ Unit 离开战斗模式");
+}
+

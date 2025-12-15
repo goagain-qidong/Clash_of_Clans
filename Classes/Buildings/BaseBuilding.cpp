@@ -104,10 +104,6 @@ void BaseBuilding::takeDamage(int damage)
     if (isDestroyed())
     {
         CCLOG("💥 %s 已被摧毁！", getDisplayName().c_str());
-        // TODO: 播放摧毁动画
-        auto explosion = ParticleExplosion::create();
-        explosion->setPosition(this->getPosition());
-        this->getParent()->addChild(explosion, 999);
         // ✅ 【新增代码】让建筑从画面上消失
         this->setVisible(false);
     }
@@ -143,7 +139,7 @@ void BaseBuilding::attackTarget(Unit* target)
 {
     if (!target || !isDefenseBuilding()) return;
     
-    CCLOG("⚔️ %s 攻击目标，造成 %d 点伤害", 
+    CCLOG("⚔️ %s 攻击目标，造成 %.1f 点伤害", 
           getDisplayName().c_str(), _combatStats.damage);
     
     // 由子类实现具体攻击逻辑（发射炮弹、箭矢等）

@@ -16,6 +16,7 @@
 
 // 前向声明
 class BaseBuilding;
+class UnitHealthBarUI;
 
 /**
  * 核心枚举定义
@@ -137,7 +138,7 @@ public:
      * @param damage 伤害值
      * @return 是否死亡
      */
-    bool takeDamage(int damage);
+    bool takeDamage(float damage);
     
     /**
      * @brief 设置攻击目标（建筑）
@@ -162,7 +163,7 @@ public:
     /**
      * @brief 获取攻击伤害
      */
-    int getDamage() const { return combat_stats_.damage; }
+    float getDamage() const { return combat_stats_.damage; }
     
     /**
      * @brief 获取攻击范围
@@ -204,6 +205,25 @@ public:
      */
     bool isMoving() const { return is_moving_; }
 
+    // ---------------------------------------------------------
+    // 6. 血条UI支持 ⭐ 新增
+    // ---------------------------------------------------------
+    
+    /**
+     * @brief 初始化血条UI
+     */
+    void initHealthBarUI();
+    
+    /**
+     * @brief 启用战斗模式（显示血条）
+     */
+    void enableBattleMode();
+    
+    /**
+     * @brief 禁用战斗模式（隐藏血条）
+     */
+    void disableBattleMode();
+
 private:
     // ---------------------------------------------------------
     // 4. 内部数据成员
@@ -237,9 +257,15 @@ private:
     BaseBuilding* current_target_ = nullptr;            // 当前攻击目标
     float attack_cooldown_ = 0.0f;                      // 攻击冷却计时器
     int unit_level_ = 1;                                // 单位等级
+    
+    // ---------------------------------------------------------
+    // 7. 血条UI ⭐ 新增
+    // ---------------------------------------------------------
+    class UnitHealthBarUI* _healthBarUI = nullptr;      // 血条UI组件
+    bool _battleModeEnabled = false;                    // 战斗模式标志
 
     // ---------------------------------------------------------
-    // 7. 内部辅助函数
+    // 8. 内部辅助函数
     // ---------------------------------------------------------
 
     // 加载配置：根据 UnitType 加载对应的 plist 和 png

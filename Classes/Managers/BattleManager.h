@@ -106,6 +106,8 @@ private:
     int _barbarianCount = 0;
     int _archerCount = 0;
     int _giantCount = 0;
+    int _goblinCount = 0;
+    int _wallBreakerCount = 0;
 
     // Deterministic Update
     float _accumulatedTime = 0.0f;

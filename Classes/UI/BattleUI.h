@@ -30,7 +30,7 @@ public:
     void updateTimer(int remainingTime);
     void updateStars(int stars);
     void updateDestruction(int percent);
-    void updateTroopCounts(int barbarianCount, int archerCount, int giantCount);
+    void updateTroopCounts(int barbarianCount, int archerCount, int giantCount, int goblinCount, int wallBreakerCount);
     
     // Visibility & Mode
     void setReplayMode(bool isReplay);
@@ -62,9 +62,13 @@ private:
     cocos2d::ui::Button* _barbarianButton = nullptr;
     cocos2d::ui::Button* _archerButton = nullptr;
     cocos2d::ui::Button* _giantButton = nullptr;
+    cocos2d::ui::Button* _goblinButton = nullptr;
+    cocos2d::ui::Button* _wallBreakerButton = nullptr;
     cocos2d::Label* _barbarianCountLabel = nullptr;
     cocos2d::Label* _archerCountLabel = nullptr;
     cocos2d::Label* _giantCountLabel = nullptr;
+    cocos2d::Label* _goblinCountLabel = nullptr;
+    cocos2d::Label* _wallBreakerCountLabel = nullptr;
 
     // Callbacks
     std::function<void()> _onEndBattle;

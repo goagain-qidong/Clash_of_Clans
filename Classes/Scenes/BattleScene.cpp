@@ -151,7 +151,9 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
                 _battleUI->updateTroopCounts(
                     _battleManager->getTroopCount(UnitType::kBarbarian),
                     _battleManager->getTroopCount(UnitType::kArcher),
-                    _battleManager->getTroopCount(UnitType::kGiant)
+                    _battleManager->getTroopCount(UnitType::kGiant),
+                    _battleManager->getTroopCount(UnitType::kGoblin),
+                    _battleManager->getTroopCount(UnitType::kWallBreaker)
                 );
             }
         });
@@ -202,7 +204,9 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
                 _battleUI->updateTroopCounts(
                     _battleManager->getTroopCount(UnitType::kBarbarian),
                     _battleManager->getTroopCount(UnitType::kArcher),
-                    _battleManager->getTroopCount(UnitType::kGiant)
+                    _battleManager->getTroopCount(UnitType::kGiant),
+                    _battleManager->getTroopCount(UnitType::kGoblin),
+                    _battleManager->getTroopCount(UnitType::kWallBreaker)
                 );
             }
         }

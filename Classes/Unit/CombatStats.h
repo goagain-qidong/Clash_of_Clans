@@ -19,7 +19,7 @@ struct CombatStats
     int currentHitpoints = 100;    // 当前生命值
     
     // ==================== 攻击属性 ====================
-    int damage = 0;                // 每次攻击伤害
+    float damage = 0.0f;           // 每次攻击伤害（支持小数）
     float attackSpeed = 1.0f;      // 攻击速度（秒/次）
     float attackRange = 0.0f;      // 攻击范围（像素）
     
@@ -60,12 +60,12 @@ struct CombatStats
      * @param dmg 伤害值
      * @return 实际受到的伤害（考虑护甲）
      */
-    int takeDamage(int dmg)
+    float takeDamage(float dmg)
     {
-        int actualDamage = dmg - armor;
-        if (actualDamage < 1) actualDamage = 1; // 至少造成1点伤害
+        float actualDamage = dmg - armor;
+        if (actualDamage < 1.0f) actualDamage = 1.0f; // 至少造成1点伤害
         
-        currentHitpoints -= actualDamage;
+        currentHitpoints -= static_cast<int>(actualDamage + 0.5f); // 四舍五入
         if (currentHitpoints < 0) currentHitpoints = 0;
         
         return actualDamage;
@@ -197,7 +197,7 @@ namespace DefenseConfig
         
         stats.maxHitpoints = hitpointsTable[actualLevel - 1];
         stats.currentHitpoints = stats.maxHitpoints;
-        stats.damage = static_cast<int>(damageTable[actualLevel - 1]);
+        stats.damage = damageTable[actualLevel - 1];  // 直接使用float值
         stats.attackSpeed = 0.8f;  // 固定0.8秒攻击一次
         stats.attackRange = 250.0f;  // 攻击范围250像素
         stats.preferredTarget = CombatStats::TargetType::kGround;  // 只攻击地面目标
@@ -228,7 +228,7 @@ namespace DefenseConfig
         
         stats.maxHitpoints = hitpointsTable[actualLevel - 1];
         stats.currentHitpoints = stats.maxHitpoints;
-        stats.damage = static_cast<int>(damageTable[actualLevel - 1]);
+        stats.damage = damageTable[actualLevel - 1];  // 直接使用float值，保留小数
         stats.attackSpeed = 0.5f;  // 固定0.5秒攻击一次
         stats.attackRange = 300.0f;  // 攻击范围300像素（比加农炮远）
         stats.preferredTarget = CombatStats::TargetType::kAny;  // 可攻击空中和地面目标

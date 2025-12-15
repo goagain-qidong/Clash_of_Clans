@@ -87,9 +87,11 @@ void BattleManager::startBattle()
         _barbarianCount = troopInv.getTroopCount(UnitType::kBarbarian);
         _archerCount = troopInv.getTroopCount(UnitType::kArcher);
         _giantCount = troopInv.getTroopCount(UnitType::kGiant);
+        _goblinCount = troopInv.getTroopCount(UnitType::kGoblin);
+        _wallBreakerCount = troopInv.getTroopCount(UnitType::kWallBreaker);
         
-        CCLOG("📦 Available Troops: Barb=%d, Arch=%d, Giant=%d", 
-              _barbarianCount, _archerCount, _giantCount);
+        CCLOG("📦 Available Troops: Barb=%d, Arch=%d, Giant=%d, Goblin=%d, WallBreaker=%d", 
+              _barbarianCount, _archerCount, _giantCount, _goblinCount, _wallBreakerCount);
         
         // Start recording
         unsigned int seed = static_cast<unsigned int>(time(nullptr));
@@ -252,6 +254,8 @@ void BattleManager::deployUnit(UnitType type, const cocos2d::Vec2& position)
         case UnitType::kBarbarian: count = &_barbarianCount; break;
         case UnitType::kArcher: count = &_archerCount; break;
         case UnitType::kGiant: count = &_giantCount; break;
+        case UnitType::kGoblin: count = &_goblinCount; break;
+        case UnitType::kWallBreaker: count = &_wallBreakerCount; break;
         default: return;
     }
     
@@ -295,6 +299,10 @@ void BattleManager::spawnUnit(UnitType type, const cocos2d::Vec2& position)
     }
     
     unit->setPosition(position);
+    
+    // 🆕 启用单位的战斗模式（显示血条）
+    unit->enableBattleMode();
+    
     int zOrder = 10000 - static_cast<int>(position.y);
     if (_mapLayer) _mapLayer->addChild(unit, zOrder);
     _deployedUnits.push_back(unit);
@@ -512,6 +520,8 @@ int BattleManager::getTroopCount(UnitType type) const
         case UnitType::kBarbarian: return _barbarianCount;
         case UnitType::kArcher: return _archerCount;
         case UnitType::kGiant: return _giantCount;
+        case UnitType::kGoblin: return _goblinCount;
+        case UnitType::kWallBreaker: return _wallBreakerCount;
         default: return 0;
     }
 }

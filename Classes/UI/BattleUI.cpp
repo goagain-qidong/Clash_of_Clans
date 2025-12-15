@@ -144,7 +144,7 @@ void BattleUI::setupTroopButtons()
 {
     float buttonY = 150;
     float buttonSpacing = 100;
-    float startX = (_visibleSize.width - buttonSpacing * 2) / 2;
+    float startX = (_visibleSize.width - buttonSpacing * 4) / 2;
     
     // 野蛮人按钮
     _barbarianButton = Button::create(
@@ -205,6 +205,46 @@ void BattleUI::setupTroopButtons()
     _giantCountLabel->setTextColor(Color4B::WHITE);
     _giantCountLabel->setVisible(false);
     this->addChild(_giantCountLabel, 100);
+    
+    // 哥布林按钮
+    _goblinButton = Button::create(
+        "units/goblin_select_button_active.png",
+        "units/goblin_select_button_active.png",
+        "units/goblin_select_button_active.png"
+    );
+    _goblinButton->setScale(0.8f);
+    _goblinButton->setPosition(Vec2(startX + buttonSpacing * 3, buttonY));
+    _goblinButton->setVisible(false);
+    _goblinButton->addClickEventListener([this](Ref*) {
+        if (_onTroopSelected) _onTroopSelected(UnitType::kGoblin);
+    });
+    this->addChild(_goblinButton, 100);
+    
+    _goblinCountLabel = Label::createWithSystemFont("0", "Arial", 24);
+    _goblinCountLabel->setPosition(Vec2(startX + buttonSpacing * 3, buttonY - 50));
+    _goblinCountLabel->setTextColor(Color4B::WHITE);
+    _goblinCountLabel->setVisible(false);
+    this->addChild(_goblinCountLabel, 100);
+    
+    // 炸弹人按钮
+    _wallBreakerButton = Button::create(
+        "units/wallbreaker_select_button_active.png",
+        "units/wallbreaker_select_button_active.png",
+        "units/wallbreaker_select_button_active.png"
+    );
+    _wallBreakerButton->setScale(0.8f);
+    _wallBreakerButton->setPosition(Vec2(startX + buttonSpacing * 4, buttonY));
+    _wallBreakerButton->setVisible(false);
+    _wallBreakerButton->addClickEventListener([this](Ref*) {
+        if (_onTroopSelected) _onTroopSelected(UnitType::kWallBreaker);
+    });
+    this->addChild(_wallBreakerButton, 100);
+    
+    _wallBreakerCountLabel = Label::createWithSystemFont("0", "Arial", 24);
+    _wallBreakerCountLabel->setPosition(Vec2(startX + buttonSpacing * 4, buttonY - 50));
+    _wallBreakerCountLabel->setTextColor(Color4B::WHITE);
+    _wallBreakerCountLabel->setVisible(false);
+    this->addChild(_wallBreakerCountLabel, 100);
 }
 
 void BattleUI::updateStatus(const std::string& text, const cocos2d::Color4B& color)
@@ -318,11 +358,13 @@ void BattleUI::updateDestruction(int percent)
     }
 }
 
-void BattleUI::updateTroopCounts(int barbarianCount, int archerCount, int giantCount)
+void BattleUI::updateTroopCounts(int barbarianCount, int archerCount, int giantCount, int goblinCount, int wallBreakerCount)
 {
     if (_barbarianCountLabel) _barbarianCountLabel->setString(StringUtils::format("%d", barbarianCount));
     if (_archerCountLabel) _archerCountLabel->setString(StringUtils::format("%d", archerCount));
     if (_giantCountLabel) _giantCountLabel->setString(StringUtils::format("%d", giantCount));
+    if (_goblinCountLabel) _goblinCountLabel->setString(StringUtils::format("%d", goblinCount));
+    if (_wallBreakerCountLabel) _wallBreakerCountLabel->setString(StringUtils::format("%d", wallBreakerCount));
 }
 
 void BattleUI::setReplayMode(bool isReplay)
@@ -343,9 +385,13 @@ void BattleUI::showTroopButtons(bool visible)
     if (_barbarianButton) _barbarianButton->setVisible(visible);
     if (_archerButton) _archerButton->setVisible(visible);
     if (_giantButton) _giantButton->setVisible(visible);
+    if (_goblinButton) _goblinButton->setVisible(visible);
+    if (_wallBreakerButton) _wallBreakerButton->setVisible(visible);
     if (_barbarianCountLabel) _barbarianCountLabel->setVisible(visible);
     if (_archerCountLabel) _archerCountLabel->setVisible(visible);
     if (_giantCountLabel) _giantCountLabel->setVisible(visible);
+    if (_goblinCountLabel) _goblinCountLabel->setVisible(visible);
+    if (_wallBreakerCountLabel) _wallBreakerCountLabel->setVisible(visible);
 }
 
 void BattleUI::showReturnButton(bool visible)
@@ -358,6 +404,8 @@ void BattleUI::highlightTroopButton(UnitType type)
     if (_barbarianButton) _barbarianButton->setScale(type == UnitType::kBarbarian ? 1.1f : 0.8f);
     if (_archerButton) _archerButton->setScale(type == UnitType::kArcher ? 1.1f : 0.8f);
     if (_giantButton) _giantButton->setScale(type == UnitType::kGiant ? 1.1f : 0.8f);
+    if (_goblinButton) _goblinButton->setScale(type == UnitType::kGoblin ? 1.1f : 0.8f);
+    if (_wallBreakerButton) _wallBreakerButton->setScale(type == UnitType::kWallBreaker ? 1.1f : 0.8f);
 }
 
 void BattleUI::setEndBattleButtonText(const std::string& text)

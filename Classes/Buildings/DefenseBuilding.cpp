@@ -356,17 +356,7 @@ void DefenseBuilding::fireProjectile(Unit* target)
         if (target && !target->IsDead())
         {
             target->takeDamage(_combatStats.damage);
-            CCLOG("💥 %s 击中目标，造成 %d 点伤害", getDisplayName().c_str(), _combatStats.damage);
-            
-            // 可选：添加爆炸粒子效果
-            if (this->getParent())
-            {
-                auto explosion = ParticleExplosion::create();
-                explosion->setPosition(target->getPosition());
-                explosion->setDuration(0.3f);
-                explosion->setScale(0.3f);
-                this->getParent()->addChild(explosion, 6000);
-            }
+            CCLOG("💥 %s 击中目标，造成 %.1f 点伤害", getDisplayName().c_str(), _combatStats.damage);
         }
         
         // 移除炮弹
