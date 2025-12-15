@@ -75,9 +75,20 @@ void PlayerListLayer::createUI()
     _container->addChild(title);
     
     // 关闭按钮
-    _closeBtn = Button::create();
-    _closeBtn->setTitleText("X");
-    _closeBtn->setTitleFontSize(32);
+    _closeBtn = Button::create("icon/return_button.png");
+    if (_closeBtn->getContentSize().equals(Size::ZERO)) {
+        _closeBtn = Button::create();
+        _closeBtn->ignoreContentAdaptWithSize(false);
+        _closeBtn->setContentSize(Size(40, 40));
+        _closeBtn->setTitleText("X");
+        _closeBtn->setTitleFontSize(32);
+        
+        if (_closeBtn->getTitleRenderer()) {
+            _closeBtn->getTitleRenderer()->setPosition(Vec2(20, 20));
+        }
+    } else {
+        _closeBtn->setScale(40.0f / _closeBtn->getContentSize().width);
+    }
     _closeBtn->setPosition(Vec2(570, 460));
     _closeBtn->addClickEventListener([this](Ref*) {
         hide();
@@ -168,17 +179,21 @@ cocos2d::ui::Widget* PlayerListLayer::createPlayerItem(const PlayerInfo& player)
     item->addChild(elixirLabel);
     
     // 攻击按钮
-    auto attackBtn = Button::create();
-    attackBtn->setTitleText("攻击！");
-    attackBtn->setTitleFontSize(24);
-    attackBtn->setContentSize(Size(120, 60));
-    attackBtn->setScale9Enabled(true);
+    auto attackBtn = Button::create("icon/attack_selected_enemy_icon.png");
+    if (attackBtn->getContentSize().equals(Size::ZERO)) {
+        attackBtn = Button::create();
+        attackBtn->ignoreContentAdaptWithSize(false);
+        attackBtn->setContentSize(Size(120, 60));
+        attackBtn->setTitleText("攻击！");
+        attackBtn->setTitleFontSize(24);
+        
+        if (attackBtn->getTitleRenderer()) {
+            attackBtn->getTitleRenderer()->setPosition(Vec2(60, 30));
+        }
+    } else {
+        attackBtn->setScale(120.0f / attackBtn->getContentSize().width);
+    }
     attackBtn->setPosition(Vec2(480, 50));
-    
-    // 绿色背景
-    auto btnBg = LayerColor::create(Color4B(0, 150, 0, 255), 120, 60);
-    btnBg->setPosition(Vec2(-60, -30));
-    attackBtn->addChild(btnBg, -1);
     
     attackBtn->addClickEventListener([this, player](Ref*) {
         if (_onPlayerSelected)

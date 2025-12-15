@@ -63,9 +63,20 @@ void SettingsPanel::setupUI()
     titleLabel->setTextColor(Color4B::YELLOW);
     _panel->addChild(titleLabel);
     
-    _closeButton = Button::create();
-    _closeButton->setTitleText("X");
-    _closeButton->setTitleFontSize(30);
+    _closeButton = Button::create("icon/return_button.png");
+    if (_closeButton->getContentSize().equals(Size::ZERO)) {
+        _closeButton = Button::create();
+        _closeButton->ignoreContentAdaptWithSize(false);
+        _closeButton->setContentSize(Size(40, 40));
+        _closeButton->setTitleText("X");
+        _closeButton->setTitleFontSize(30);
+        
+        if (_closeButton->getTitleRenderer()) {
+            _closeButton->getTitleRenderer()->setPosition(Vec2(20, 20));
+        }
+    } else {
+        _closeButton->setScale(40.0f / _closeButton->getContentSize().width);
+    }
     _closeButton->setPosition(Vec2(560, 560));
     _closeButton->addClickEventListener([this](Ref*) { onCloseClicked(); });
     _panel->addChild(_closeButton);
@@ -373,9 +384,20 @@ void SettingsPanel::showMapSelectionPanel()
     titleLabel->setPosition(Vec2(250, 320));
     mapPanel->addChild(titleLabel);
     
-    auto closeBtn = Button::create();
-    closeBtn->setTitleText("X");
-    closeBtn->setTitleFontSize(24);
+    auto closeBtn = Button::create("icon/return_button.png");
+    if (closeBtn->getContentSize().equals(Size::ZERO)) {
+        closeBtn = Button::create();
+        closeBtn->ignoreContentAdaptWithSize(false);
+        closeBtn->setContentSize(Size(40, 40));
+        closeBtn->setTitleText("X");
+        closeBtn->setTitleFontSize(24);
+        
+        if (closeBtn->getTitleRenderer()) {
+            closeBtn->getTitleRenderer()->setPosition(Vec2(20, 20));
+        }
+    } else {
+        closeBtn->setScale(40.0f / closeBtn->getContentSize().width);
+    }
     closeBtn->setPosition(Vec2(470, 320));
     closeBtn->addClickEventListener([mapPanel](Ref*) {
         mapPanel->removeFromParent();
@@ -551,9 +573,20 @@ void SettingsPanel::showAccountList()
     titleLabel->setPosition(Vec2(200, 370));
     accountPanel->addChild(titleLabel);
     
-    auto closeBtn = Button::create();
-    closeBtn->setTitleText("X");
-    closeBtn->setTitleFontSize(24);
+    auto closeBtn = Button::create("icon/return_button.png");
+    if (closeBtn->getContentSize().equals(Size::ZERO)) {
+        closeBtn = Button::create();
+        closeBtn->ignoreContentAdaptWithSize(false);
+        closeBtn->setContentSize(Size(40, 40));
+        closeBtn->setTitleText("X");
+        closeBtn->setTitleFontSize(24);
+        
+        if (closeBtn->getTitleRenderer()) {
+            closeBtn->getTitleRenderer()->setPosition(Vec2(20, 20));
+        }
+    } else {
+        closeBtn->setScale(40.0f / closeBtn->getContentSize().width);
+    }
     closeBtn->setPosition(Vec2(370, 370));
     closeBtn->addClickEventListener([accountPanel](Ref*) {
         accountPanel->removeFromParent();

@@ -8,6 +8,9 @@
  ****************************************************************/
 #include "SceneUIController.h"
 #include "../UI/SettingsPanel.h"
+#include "../Managers/SocketClient.h"
+#include "../Scenes/BattleScene.h"
+#include "json/document.h"
 
 USING_NS_CC;
 using namespace ui;
@@ -23,6 +26,37 @@ bool SceneUIController::init()
     
     setupMainButtons();
     
+    // 🆕 设置全局PVP回调
+    SocketClient::getInstance().setOnPvpStart([](const std::string& role, const std::string& opponentId, const std::string& mapData) {
+        if (role == "FAIL")
+        {
+            auto scene = Director::getInstance()->getRunningScene();
+            if (scene)
+            {
+                auto label = Label::createWithSystemFont("PVP Failed: " + opponentId, "Arial", 24);
+                label->setPosition(Director::getInstance()->getVisibleSize() / 2);
+                label->setTextColor(Color4B::RED);
+                scene->addChild(label, 1000);
+                label->runAction(Sequence::create(DelayTime::create(2.0f), RemoveSelf::create(), nullptr));
+            }
+            return;
+        }
+        
+        // 解析地图数据
+        AccountGameData enemyData = AccountGameData::fromJson(mapData);
+        
+        // 创建战斗场景
+        auto scene = BattleScene::createWithEnemyData(enemyData, opponentId);
+        auto battleScene = dynamic_cast<BattleScene*>(scene);
+        if (battleScene)
+        {
+            bool isAttacker = (role == "ATTACK");
+            battleScene->setPvpMode(isAttacker);
+        }
+        
+        Director::getInstance()->replaceScene(TransitionFade::create(0.5f, scene));
+    });
+    
     return true;
 }
 
@@ -31,56 +65,104 @@ void SceneUIController::setupMainButtons()
     float resourceXPos = 30;
     float buildButtonY = _visibleSize.height - 230;
     
-    // Shop 按钮 (绿色)
-    _shopButton = createFlatButton("Shop", Size(100, 50), Color3B(50, 150, 50), [this](Ref*) {
-        if (_onShopClicked) _onShopClicked();
-    });
+    // Shop 按钮
+    _shopButton = Button::create("icon/shop_icon.png");
+    if (_shopButton->getContentSize().equals(Size::ZERO)) {
+        _shopButton = createFlatButton("Shop", Size(100, 50), Color3B(50, 150, 50), [this](Ref*) {
+            if (_onShopClicked) _onShopClicked();
+        });
+    } else {
+        _shopButton->setScale(90.0f / _shopButton->getContentSize().width);
+        _shopButton->addClickEventListener([this](Ref*) {
+            if (_onShopClicked) _onShopClicked();
+        });
+    }
     _shopButton->setPosition(Vec2(resourceXPos + 70, buildButtonY));
     this->addChild(_shopButton, 10);
     
-    // Settings 按钮 (灰色)
-    _settingsButton = createFlatButton("\xE2\x9A\x99", Size(60, 60), Color3B(100, 100, 100), [this](Ref*) {
-        onSettingsClicked();
-    });
-    _settingsButton->setTitleFontSize(36);
+    // Settings 按钮
+    _settingsButton = Button::create("icon/tool_icon.png");
+    if (_settingsButton->getContentSize().equals(Size::ZERO)) {
+        _settingsButton = createFlatButton("\xE2\x9A\x99", Size(60, 60), Color3B(100, 100, 100), [this](Ref*) {
+            onSettingsClicked();
+        });
+        _settingsButton->setTitleFontSize(36);
+    } else {
+        _settingsButton->setScale(60.0f / _settingsButton->getContentSize().width);
+        _settingsButton->addClickEventListener([this](Ref*) {
+            onSettingsClicked();
+        });
+    }
     _settingsButton->setPosition(Vec2(_visibleSize.width - 60, _visibleSize.height - 160));
     this->addChild(_settingsButton, 10);
     
-    // Attack 按钮 (橙色)
-    _attackButton = createFlatButton("Attack!", Size(120, 60), Color3B(200, 80, 0), [this](Ref*) {
-        if (_onAttackClicked) _onAttackClicked();
-    });
+    // Attack 按钮
+    _attackButton = Button::create("icon/attack_icon.png");
+    if (_attackButton->getContentSize().equals(Size::ZERO)) {
+        _attackButton = createFlatButton("Attack!", Size(120, 60), Color3B(200, 80, 0), [this](Ref*) {
+            if (_onAttackClicked) _onAttackClicked();
+        });
+    } else {
+        _attackButton->setScale(110.0f / _attackButton->getContentSize().width);
+        _attackButton->addClickEventListener([this](Ref*) {
+            if (_onAttackClicked) _onAttackClicked();
+        });
+    }
     _attackButton->setPosition(Vec2(100, 100));
     this->addChild(_attackButton, 20);
     
-    // Clan 按钮 (蓝色)
-    _clanButton = createFlatButton("Clan", Size(100, 50), Color3B(50, 100, 150), [this](Ref*) {
-        if (_onClanClicked) _onClanClicked();
-    });
+    // Clan 按钮
+    _clanButton = Button::create("icon/clan_icon.png");
+    if (_clanButton->getContentSize().equals(Size::ZERO)) {
+        _clanButton = createFlatButton("Clan", Size(100, 50), Color3B(50, 100, 150), [this](Ref*) {
+            if (_onClanClicked) _onClanClicked();
+        });
+    } else {
+        _clanButton->setScale(90.0f / _clanButton->getContentSize().width);
+        _clanButton->addClickEventListener([this](Ref*) {
+            if (_onClanClicked) _onClanClicked();
+        });
+    }
     _clanButton->setPosition(Vec2(_visibleSize.width - 80, 100));
     this->addChild(_clanButton, 20);
     
-    // 🆕 Defense Log 按钮 (紫色) - 左下角
-    _defenseLogButton = createFlatButton("Defense Log", Size(140, 50), Color3B(100, 50, 100), [this](Ref*) {
-        if (_onDefenseLogClicked) _onDefenseLogClicked();
-    });
-    _defenseLogButton->setPosition(Vec2(100, 40)); // 左下角，稍微留点边距
+    // Defense Log 按钮
+    _defenseLogButton = Button::create("icon/defense_log_icon.png");
+    if (_defenseLogButton->getContentSize().equals(Size::ZERO))
+    {
+        _defenseLogButton = createFlatButton("Defense Log", Size(140, 50), Color3B(100, 50, 100), [this](Ref*) {
+            if (_onDefenseLogClicked)
+                _onDefenseLogClicked();
+        });
+    }
+    else
+    {
+        _defenseLogButton->setScale(110.0f / _defenseLogButton->getContentSize().width);
+        _defenseLogButton->addClickEventListener([this](Ref*) {
+            if (_onDefenseLogClicked)
+                _onDefenseLogClicked();
+        });
+    }
+    _defenseLogButton->setPosition(Vec2(100, 200));
     this->addChild(_defenseLogButton, 20);
 }
 
 cocos2d::ui::Button* SceneUIController::createFlatButton(const std::string& text, const cocos2d::Size& size, const cocos2d::Color3B& color, const std::function<void(cocos2d::Ref*)>& callback)
 {
     auto button = Button::create();
+    // 强制使用自定义大小，确保布局正确
+    button->ignoreContentAdaptWithSize(false);
+    button->setContentSize(size);
+    
     button->setTitleText(text);
     button->setTitleFontSize(20);
     button->setTitleColor(Color3B::WHITE);
-    button->setContentSize(size);
-    
-    // 创建纯色背景
-    auto bg = LayerColor::create(Color4B(color), size.width, size.height);
-    bg->setPosition(Vec2::ZERO);
-    // 确保背景在文字后面
-    button->addChild(bg, -1);
+    // 确保文字居中
+    if (button->getTitleRenderer()) {
+        button->getTitleRenderer()->setAlignment(TextHAlignment::CENTER, TextVAlignment::CENTER);
+        // 调整Label位置到中心
+        button->getTitleRenderer()->setPosition(Vec2(size.width / 2, size.height / 2));
+    }
     
     button->addClickEventListener(callback);
     
@@ -224,9 +306,9 @@ void SceneUIController::showConfirmButtons(const Vec2& worldPos)
     _confirmButton->setContentSize(Size(buttonSize, buttonSize));
     _confirmButton->setPosition(Vec2(worldPos.x + offsetX, worldPos.y + offsetY));
     
-    auto confirmBg = LayerColor::create(Color4B(0, 200, 0, 200), buttonSize, buttonSize);
-    confirmBg->setPosition(Vec2(-buttonSize / 2, -buttonSize / 2));
-    _confirmButton->addChild(confirmBg, -1);
+    // auto confirmBg = LayerColor::create(Color4B(0, 200, 0, 200), buttonSize, buttonSize);
+    // confirmBg->setPosition(Vec2(-buttonSize / 2, -buttonSize / 2));
+    // _confirmButton->addChild(confirmBg, -1);
     
     _confirmButton->addClickEventListener([this](Ref*) {
         if (_onConfirmBuilding) _onConfirmBuilding();
@@ -241,9 +323,9 @@ void SceneUIController::showConfirmButtons(const Vec2& worldPos)
     _cancelButton->setContentSize(Size(buttonSize, buttonSize));
     _cancelButton->setPosition(Vec2(worldPos.x - offsetX, worldPos.y + offsetY));
     
-    auto cancelBg = LayerColor::create(Color4B(200, 0, 0, 200), buttonSize, buttonSize);
-    cancelBg->setPosition(Vec2(-buttonSize / 2, -buttonSize / 2));
-    _cancelButton->addChild(cancelBg, -1);
+    // auto cancelBg = LayerColor::create(Color4B(200, 0, 0, 200), buttonSize, buttonSize);
+    // cancelBg->setPosition(Vec2(-buttonSize / 2, -buttonSize / 2));
+    // _cancelButton->addChild(cancelBg, -1);
     
     _cancelButton->addClickEventListener([this](Ref*) {
         if (_onCancelBuilding) _onCancelBuilding();

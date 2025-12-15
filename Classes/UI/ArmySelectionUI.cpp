@@ -95,11 +95,6 @@ void ArmySelectionUI::createUI()
     _confirmBtn->setScale9Enabled(true);
     _confirmBtn->setPosition(Vec2(300, 70));
     
-    // 绿色背景
-    auto confirmBg = LayerColor::create(Color4B(0, 150, 0, 255), 180, 70);
-    confirmBg->setPosition(Vec2(-90, -35));
-    _confirmBtn->addChild(confirmBg, -1);
-    
     _confirmBtn->addClickEventListener([this](Ref*) {
         if (_onConfirmed)
         {

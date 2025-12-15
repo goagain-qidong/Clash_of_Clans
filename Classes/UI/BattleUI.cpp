@@ -88,9 +88,24 @@ void BattleUI::setupTopBar()
 void BattleUI::setupBottomButtons()
 {
     // 结束战斗按钮
-    _endBattleButton = Button::create();
-    _endBattleButton->setTitleText("结束战斗");
-    _endBattleButton->setTitleFontSize(24);
+    _endBattleButton = Button::create("icon/end_battle_button.png");
+    if (_endBattleButton->getContentSize().equals(Size::ZERO)) {
+        _endBattleButton = Button::create();
+        _endBattleButton->ignoreContentAdaptWithSize(false);
+        _endBattleButton->setContentSize(Size(120, 50));
+        _endBattleButton->setTitleText("结束战斗");
+        _endBattleButton->setTitleFontSize(24);
+        
+        auto bg = LayerColor::create(Color4B(200, 50, 50, 255), 120, 50);
+        bg->setPosition(Vec2::ZERO);
+        _endBattleButton->addChild(bg, -1);
+        
+        if (_endBattleButton->getTitleRenderer()) {
+            _endBattleButton->getTitleRenderer()->setPosition(Vec2(60, 25));
+        }
+    } else {
+        _endBattleButton->setScale(120.0f / _endBattleButton->getContentSize().width);
+    }
     _endBattleButton->setPosition(Vec2(_visibleSize.width - 100, 60));
     _endBattleButton->setVisible(false);
     _endBattleButton->addClickEventListener([this](Ref*) {
@@ -99,9 +114,24 @@ void BattleUI::setupBottomButtons()
     this->addChild(_endBattleButton, 100);
 
     // 返回按钮（战斗结束后显示）
-    _returnButton = Button::create();
-    _returnButton->setTitleText("返回主场景");
-    _returnButton->setTitleFontSize(24);
+    _returnButton = Button::create("icon/return_button.png");
+    if (_returnButton->getContentSize().equals(Size::ZERO)) {
+        _returnButton = Button::create();
+        _returnButton->ignoreContentAdaptWithSize(false);
+        _returnButton->setContentSize(Size(160, 50));
+        _returnButton->setTitleText("返回主场景");
+        _returnButton->setTitleFontSize(24);
+        
+        auto bg = LayerColor::create(Color4B(50, 150, 50, 255), 160, 50);
+        bg->setPosition(Vec2::ZERO);
+        _returnButton->addChild(bg, -1);
+        
+        if (_returnButton->getTitleRenderer()) {
+            _returnButton->getTitleRenderer()->setPosition(Vec2(80, 25));
+        }
+    } else {
+        _returnButton->setScale(120.0f / _returnButton->getContentSize().width);
+    }
     _returnButton->setPosition(Vec2(_visibleSize.width / 2, 60));
     _returnButton->setVisible(false);
     _returnButton->addClickEventListener([this](Ref*) {

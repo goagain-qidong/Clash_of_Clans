@@ -872,6 +872,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ArmySelectionUI.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\BattleUI.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\BuildingHealthBarUI.h" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ClanPanel.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\PlayerListLayer.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ResourceCollectionUI.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\SettingsPanel.h" />
@@ -928,6 +929,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ArmySelectionUI.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\BattleUI.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\BuildingHealthBarUI.cpp" />
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ClanPanel.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\PlayerListLayer.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ResourceCollectionUI.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\SettingsPanel.cpp" />
@@ -1155,7 +1157,17 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\Elixir.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\Gem.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\Gold.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\attack_icon.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\attack_selected_enemy_icon.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\clan_icon.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\crystal.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\defense_log_icon.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\end_battle_button.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\ranking_icon.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\return_button.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\return_home_button.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\shop_icon.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\tool_icon.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\loading_picture.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\loading_picture_christmas.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\loading_picture_festival.png" />

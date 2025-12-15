@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.6)
 set(APP_NAME HelloCpp)
 project(${APP_NAME})
 
-# --- ǿ  ʹ   UTF-8      ---
 if(MSVC)
     add_compile_options(/utf-8)
     add_compile_options(/wd4819)
@@ -30,8 +29,7 @@ if(APPLE OR WINDOWS)
     cocos_mark_multi_resources(common_res_files RES_TO "Resources" FOLDERS ${GAME_RES_FOLDER})
 endif()
 
-# ---- 按照 Classes 目录组织自动收集文件 ----
-# 暴力扫描 Classes 目录下所有的 .cpp 和 .h 文件（包含所有子文件夹）
+# 自动扫描 Classes 目录下所有的 .cpp 和 .h 文件（包含所有子文件夹）
 file(GLOB_RECURSE GAME_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/Classes/*.cpp")
 file(GLOB_RECURSE GAME_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/Classes/*.h")
 

@@ -27,6 +27,7 @@
 #include "SocketClient.h"
 #include "UI/ArmySelectionUI.h"
 #include "UI/PlayerListLayer.h"
+#include "UI/ClanPanel.h" // 🆕 Include ClanPanel
 #include "Unit/unit.h"
 #include "ui/CocosGUI.h"
 #include "Managers/MusicManager.h" // ✅ 新增
@@ -206,7 +207,7 @@ void DraggableMapScene::loadGameState()
     if (_buildingManager)
     {
         _buildingManager->loadCurrentAccountState();
-        CCLOG("? Game state loaded");
+        CCLOG("Game state loaded");
     }
 }
 
@@ -509,9 +510,12 @@ void DraggableMapScene::onAttackClicked()
 
 void DraggableMapScene::onClanClicked()
 {
-    // Placeholder for clan UI - not implemented yet
-    if (_uiController)
-        _uiController->showHint("工会功能尚未实现");
+    auto clanPanel = ClanPanel::create();
+    if (clanPanel)
+    {
+        this->addChild(clanPanel, 200);
+        clanPanel->show();
+    }
 }
 
 void DraggableMapScene::onBuildingSelected(const BuildingData& data)
@@ -679,6 +683,8 @@ void DraggableMapScene::connectToServer()
         CCLOG("[Socket] onConnected: %d", ok);
     });
 
+    // 🔴 Disable auto-connect to allow manual connection via Clan Panel
+    /*
     // If we have an account, attempt to login after connect
     const std::string host = "127.0.0.1";
     const int port = 12345; // default dev port (adjust if your server uses another)
@@ -694,6 +700,7 @@ void DraggableMapScene::connectToServer()
     {
         sock.login(cur->userId, cur->username, cur->gameData.trophies);
     }
+    */
 }
 
 void DraggableMapScene::setupNetworkCallbacks()

@@ -73,9 +73,8 @@ void ShopLayer::initUI()
     _container->addChild(title);
 
     // 关闭按钮
-    _closeBtn = Button::create();
-    _closeBtn->setTitleText("X");
-    _closeBtn->setTitleFontSize(30);
+    _closeBtn = Button::create("return_button.png");
+    _closeBtn->setScale9Enabled(false);
     _closeBtn->setPosition(
         Vec2(_container->getContentSize().width - 40.0f, _container->getContentSize().height - 30.0f));
     _closeBtn->addClickEventListener([this](Ref*) { hide(); });

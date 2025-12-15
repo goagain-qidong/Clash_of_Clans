@@ -142,6 +142,9 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\BuildingHealthBarUI.cpp">
       <Filter>Source Files\Classes\UI</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ClanPanel.cpp">
+      <Filter>Source Files\Classes\UI</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\PlayerListLayer.cpp">
       <Filter>Source Files\Classes\UI</Filter>
     </ClCompile>
@@ -310,6 +313,9 @@
       <Filter>Source Files\Classes\UI</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\BuildingHealthBarUI.h">
+      <Filter>Source Files\Classes\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\ClanPanel.h">
       <Filter>Source Files\Classes\UI</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\PlayerListLayer.h">
@@ -996,7 +1002,37 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\Gold.png">
       <Filter>Resources\icon</Filter>
     </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\attack_icon.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\attack_selected_enemy_icon.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\clan_icon.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\crystal.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\defense_log_icon.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\end_battle_button.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\ranking_icon.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\return_button.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\return_home_button.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\shop_icon.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\tool_icon.png">
       <Filter>Resources\icon</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\loading_picture.png">

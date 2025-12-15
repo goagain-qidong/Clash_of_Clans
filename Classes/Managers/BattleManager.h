@@ -62,6 +62,11 @@ public:
     void setBattleEndCallback(const std::function<void()>& callback) { _onBattleEnd = callback; }
     void setTroopDeployCallback(const std::function<void(UnitType, int)>& callback) { _onTroopDeploy = callback; }
 
+    // 🆕 Network PVP
+    void setNetworkMode(bool isNetworked, bool isAttacker);
+    void deployUnitRemote(UnitType type, const cocos2d::Vec2& position);
+    void setNetworkDeployCallback(const std::function<void(UnitType, const cocos2d::Vec2&)>& callback);
+
 private:
     // Logic Methods
     void fixedUpdate();
@@ -72,6 +77,9 @@ private:
     void uploadBattleResult();
     std::string getCurrentTimestamp();
     void updateTroopCounts();
+    
+    // 🆕 Helper
+    void spawnUnit(UnitType type, const cocos2d::Vec2& position);
 
     // Data
     cocos2d::Node* _mapLayer = nullptr;
@@ -108,6 +116,11 @@ private:
     std::function<void()> _onUIUpdate;
     std::function<void()> _onBattleEnd;
     std::function<void(UnitType, int)> _onTroopDeploy;
+    
+    // 🆕 Network
+    bool _isNetworked = false;
+    bool _isAttacker = false;
+    std::function<void(UnitType, const cocos2d::Vec2&)> _onNetworkDeploy;
 };
 
 #endif // __BATTLE_MANAGER_H__

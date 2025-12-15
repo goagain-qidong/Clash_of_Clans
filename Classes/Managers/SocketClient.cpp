@@ -363,6 +363,62 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data)
             _onClanWarStatus(warId, stars1, stars2);
         }
         break;
+    // 🆕 PVP处理
+    case PACKET_PVP_START:
+        if (_onPvpStart)
+        {
+            // 格式: ROLE|OpponentID|MapData
+            // ROLE: ATTACK, DEFEND, FAIL
+            std::istringstream iss(data);
+            std::string role, opponentId, mapData;
+            std::getline(iss, role, '|');
+            std::getline(iss, opponentId, '|');
+            std::getline(iss, mapData); // 剩余部分为地图数据
+            _onPvpStart(role, opponentId, mapData);
+        }
+        break;
+    case PACKET_PVP_ACTION:
+        if (_onPvpAction)
+        {
+            // 格式: UnitType|X|Y
+            std::istringstream iss(data);
+            std::string token;
+            std::getline(iss, token, '|');
+            int unitType = std::stoi(token);
+            std::getline(iss, token, '|');
+            float x = std::stof(token);
+            std::getline(iss, token, '|');
+            float y = std::stof(token);
+            _onPvpAction(unitType, x, y);
+        }
+        break;
+    case PACKET_PVP_END:
+        if (_onPvpEnd)
+        {
+            _onPvpEnd(data);
+        }
+        break;
+    case PACKET_SPECTATE_JOIN:
+        if (_onSpectateJoin)
+        {
+            // 格式: SPECTATE|AttackerID|DefenderID|MapData
+            // 或 FAIL|Reason
+            if (data.substr(0, 4) == "FAIL")
+            {
+                _onSpectateJoin(false, "", "", "");
+            }
+            else
+            {
+                std::istringstream iss(data);
+                std::string type, attackerId, defenderId, mapData;
+                std::getline(iss, type, '|');
+                std::getline(iss, attackerId, '|');
+                std::getline(iss, defenderId, '|');
+                std::getline(iss, mapData);
+                _onSpectateJoin(true, attackerId, defenderId, mapData);
+            }
+        }
+        break;
     default:
         cocos2d::log("[SocketClient] Unknown packet type: %d", type);
         break;
@@ -439,6 +495,30 @@ void SocketClient::submitClanWarResult(const std::string& warId, const AttackRes
 {
     sendPacket(PACKET_CLAN_WAR_RESULT, warId + "|" + result.serialize());
 }
+
+// 🆕 PVP系统实现
+void SocketClient::requestPvp(const std::string& targetId)
+{
+    sendPacket(PACKET_PVP_REQUEST, targetId);
+}
+
+void SocketClient::sendPvpAction(int unitType, float x, float y)
+{
+    std::ostringstream oss;
+    oss << unitType << "|" << x << "|" << y;
+    sendPacket(PACKET_PVP_ACTION, oss.str());
+}
+
+void SocketClient::endPvp()
+{
+    sendPacket(PACKET_PVP_END, "");
+}
+
+void SocketClient::requestSpectate(const std::string& targetId)
+{
+    sendPacket(PACKET_SPECTATE_REQUEST, targetId);
+}
+
 // ==================== 回调设置 ====================
 void SocketClient::setOnConnected(std::function<void(bool)> callback)
 {
@@ -493,6 +573,28 @@ void SocketClient::setOnClanWarStatus(std::function<void(const std::string&, int
 {
     _onClanWarStatus = callback;
 }
+
+// 🆕 PVP回调设置
+void SocketClient::setOnPvpStart(std::function<void(const std::string&, const std::string&, const std::string&)> callback)
+{
+    _onPvpStart = callback;
+}
+
+void SocketClient::setOnPvpAction(std::function<void(int, float, float)> callback)
+{
+    _onPvpAction = callback;
+}
+
+void SocketClient::setOnPvpEnd(std::function<void(const std::string&)> callback)
+{
+    _onPvpEnd = callback;
+}
+
+void SocketClient::setOnSpectateJoin(std::function<void(bool, const std::string&, const std::string&, const std::string&)> callback)
+{
+    _onSpectateJoin = callback;
+}
+
 void SocketClient::setOnMapReceived(std::function<void(const std::string&)> callback)
 {
     _onMapReceived = callback;

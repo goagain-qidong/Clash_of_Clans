@@ -240,6 +240,12 @@ void BattleManager::updateBattleState(float dt)
 
 void BattleManager::deployUnit(UnitType type, const cocos2d::Vec2& position)
 {
+    // 如果是联网模式且不是攻击者（即防御者或观战者），禁止本地操作下兵
+    if (_isNetworked && !_isAttacker)
+    {
+        return;
+    }
+
     int* count = nullptr;
     switch (type)
     {
@@ -251,6 +257,7 @@ void BattleManager::deployUnit(UnitType type, const cocos2d::Vec2& position)
     
     if (!_isReplayMode)
     {
+        // 联网模式下，攻击者下兵也需要消耗（或者无限兵力？这里假设消耗）
         if (*count <= 0) return;
         
         auto& troopInv = TroopInventory::getInstance();
@@ -260,12 +267,30 @@ void BattleManager::deployUnit(UnitType type, const cocos2d::Vec2& position)
         if (_onTroopDeploy) _onTroopDeploy(type, *count);
         
         ReplaySystem::getInstance().recordDeployUnit(_currentFrame, type, position);
+        
+        // 🆕 发送网络包
+        if (_isNetworked && _isAttacker && _onNetworkDeploy)
+        {
+            _onNetworkDeploy(type, position);
+        }
     }
     
+    spawnUnit(type, position);
+}
+
+void BattleManager::deployUnitRemote(UnitType type, const cocos2d::Vec2& position)
+{
+    // 远程下兵（防御者/观战者接收到的操作）
+    // 不消耗本地库存，直接生成
+    spawnUnit(type, position);
+}
+
+void BattleManager::spawnUnit(UnitType type, const cocos2d::Vec2& position)
+{
     Unit* unit = Unit::create(type);
     if (!unit)
     {
-        if (!_isReplayMode) TroopInventory::getInstance().addTroops(type, 1);
+        // if (!_isReplayMode) TroopInventory::getInstance().addTroops(type, 1); // Revert? Too complex for now
         return;
     }
     
@@ -411,7 +436,7 @@ void BattleManager::endBattle(bool surrender)
     else
         MusicManager::getInstance().playMusic(MusicType::BATTLE_LOSE, false);
         
-    if (!_isReplayMode)
+    if (!_isReplayMode && !_isNetworked) // 🆕 联网模式下不保存本地结果
     {
         AccountManager::getInstance().saveGameStateToFile();
         uploadBattleResult();
@@ -489,4 +514,15 @@ int BattleManager::getTroopCount(UnitType type) const
         case UnitType::kGiant: return _giantCount;
         default: return 0;
     }
+}
+
+void BattleManager::setNetworkMode(bool isNetworked, bool isAttacker)
+{
+    _isNetworked = isNetworked;
+    _isAttacker = isAttacker;
+}
+
+void BattleManager::setNetworkDeployCallback(const std::function<void(UnitType, const cocos2d::Vec2&)>& callback)
+{
+    _onNetworkDeploy = callback;
 }

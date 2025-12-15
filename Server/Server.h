@@ -1,4 +1,12 @@
-﻿#pragma once
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     Server.h
+ * File Function: 服务器主逻辑
+ * Author:        赵崇治
+ * Update Date:   2025/12/14
+ * License:       MIT License
+ ****************************************************************/
+#pragma once
 
 #ifndef _SERVER_H_
 
@@ -74,6 +82,13 @@ enum PacketType
 
     PACKET_CLAN_WAR_STATUS = 34,  // 部落战状态
 
+    // 🆕 实时PVP与观战
+    PACKET_PVP_REQUEST = 40,      // 请求挑战/攻击
+    PACKET_PVP_START = 41,        // PVP开始通知
+    PACKET_PVP_ACTION = 42,       // PVP操作（下兵）
+    PACKET_PVP_END = 43,          // PVP结束
+    PACKET_SPECTATE_REQUEST = 44, // 请求观战
+    PACKET_SPECTATE_JOIN = 45     // 加入观战通知
 };
 
 // ==================== 数据包头 ====================
@@ -178,6 +193,16 @@ struct ClanWarInfo
     bool isActive = false;
 };
 
+// 🆕 PVP会话
+struct PvpSession
+{
+    std::string attackerId;
+    std::string defenderId;
+    std::vector<std::string> spectatorIds;
+    std::string mapData; // 缓存地图数据
+    bool isActive = true;
+};
+
 // ==================== 匹配队列项 ====================
 
 struct MatchQueueEntry
@@ -243,6 +268,10 @@ private:
 
     std::mutex warMutex;
 
+    // 🆕 PVP会话管理
+    std::map<std::string, PvpSession> pvpSessions; // key: attackerId (or unique session id)
+    std::mutex pvpMutex;
+
     std::mutex dataMutex;
 
     // 网络函数
@@ -294,6 +323,12 @@ private:
     void startClanWar(const std::string& clan1Id, const std::string& clan2Id);
 
     void processClanWarAttack(const std::string& warId, const AttackResult& result);
+
+    // 🆕 PVP系统
+    void handlePvpRequest(SOCKET clientSocket, const std::string& targetId);
+    void handlePvpAction(SOCKET clientSocket, const std::string& actionData);
+    void handleSpectateRequest(SOCKET clientSocket, const std::string& targetId);
+    void endPvpSession(const std::string& attackerId);
 
     // 辅助函数
 

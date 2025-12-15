@@ -17,6 +17,7 @@
 #include "Managers/DefenseLogSystem.h"
 #include "Managers/TroopInventory.h"
 #include "Managers/MusicManager.h"
+#include "Managers/SocketClient.h" // 🆕 Include SocketClient
 #include <ctime>
 
 USING_NS_CC;
@@ -135,6 +136,12 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
                     trophyChange,
                     _battleManager->isReplayMode()
                 );
+                
+                // 🆕 PVP End
+                if (_isPvpMode && _isAttacker)
+                {
+                    SocketClient::getInstance().endPvp();
+                }
             }
         });
         
@@ -432,6 +439,86 @@ void BattleScene::toggleSpeed()
     } else {
         _timeScale *= 2.0f;
     }
+}
+
+// 🆕 PVP Implementation
+void BattleScene::setPvpMode(bool isAttacker)
+{
+    _isPvpMode = true;
+    _isAttacker = isAttacker;
+    
+    if (_battleManager)
+    {
+        _battleManager->setNetworkMode(true, isAttacker);
+    }
+    
+    if (!_isAttacker && _battleUI)
+    {
+        _battleUI->showTroopButtons(false);
+        _battleUI->updateStatus("Defending against attacker...", Color4B::RED);
+    }
+}
+
+void BattleScene::onEnter()
+{
+    Scene::onEnter();
+    
+    if (_isPvpMode)
+    {
+        auto& client = SocketClient::getInstance();
+        
+        // 接收远程操作
+        client.setOnPvpAction([this](int unitType, float x, float y) {
+            if (_battleManager)
+            {
+                // 确保在主线程执行
+                Director::getInstance()->getScheduler()->performFunctionInCocosThread([this, unitType, x, y]() {
+                    if (_battleManager)
+                        _battleManager->deployUnitRemote((UnitType)unitType, Vec2(x, y));
+                });
+            }
+        });
+        
+        // 接收结束通知
+        client.setOnPvpEnd([this](const std::string& result) {
+            Director::getInstance()->getScheduler()->performFunctionInCocosThread([this]() {
+                if (_battleManager)
+                {
+                    _battleManager->endBattle(false);
+                }
+            });
+        });
+        
+        // 发送本地操作
+        if (_battleManager && _isAttacker)
+        {
+            _battleManager->setNetworkDeployCallback([this](UnitType type, const Vec2& pos) {
+                SocketClient::getInstance().sendPvpAction((int)type, pos.x, pos.y);
+            });
+        }
+    }
+}
+
+void BattleScene::onExit()
+{
+    if (_isPvpMode)
+    {
+        auto& client = SocketClient::getInstance();
+        client.setOnPvpAction(nullptr);
+        client.setOnPvpEnd(nullptr);
+        
+        if (_battleManager)
+        {
+            _battleManager->setNetworkDeployCallback(nullptr);
+        }
+        
+        if (_isAttacker)
+        {
+            client.endPvp();
+        }
+    }
+    
+    Scene::onExit();
 }
 
 // ==================== 触摸监听器设置 ====================

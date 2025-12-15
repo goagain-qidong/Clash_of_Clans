@@ -84,7 +84,12 @@ public:
     virtual bool initWithReplayData(const std::string& replayDataStr);
 
     virtual void update(float dt) override;
+    virtual void onEnter() override;
+    virtual void onExit() override;
     
+    // 🆕 PVP Configuration
+    void setPvpMode(bool isAttacker);
+
 private:
     BattleScene();
     ~BattleScene();
@@ -135,6 +140,10 @@ private:
      * @brief 禁用所有防御建筑的战斗模式并重置血量
      */
     void disableAllBuildingsBattleMode();
+    
+    // 🆕 PVP State
+    bool _isPvpMode = false;
+    bool _isAttacker = false;
 };
 
-#endif // __BATTLE_SCENE_H__#endif // __BATTLE_SCENE_H__
+#endif // __BATTLE_SCENE_H__

@@ -62,7 +62,15 @@ enum PacketType
     PACKET_CLAN_WAR_MATCH = 31,
     PACKET_CLAN_WAR_ATTACK = 32,
     PACKET_CLAN_WAR_RESULT = 33,
-    PACKET_CLAN_WAR_STATUS = 34,
+    PACKET_CLAN_WAR_STATUS = 34,  // 部落战状态
+
+    // 🆕 实时PVP与观战
+    PACKET_PVP_REQUEST = 40,      // 请求挑战/攻击
+    PACKET_PVP_START = 41,        // PVP开始通知
+    PACKET_PVP_ACTION = 42,       // PVP操作（下兵）
+    PACKET_PVP_END = 43,          // PVP结束
+    PACKET_SPECTATE_REQUEST = 44, // 请求观战
+    PACKET_SPECTATE_JOIN = 45     // 加入观战通知
 };
 // ==================== 数据包头 ====================
 struct PacketHeader
@@ -135,7 +143,14 @@ public:
     void searchClanWar();
     void attackInClanWar(const std::string& warId, const std::string& targetMemberId);
     void submitClanWarResult(const std::string& warId, const AttackResult& result);
-    // 回调设置
+
+    // 🆕 PVP系统
+    void requestPvp(const std::string& targetId);
+    void sendPvpAction(int unitType, float x, float y);
+    void endPvp();
+    void requestSpectate(const std::string& targetId);
+
+    // ==================== 回调设置 ====================
     void setOnConnected(std::function<void(bool)> callback);
     void setOnLoginResult(std::function<void(bool, const std::string&)> callback);
     void setOnMatchFound(std::function<void(const MatchInfo&)> callback);
@@ -151,6 +166,14 @@ public:
     void setOnClanMembers(std::function<void(const std::string&)> callback);
     void setOnClanWarMatch(std::function<void(const std::string&, const std::string&, const std::string&)> callback);
     void setOnClanWarStatus(std::function<void(const std::string&, int, int)> callback);
+    
+    // 🆕 PVP回调
+    // role: "ATTACK", "DEFEND", "FAIL"
+    void setOnPvpStart(std::function<void(const std::string& role, const std::string& opponentId, const std::string& mapData)> callback);
+    void setOnPvpAction(std::function<void(int unitType, float x, float y)> callback);
+    void setOnPvpEnd(std::function<void(const std::string& result)> callback);
+    void setOnSpectateJoin(std::function<void(bool success, const std::string& attackerId, const std::string& defenderId, const std::string& mapData)> callback);
+
     void setOnMapReceived(std::function<void(const std::string&)> callback);
     void setOnDisconnected(std::function<void()> callback);
     // 在主线程中处理回调（需要在 update 中调用）
@@ -182,6 +205,13 @@ private:
     std::function<void(const std::string&)> _onClanMembers;
     std::function<void(const std::string&, const std::string&, const std::string&)> _onClanWarMatch;
     std::function<void(const std::string&, int, int)> _onClanWarStatus;
+    
+    // 🆕 PVP回调存储
+    std::function<void(const std::string&, const std::string&, const std::string&)> _onPvpStart;
+    std::function<void(int, float, float)> _onPvpAction;
+    std::function<void(const std::string&)> _onPvpEnd;
+    std::function<void(bool, const std::string&, const std::string&, const std::string&)> _onSpectateJoin;
+
     std::function<void(const std::string&)> _onMapReceived;
     std::function<void()> _onDisconnected;
     // 🆕 用户列表回调
