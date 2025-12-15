@@ -64,9 +64,6 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\HUDLayer.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\HeroManager.cpp">
-      <Filter>Source Files\Classes\Managers</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\InputController.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
@@ -80,6 +77,9 @@
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\NetworkManager.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\OccupiedGridOverlay.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\ReplaySystem.cpp">
@@ -111,9 +111,6 @@
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\UpgradeManager.cpp">
       <Filter>Source Files\Classes\Managers</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Models\Hero.cpp">
-      <Filter>Source Files\Classes\Models</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\AccountSelectScene.cpp">
       <Filter>Source Files\Classes\Scenes</Filter>
@@ -152,6 +149,9 @@
       <Filter>Source Files\Classes\UI</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\SettingsPanel.cpp">
+      <Filter>Source Files\Classes\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\UnitHealthBarUI.cpp">
       <Filter>Source Files\Classes\UI</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\UpgradeTimerUI.cpp">
@@ -237,9 +237,6 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\HUDLayer.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\HeroManager.h">
-      <Filter>Source Files\Classes\Managers</Filter>
-    </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\InputController.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
@@ -253,6 +250,9 @@
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\NetworkManager.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\OccupiedGridOverlay.h">
       <Filter>Source Files\Classes\Managers</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\ReplaySystem.h">
@@ -284,12 +284,6 @@
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Managers\UpgradeManager.h">
       <Filter>Source Files\Classes\Managers</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Models\Hero.h">
-      <Filter>Source Files\Classes\Models</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Models\Pathfinder.h">
-      <Filter>Source Files\Classes\Models</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\AccountSelectScene.h">
       <Filter>Source Files\Classes\Scenes</Filter>
@@ -325,6 +319,9 @@
       <Filter>Source Files\Classes\UI</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\SettingsPanel.h">
+      <Filter>Source Files\Classes\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\UnitHealthBarUI.h">
       <Filter>Source Files\Classes\UI</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\UpgradeTimerUI.h">
@@ -2556,9 +2553,6 @@
     </Filter>
     <Filter Include="Source Files\Classes\Managers">
       <UniqueIdentifier>{97E3A242-2344-3A4F-8F13-211DAA837378}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Classes\Models">
-      <UniqueIdentifier>{5BDD5D3B-40E5-39DD-B7D5-70569532FB40}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Classes\Scenes">
       <UniqueIdentifier>{9E6AEE65-5BBF-330A-A3A0-AFE682CA5AB5}</UniqueIdentifier>

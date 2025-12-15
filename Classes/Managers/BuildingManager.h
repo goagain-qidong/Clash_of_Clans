@@ -18,6 +18,7 @@
 // Forward declaration
 struct BuildingSerialData;
 struct AccountGameData;
+class OccupiedGridOverlay; // 🆕 新增前向声明
 
 /**
 
@@ -100,7 +101,7 @@ public:
 
      * @brief 每帧更新，调用所有建筑的 tick 方法
 
-     * @param dt 距上一帧的时间间隔（秒）
+     * @param dt 路上一帧的时间间隔（秒）
 
      */
     void update(float dt) override;
@@ -194,6 +195,23 @@ public:
     /** @brief 获取正在移动的建筑 */
     BaseBuilding* getMovingBuilding() const { return _movingBuilding; }
     
+    // 🆕 显示占用网格覆盖层
+    /**
+     * @brief 显示所有已有建筑的占用网格（含周围一格）
+     * @param autoFadeOut 是否自动淡出（已废弃，保留兼容性）
+     */
+    void showOccupiedGrids(bool autoFadeOut = true);
+    
+    /**
+     * @brief 淡出并隐藏占用网格覆盖层
+     */
+    void hideOccupiedGrids();
+    
+    /**
+     * @brief 更新草坪图层（常态显示）
+     */
+    void updateGrassLayer();
+    
     // ==================== 内部方法 ====================
     /**
      * @brief 在指定网格位置放置建筑
@@ -269,5 +287,8 @@ public:
     BaseBuilding* _movingBuilding = nullptr;           // 当前移动的建筑
     cocos2d::Vec2 _buildingOriginalGridPos;            // 建筑原始网格位置
     cocos2d::Sprite* _movingGhostSprite = nullptr;     // 移动时的幽灵精灵
+    
+    // 🆕 占用网格覆盖层
+    OccupiedGridOverlay* _occupiedGridOverlay = nullptr; // 占用网格覆盖层
 };
 #endif // BUILDING_MANAGER_H_

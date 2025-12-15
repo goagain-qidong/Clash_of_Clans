@@ -492,9 +492,6 @@ void DraggableMapScene::onAttackClicked()
     this->addChild(armyUI, 200);
 
     armyUI->setOnConfirmed([this]() {
-        CCLOG("✅ 军队准备完成，开始搜索对手...");
-        _uiController->showHint("正在搜索对手...");
-
         auto& client = SocketClient::getInstance();
         if (client.isConnected())
         {
@@ -602,6 +599,13 @@ void DraggableMapScene::onBuildingClicked(BaseBuilding* building)
 {
     if (!building)
         return;
+    
+    // 🆕 显示占用网格覆盖层（淡入效果，不自动淡出）
+    if (_buildingManager)
+    {
+        _buildingManager->showOccupiedGrids(false); // false表示不自动淡出
+    }
+    
     showUpgradeUI(building);
 }
 
@@ -632,7 +636,16 @@ void DraggableMapScene::showUpgradeUI(BaseBuilding* building)
         }
     });
 
-    upgradeUI->setCloseCallback([this]() { _currentUpgradeUI = nullptr; });
+    // 🔴 修复：在关闭回调中添加淡出网格的逻辑
+    upgradeUI->setCloseCallback([this]() { 
+        _currentUpgradeUI = nullptr;
+        
+        // 淡出占用网格覆盖层
+        if (_buildingManager)
+        {
+            _buildingManager->hideOccupiedGrids();
+        }
+    });
 
     this->addChild(upgradeUI, 1000);
     upgradeUI->show();
@@ -643,6 +656,19 @@ void DraggableMapScene::hideUpgradeUI()
 {
     if (!_currentUpgradeUI)
         return;
+
+    // 先淡出占用网格覆盖层，再隐藏UI
+    if (_buildingManager)
+    {
+        // 延迟淡出，让用户看到效果
+        auto delay = DelayTime::create(0.2f);
+        auto call  = CallFunc::create([this]() {
+            if (_buildingManager)
+                _buildingManager->hideOccupiedGrids();
+        });
+        this->runAction(Sequence::create(delay, call, nullptr));
+    }
+    
     auto upgradeUI = dynamic_cast<BuildingUpgradeUI*>(_currentUpgradeUI);
     if (upgradeUI)
         upgradeUI->hide();
@@ -1068,7 +1094,6 @@ void DraggableMapScene::showPlayerListFromServerData(const std::string& serverDa
 void DraggableMapScene::startAttack(const std::string& targetUserId)
 {
     CCLOG("⚔️ 开始攻击玩家: %s", targetUserId.c_str());
-    _uiController->showHint(StringUtils::format("正在加载 %s 的基地...", targetUserId.c_str()));
 
     auto& accMgr = AccountManager::getInstance();
     auto enemyGameData = accMgr.getPlayerGameData(targetUserId);

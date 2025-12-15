@@ -165,10 +165,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="PVP_测试说明.md" />
-    <None Include="README.md" />
-    <None Include="联网PVP修复说明.md" />
-    <None Include="联网对战使用说明.md" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

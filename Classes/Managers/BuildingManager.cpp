@@ -10,6 +10,7 @@
 #include "Managers/UpgradeManager.h" // 引入头文件
 #include "Managers/TroopInventory.h"  // 🆕 引入士兵库存管理
 #include "Managers/BuildingLimitManager.h"  // 🆕 引入建筑数量限制管理
+#include "Managers/OccupiedGridOverlay.h"  // 🆕 引入占用网格覆盖层
 #include "ArmyBuilding.h"
 #include "ArmyCampBuilding.h"
 #include "BuildersHutBuilding.h"
@@ -35,6 +36,18 @@ void BuildingManager::setup(cocos2d::Sprite* mapSprite, GridMap* gridMap)
 {
     _mapSprite = mapSprite;
     _gridMap = gridMap;
+    
+    // 🆕 创建占用网格覆盖层
+    if (_gridMap && !_occupiedGridOverlay)
+    {
+        _occupiedGridOverlay = OccupiedGridOverlay::create(_gridMap);
+        if (_occupiedGridOverlay)
+        {
+            _occupiedGridOverlay->setVisible(true); // 默认可见以显示草坪层
+            // 🔴 修复：Z-Order设为500，在建筑之下（建筑Z-Order约9000-10000），但在网格之上（999）
+            _mapSprite->addChild(_occupiedGridOverlay, 500);
+        }
+    }
 }
 void BuildingManager::startPlacing(const BuildingData& buildingData)
 {
@@ -258,7 +271,18 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     building->setGridPosition(gridPos);
     building->setGridSize(_selectedBuilding.gridSize);
     building->setAnchorPoint(Vec2(0.5f, 0.35f));
-    building->setScale(_selectedBuilding.scaleFactor);
+    
+    // 🔴 修复：不要覆盖建筑自身的缩放（如城墙已设置为0.6）
+    // 只有当建筑没有设置缩放时，才使用buildingData的缩放
+    float currentScale = building->getScale();
+    if (currentScale == 1.0f || currentScale == 0.0f) // 默认缩放或未初始化
+    {
+        building->setScale(_selectedBuilding.scaleFactor);
+    }
+    
+    // 🆕 记录目标缩放值（用于动画）
+    float targetScale = building->getScale();
+    
     Vec2 buildingPos = calculateBuildingPosition(gridPos);
     building->setPosition(buildingPos);
     // 4. 设置动态 Z-Order (Y-Sorting)
@@ -270,7 +294,7 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     _mapSprite->addChild(building);
     // 5. 播放落地动画
     building->setScale(0.0f);
-    auto scaleAction = EaseBackOut::create(ScaleTo::create(0.4f, _selectedBuilding.scaleFactor));
+    auto scaleAction = EaseBackOut::create(ScaleTo::create(0.4f, targetScale));  // 🔴 使用记录的目标缩放值
     auto fadeIn = FadeIn::create(0.3f);
     building->runAction(Spawn::create(scaleAction, fadeIn, nullptr));
     // 6. 保存到建筑列表
@@ -299,11 +323,68 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     {
         _onBuildingPlaced(building);
     }
-    // 9. 延迟退出建造模式
-    auto delay = DelayTime::create(1.0f);
-    auto callback = CallFunc::create([this]() { endPlacing(); });
-    this->runAction(Sequence::create(delay, callback, nullptr));
-
+    
+    // 🆕 更新占用网格覆盖层（草坪图层）
+    updateGrassLayer();
+    
+    // 9. 🆕 检查是否为城墙且可以继续放置
+    bool isWall = (_selectedBuilding.name == "Wall" || _selectedBuilding.name == "城墙");
+    bool canContinue = false;
+    
+    if (isWall)
+    {
+        // 检查是否还可以继续建造城墙
+        if (limitMgr->canBuild("Wall"))
+        {
+            // 检查是否有足够资源
+            if (resMgr.hasEnough(costType, cost))
+            {
+                canContinue = true;
+                showHint("继续放置城墙，按ESC取消");
+            }
+            else
+            {
+                showHint(StringUtils::format("资源不足，无法继续建造城墙（已建造 %d/%d）",
+                    limitMgr->getBuildingCount("Wall"),
+                    limitMgr->getLimit("Wall")));
+            }
+        }
+        else
+        {
+            showHint(StringUtils::format("已达城墙建造上限（%d/%d）",
+                limitMgr->getBuildingCount("Wall"),
+                limitMgr->getLimit("Wall")));
+        }
+    }
+    
+    // 10. 决定是否继续建造模式
+    if (canContinue)
+    {
+        // 保持建造模式，重置状态以便继续放置
+        _isDraggingBuilding = false;
+        _isWaitingConfirm = false;
+        _pendingGridPos = Vec2::ZERO;
+        
+        // 保持虚影精灵可见，但移到屏幕外
+        if (_ghostSprite)
+        {
+            _ghostSprite->setPosition(Vec2(-1000.0f, -1000.0f));
+            _ghostSprite->setVisible(false);
+        }
+        
+        // 隐藏网格底座
+        if (_gridMap)
+        {
+            _gridMap->hideBuildingBase();
+        }
+    }
+    else
+    {
+        // 延迟退出建造模式
+        auto delay = DelayTime::create(1.0f);
+        auto callback = CallFunc::create([this]() { endPlacing(); });
+        this->runAction(Sequence::create(delay, callback, nullptr));
+    }
 }
 BaseBuilding* BuildingManager::createBuildingEntity(const BuildingData& buildingData)
 {
@@ -620,6 +701,9 @@ void BuildingManager::onBuildingTouchEnded(const cocos2d::Vec2& touchPos, BaseBu
         {
             _onBuildingMoved(building, newGridPos);
         }
+        
+        // 🆕 更新草坪图层
+        updateGrassLayer();
 
         // 清理移动模式状态
         confirmBuildingMove();
@@ -659,6 +743,55 @@ void BuildingManager::confirmBuildingMove()
 
     _isMovingBuilding = false;
     _movingBuilding = nullptr;
+}
+
+void BuildingManager::showOccupiedGrids(bool autoFadeOut)
+{
+    /**
+     * 显示所有已有建筑的占用网格（含周围一格）
+     * @param autoFadeOut 此参数已废弃，保留用于兼容性
+     */
+    if (!_occupiedGridOverlay)
+    {
+        CCLOG("⚠️ OccupiedGridOverlay is null!");
+        return;
+    }
+    
+    CCLOG("🎨 Showing occupied grids for %zu buildings", _buildings.size());
+    
+    // 停止之前的自动淡出动作
+    this->stopAllActions();
+    
+    _occupiedGridOverlay->showOccupiedGrids(_buildings);
+    
+    // 🔴 移除自动淡出逻辑，由外部控制淡出时机
+    // 淡出应该在建筑升级UI关闭时调用
+}
+
+void BuildingManager::hideOccupiedGrids()
+{
+    /**
+     * 淡出并隐藏占用网格覆盖层
+     */
+    if (!_occupiedGridOverlay)
+        return;
+    
+    _occupiedGridOverlay->fadeOutAndHide(0.5f);
+}
+
+void BuildingManager::updateGrassLayer()
+{
+    /**
+     * 更新草坪图层
+     */
+    if (!_occupiedGridOverlay)
+    {
+        CCLOG("⚠️ OccupiedGridOverlay is null in updateGrassLayer!");
+        return;
+    }
+    
+    CCLOG("🌱 Updating grass layer for %zu buildings", _buildings.size());
+    _occupiedGridOverlay->updateGrassLayer(_buildings);
 }
 
 cocos2d::Vec2 BuildingManager::calculateBuildingPositionForMoving(const cocos2d::Vec2& gridPos) const
@@ -822,6 +955,12 @@ void BuildingManager::loadBuildingsFromData(const std::vector<BuildingSerialData
     
     CCLOG("✅ Loaded %zu buildings successfully (Mode: %s)", 
           _buildings.size(), isReadOnly ? "Attack" : "Edit");
+    
+    // 🆕 加载完建筑后，更新草坪图层
+    if (!isReadOnly)
+    {
+        updateGrassLayer();
+    }
 }
 
 void BuildingManager::clearAllBuildings(bool clearTroops)
