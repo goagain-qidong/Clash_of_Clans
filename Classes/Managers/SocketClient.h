@@ -70,7 +70,18 @@ enum PacketType
     PACKET_PVP_ACTION = 42,       // PVP操作（下兵）
     PACKET_PVP_END = 43,          // PVP结束
     PACKET_SPECTATE_REQUEST = 44, // 请求观战
-    PACKET_SPECTATE_JOIN = 45     // 加入观战通知
+    PACKET_SPECTATE_JOIN = 45,    // 加入观战通知
+    
+    // 🆕 部落战争增强
+    PACKET_CLAN_WAR_MEMBER_LIST = 50,   // 获取部落战成员列表
+    PACKET_CLAN_WAR_ATTACK_START = 51,  // 开始攻击部落战目标
+    PACKET_CLAN_WAR_ATTACK_END = 52,    // 部落战攻击结束
+    PACKET_CLAN_WAR_SPECTATE = 53,      // 观战部落战
+    PACKET_CLAN_WAR_STATE_UPDATE = 54, // 部落战状态更新
+
+    // 🆕 战斗状态广播
+    PACKET_BATTLE_STATUS_LIST = 60,     // 请求/返回战斗状态列表
+    PACKET_BATTLE_STATUS_UPDATE = 61    // 战斗状态更新通知
 };
 // ==================== 数据包头 ====================
 struct PacketHeader
@@ -143,12 +154,21 @@ public:
     void searchClanWar();
     void attackInClanWar(const std::string& warId, const std::string& targetMemberId);
     void submitClanWarResult(const std::string& warId, const AttackResult& result);
+    
+    // 🆕 部落战争增强
+    void requestClanWarMemberList(const std::string& warId);
+    void startClanWarAttack(const std::string& warId, const std::string& targetId);
+    void endClanWarAttack(const std::string& warId, int stars, float destructionRate);
+    void spectateClanWar(const std::string& warId, const std::string& targetId);
 
     // 🆕 PVP系统
     void requestPvp(const std::string& targetId);
     void sendPvpAction(int unitType, float x, float y);
     void endPvp();
     void requestSpectate(const std::string& targetId);
+
+    // 🆕 请求战斗状态列表
+    void requestBattleStatusList();
 
     // ==================== 回调设置 ====================
     void setOnConnected(std::function<void(bool)> callback);
@@ -174,6 +194,15 @@ public:
     void setOnPvpEnd(std::function<void(const std::string& result)> callback);
     void setOnSpectateJoin(std::function<void(bool success, const std::string& attackerId, const std::string& defenderId, const std::string& mapData)> callback);
 
+    // 🆕 战斗状态回调
+    void setOnBattleStatusList(std::function<void(const std::string&)> callback);
+
+    // 🆕 部落战争增强回调
+    void setOnClanWarMemberList(std::function<void(const std::string&)> callback);
+    void setOnClanWarAttackStart(std::function<void(const std::string&, const std::string&, const std::string&)> callback);
+    void setOnClanWarSpectate(std::function<void(bool, const std::string&, const std::string&, const std::string&)> callback);
+    void setOnClanWarStateUpdate(std::function<void(const std::string&)> callback);
+
     void setOnMapReceived(std::function<void(const std::string&)> callback);
     void setOnDisconnected(std::function<void()> callback);
     // 在主线程中处理回调（需要在 update 中调用）
@@ -192,6 +221,8 @@ private:
     std::mutex _callbackMutex;
     std::queue<ReceivedPacket> _pendingPackets;
     // 回调函数
+    // 在 private 部分的回调函数存储中添加：
+    std::function<void(const std::string&)> _onBattleStatusList;
     std::function<void(bool)> _onConnected;
     std::function<void(bool, const std::string&)> _onLoginResult;
     std::function<void(const MatchInfo&)> _onMatchFound;
@@ -211,6 +242,12 @@ private:
     std::function<void(int, float, float)> _onPvpAction;
     std::function<void(const std::string&)> _onPvpEnd;
     std::function<void(bool, const std::string&, const std::string&, const std::string&)> _onSpectateJoin;
+    
+    // 🆕 部落战争增强回调存储
+    std::function<void(const std::string&)> _onClanWarMemberList;
+    std::function<void(const std::string&, const std::string&, const std::string&)> _onClanWarAttackStart;
+    std::function<void(bool, const std::string&, const std::string&, const std::string&)> _onClanWarSpectate;
+    std::function<void(const std::string&)> _onClanWarStateUpdate;
 
     std::function<void(const std::string&)> _onMapReceived;
     std::function<void()> _onDisconnected;

@@ -10,6 +10,15 @@
  ****************************************************************/
 USING_NS_CC;
 
+HUDLayer::~HUDLayer() {
+    // 清除回调，避免悬垂指针
+    ResourceManager::getInstance().setOnResourceChangeCallback(nullptr);
+    if (UpgradeManager::getInstance()) {
+        UpgradeManager::getInstance()->setOnAvailableBuilderChanged(nullptr);
+    }
+    CCLOG("🗑️ HUDLayer destroyed, callbacks cleared");
+}
+
 HUDLayer* HUDLayer::create() {
     HUDLayer* ret = new (std::nothrow) HUDLayer();
     if (ret && ret->init()) {

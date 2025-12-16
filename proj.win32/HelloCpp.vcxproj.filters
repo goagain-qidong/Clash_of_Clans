@@ -157,6 +157,9 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\UpgradeTimerUI.cpp">
       <Filter>Source Files\Classes\UI</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\PathFinder.cpp">
+      <Filter>Source Files\Classes\Unit</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\TrainingUI.cpp">
       <Filter>Source Files\Classes\Unit</Filter>
     </ClCompile>
@@ -328,6 +331,9 @@
       <Filter>Source Files\Classes\UI</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\CombatStats.h">
+      <Filter>Source Files\Classes\Unit</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\PathFinder.h">
       <Filter>Source Files\Classes\Unit</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\TrainingUI.h">
@@ -1008,6 +1014,9 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\clan_icon.png">
       <Filter>Resources\icon</Filter>
     </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\confirm_button.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\crystal.png">
       <Filter>Resources\icon</Filter>
     </ClInclude>
@@ -1015,6 +1024,12 @@
       <Filter>Resources\icon</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\end_battle_button.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\minus_button.png">
+      <Filter>Resources\icon</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\plus_button.png">
       <Filter>Resources\icon</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\ranking_icon.png">

@@ -173,861 +173,685 @@ SOCKET Server::findSocketByPlayerId(const std::string& playerId)
 
 void Server::handlePvpRequest(SOCKET clientSocket, const std::string& targetId)
 {
-    std::lock_guard<std::mutex> lock(pvpMutex);
+    std::string requesterId;
+    std::string targetMapData;
+    SOCKET targetSocket = INVALID_SOCKET;
     
-    // 🔴 修复：检查clientSocket是否存在于onlinePlayers中
-    if (onlinePlayers.find(clientSocket) == onlinePlayers.end())
+    // 第一步：获取必要数据（短时间持锁）
     {
-        std::cout << "[PVP] Error: clientSocket not found in onlinePlayers!" << std::endl;
-        return;
+        std::lock_guard<std::mutex> lock(dataMutex);
+        
+        auto requesterIt = onlinePlayers.find(clientSocket);
+        if (requesterIt == onlinePlayers.end())
+        {
+            std::cout << "[PVP] Requester not found" << std::endl;
+            sendPacket(clientSocket, PACKET_PVP_START, "FAIL|NOT_LOGGED_IN|");
+            return;
+        }
+        
+        requesterId = requesterIt->second.playerId;
+        
+        // 查找目标玩家
+        targetSocket = findSocketByPlayerId(targetId);
+        if (targetSocket == INVALID_SOCKET)
+        {
+            std::cout << "[PVP] Target player " << targetId << " not online" << std::endl;
+            sendPacket(clientSocket, PACKET_PVP_START, "FAIL|TARGET_OFFLINE|");
+            return;
+        }
+        
+        auto targetIt = onlinePlayers.find(targetSocket);
+        if (targetIt == onlinePlayers.end())
+        {
+            std::cout << "[PVP] Target context missing" << std::endl;
+            sendPacket(clientSocket, PACKET_PVP_START, "FAIL|NO_MAP|");
+            return;
+        }
+
+        // 优先使用在线玩家的缓存地图数据；若为空则从持久化存储中回退
+        if (!targetIt->second.mapData.empty())
+        {
+            targetMapData = targetIt->second.mapData;
+        }
+        else
+        {
+            auto savedIt = savedMaps.find(targetId);
+            if (savedIt != savedMaps.end() && !savedIt->second.empty())
+            {
+                targetMapData = savedIt->second;
+                targetIt->second.mapData = targetMapData; // 缓存，避免后续再次回退
+                std::cout << "[PVP] Target map loaded from savedMaps" << std::endl;
+            }
+            else
+            {
+                auto dbIt = playerDatabase.find(targetId);
+                if (dbIt != playerDatabase.end() && !dbIt->second.mapData.empty())
+                {
+                    targetMapData = dbIt->second.mapData;
+                    targetIt->second.mapData = targetMapData;
+                    std::cout << "[PVP] Target map loaded from playerDatabase" << std::endl;
+                }
+            }
+        }
+
+        if (targetMapData.empty())
+        {
+            std::cout << "[PVP] Target has no map data" << std::endl;
+            sendPacket(clientSocket, PACKET_PVP_START, "FAIL|NO_MAP|");
+            return;
+        }
     }
     
-    std::string attackerId = onlinePlayers[clientSocket].playerId;
-    
-    // 🔴 修复：检查attackerId是否有效
-    if (attackerId.empty())
+    // 第二步：检查和创建PVP会话（独立持锁）
     {
-        std::cout << "[PVP] Error: Attacker not logged in!" << std::endl;
-        sendPacket(clientSocket, PACKET_PVP_START, "FAIL|NOT_LOGGED_IN");
-        return;
+        std::lock_guard<std::mutex> pvpLock(pvpMutex);
+        
+        // 检查是否已经在PVP中
+        if (pvpSessions.find(requesterId) != pvpSessions.end() ||
+            pvpSessions.find(targetId) != pvpSessions.end())
+        {
+            sendPacket(clientSocket, PACKET_PVP_START, "FAIL|ALREADY_IN_BATTLE|");
+            return;
+        }
+        
+        // 创建PVP会话
+        PvpSession session;
+        session.attackerId = requesterId;
+        session.defenderId = targetId;
+        session.mapData = targetMapData;
+        session.isActive = true;
+        
+        pvpSessions[requesterId] = session;
+        
+        std::cout << "[PVP] Session created: " << requesterId << " vs " << targetId << std::endl;
     }
     
-    // 检查目标是否在线
-    SOCKET targetSocket = findSocketByPlayerId(targetId);
-    if (targetSocket == INVALID_SOCKET)
-    {
-        std::cout << "[PVP] Target " << targetId << " is offline" << std::endl;
-        sendPacket(clientSocket, PACKET_PVP_START, "FAIL|OFFLINE");
-        return;
-    }
+    // 第三步：发送通知（不需要持锁）
+    std::string attackerMsg = "ATTACK|" + targetId + "|" + targetMapData;
+    sendPacket(clientSocket, PACKET_PVP_START, attackerMsg);
     
-    // 检查是否已经在战斗中
-    if (pvpSessions.find(attackerId) != pvpSessions.end() || pvpSessions.find(targetId) != pvpSessions.end())
-    {
-        std::cout << "[PVP] One of the players is already in battle" << std::endl;
-        sendPacket(clientSocket, PACKET_PVP_START, "FAIL|BUSY");
-        return;
-    }
-    
-    // 获取目标地图数据
-    std::string mapData = "";
-    if (savedMaps.find(targetId) != savedMaps.end())
-    {
-        mapData = savedMaps[targetId];
-    }
-    else if (onlinePlayers.find(targetSocket) != onlinePlayers.end() && 
-             !onlinePlayers[targetSocket].mapData.empty())
-    {
-        mapData = onlinePlayers[targetSocket].mapData;
-    }
-    
-    if (mapData.empty())
-    {
-        std::cout << "[PVP] No map data for target " << targetId << std::endl;
-        sendPacket(clientSocket, PACKET_PVP_START, "FAIL|NO_MAP");
-        return;
-    }
-    
-    // 创建会话
-    PvpSession session;
-    session.attackerId = attackerId;
-    session.defenderId = targetId;
-    session.mapData = mapData;
-    pvpSessions[attackerId] = session;
-    
-    // 通知攻击者：开始攻击
-    sendPacket(clientSocket, PACKET_PVP_START, "ATTACK|" + targetId + "|" + mapData);
-    
-    // 通知防御者：被攻击
-    sendPacket(targetSocket, PACKET_PVP_START, "DEFEND|" + attackerId);
-    
-    std::cout << "[PVP] Started: " << attackerId << " vs " << targetId << std::endl;
+    std::string defenderMsg = "DEFEND|" + requesterId + "|";
+    sendPacket(targetSocket, PACKET_PVP_START, defenderMsg);
+
+    broadcastBattleStatusToAll();
 }
 
 void Server::handlePvpAction(SOCKET clientSocket, const std::string& actionData)
 {
-    std::lock_guard<std::mutex> lock(pvpMutex);
+    std::string playerId;
+    PvpSession sessionCopy;
+    bool foundSession = false;
     
-    // 🔴 修复：检查clientSocket是否存在
-    if (onlinePlayers.find(clientSocket) == onlinePlayers.end())
+    // 第一步：获取玩家ID和会话副本
     {
-        return;
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto it = onlinePlayers.find(clientSocket);
+        if (it == onlinePlayers.end()) return;
+        playerId = it->second.playerId;
     }
     
-    std::string senderId = onlinePlayers[clientSocket].playerId;
-    
-    if (senderId.empty() || pvpSessions.find(senderId) == pvpSessions.end())
+    // 第二步：查找PVP会话
     {
-        return;
+        std::lock_guard<std::mutex> pvpLock(pvpMutex);
+        auto sessionIt = pvpSessions.find(playerId);
+        if (sessionIt == pvpSessions.end()) return;
+        sessionCopy = sessionIt->second;
+        foundSession = true;
     }
     
-    const auto& session = pvpSessions[senderId];
+    if (!foundSession) return;
     
-    // 转发给防御者
-    SOCKET defenderSocket = findSocketByPlayerId(session.defenderId);
-    if (defenderSocket != INVALID_SOCKET)
+    // 第三步：广播操作（使用会话副本，不需要持锁）
     {
-        sendPacket(defenderSocket, PACKET_PVP_ACTION, actionData);
-    }
-    
-    // 转发给观战者
-    for (const auto& spectatorId : session.spectatorIds)
-    {
-        SOCKET specSocket = findSocketByPlayerId(spectatorId);
-        if (specSocket != INVALID_SOCKET)
+        std::lock_guard<std::mutex> lock(dataMutex);
+        
+        SOCKET defenderSocket = findSocketByPlayerId(sessionCopy.defenderId);
+        if (defenderSocket != INVALID_SOCKET)
         {
-            sendPacket(specSocket, PACKET_PVP_ACTION, actionData);
+            sendPacket(defenderSocket, PACKET_PVP_ACTION, actionData);
+        }
+        
+        for (const auto& spectatorId : sessionCopy.spectatorIds)
+        {
+            SOCKET spectatorSocket = findSocketByPlayerId(spectatorId);
+            if (spectatorSocket != INVALID_SOCKET)
+            {
+                sendPacket(spectatorSocket, PACKET_PVP_ACTION, actionData);
+            }
         }
     }
 }
 
 void Server::handleSpectateRequest(SOCKET clientSocket, const std::string& targetId)
 {
-    std::lock_guard<std::mutex> lock(pvpMutex);
+    std::string spectatorId;
+    PvpSession* foundSession = nullptr;
+    std::string attackerId, defenderId, mapData;
     
-    // 🔴 修复：检查clientSocket是否存在
-    if (onlinePlayers.find(clientSocket) == onlinePlayers.end())
+    // 第一步：获取观战者ID
     {
-        sendPacket(clientSocket, PACKET_SPECTATE_JOIN, "FAIL|NOT_LOGGED_IN");
-        return;
-    }
-    
-    std::string spectatorId = onlinePlayers[clientSocket].playerId;
-    
-    if (spectatorId.empty())
-    {
-        sendPacket(clientSocket, PACKET_SPECTATE_JOIN, "FAIL|NOT_LOGGED_IN");
-        return;
-    }
-    
-    // 查找目标所在的会话
-    std::string sessionKey = "";
-    for (const auto& pair : pvpSessions)
-    {
-        if (pair.second.attackerId == targetId || pair.second.defenderId == targetId)
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto requesterIt = onlinePlayers.find(clientSocket);
+        if (requesterIt == onlinePlayers.end())
         {
-            sessionKey = pair.first;
-            break;
+            sendPacket(clientSocket, PACKET_SPECTATE_JOIN, "0|||");
+            return;
+        }
+        spectatorId = requesterIt->second.playerId;
+    }
+    
+    // 第二步：查找目标的PVP会话并添加观战者
+    {
+        std::lock_guard<std::mutex> pvpLock(pvpMutex);
+        
+        for (auto& pair : pvpSessions)
+        {
+            if (pair.second.attackerId == targetId || pair.second.defenderId == targetId)
+            {
+                foundSession = &pair.second;
+                attackerId = pair.second.attackerId;
+                defenderId = pair.second.defenderId;
+                mapData = pair.second.mapData;
+                
+                if (foundSession->isActive)
+                {
+                    foundSession->spectatorIds.push_back(spectatorId);
+                }
+                break;
+            }
         }
     }
     
-    if (sessionKey.empty())
+    if (!foundSession || mapData.empty())
     {
-        sendPacket(clientSocket, PACKET_SPECTATE_JOIN, "FAIL|NO_BATTLE");
+        sendPacket(clientSocket, PACKET_SPECTATE_JOIN, "0|||");
         return;
     }
     
-    auto& session = pvpSessions[sessionKey];
-    session.spectatorIds.push_back(spectatorId);
+    std::cout << "[Spectate] " << spectatorId << " watching " << attackerId << " vs " << defenderId << std::endl;
     
-    // 通知观战者加入成功，发送地图数据
-    sendPacket(clientSocket, PACKET_SPECTATE_JOIN, "SPECTATE|" + session.attackerId + "|" + session.defenderId + "|" + session.mapData);
-    
-    std::cout << "[PVP] " << spectatorId << " is spectating " << session.attackerId << " vs " << session.defenderId << std::endl;
+    std::string response = "1|" + attackerId + "|" + defenderId + "|" + mapData;
+    sendPacket(clientSocket, PACKET_SPECTATE_JOIN, response);
 }
 
 void Server::endPvpSession(const std::string& attackerId)
 {
-    std::lock_guard<std::mutex> lock(pvpMutex);
+    PvpSession sessionCopy;
+    bool foundSession = false;
     
-    if (pvpSessions.find(attackerId) != pvpSessions.end())
+    // 第一步：获取会话副本并删除
     {
-        const auto& session = pvpSessions[attackerId];
+        std::lock_guard<std::mutex> pvpLock(pvpMutex);
+        auto it = pvpSessions.find(attackerId);
+        if (it == pvpSessions.end()) return;
         
-        // 通知防御者结束
-        SOCKET defenderSocket = findSocketByPlayerId(session.defenderId);
+        sessionCopy = it->second;
+        foundSession = true;
+        pvpSessions.erase(it);
+        
+        std::cout << "[PVP] Session ended: " << attackerId << std::endl;
+    }
+    
+    if (!foundSession) return;
+    
+    // 第二步：通知相关玩家（使用副本数据）
+    {
+        std::lock_guard<std::mutex> dataLock(dataMutex);
+        
+        SOCKET defenderSocket = findSocketByPlayerId(sessionCopy.defenderId);
         if (defenderSocket != INVALID_SOCKET)
         {
-            sendPacket(defenderSocket, PACKET_PVP_END, "FINISHED");
+            sendPacket(defenderSocket, PACKET_PVP_END, "BATTLE_ENDED");
         }
         
-        // 通知观战者结束
-        for (const auto& spectatorId : session.spectatorIds)
+        for (const auto& spectatorId : sessionCopy.spectatorIds)
         {
-            SOCKET specSocket = findSocketByPlayerId(spectatorId);
-            if (specSocket != INVALID_SOCKET)
+            SOCKET spectatorSocket = findSocketByPlayerId(spectatorId);
+            if (spectatorSocket != INVALID_SOCKET)
             {
-                sendPacket(specSocket, PACKET_PVP_END, "FINISHED");
+                sendPacket(spectatorSocket, PACKET_PVP_END, "BATTLE_ENDED");
             }
         }
-        
-        std::cout << "[PVP] Ended: " << attackerId << " vs " << session.defenderId << std::endl;
-        
-        pvpSessions.erase(attackerId);
     }
+    broadcastBattleStatusToAll();
 }
 
-// ==================== 辅助函数 ====================
-
-// 🆕 获取用户列表JSON
-std::string Server::getUserListJson(const std::string& requesterId)
+ClanWarSession* Server::getClanWarSession(const std::string& warId)
 {
-    // 🔴 修复：需要先获取dataMutex锁再读取onlinePlayers
-    // 不能在这里锁dataMutex，因为调用者已经锁了
-    // std::lock_guard<std::mutex> lock(dataMutex);  // 移除这行
-    
-    std::ostringstream oss;
-    bool first = true;
-    int count = 0;
+    std::lock_guard<std::mutex> lock(clanWarSessionMutex);
+    auto it = clanWarSessions.find(warId);
+    return it != clanWarSessions.end() ? &it->second : nullptr;
+}
 
-    std::cout << "[UserList] Generating list for: " << requesterId << ". Total online: " << onlinePlayers.size() << std::endl;
+void Server::initClanWarMembers(ClanWarSession& session)
+{
+    // 注意：此函数在调用时，调用者应该已经持有 clanWarSessionMutex
+    // 但需要获取 clanMutex 和 dataMutex 来访问部落成员和玩家数据
     
-    for (const auto& pair : onlinePlayers)
+    std::lock_guard<std::mutex> clanLock(clanMutex);
+    std::lock_guard<std::mutex> dataLock(dataMutex);
+    
+    // 初始化clan1成员
+    auto clan1It = clans.find(session.clan1Id);
+    if (clan1It != clans.end())
     {
-        const auto& player = pair.second;
-        
-        // 排除请求者自己
-        if (player.playerId == requesterId)
+        for (const auto& memberId : clan1It->second.memberIds)
         {
-            continue;
-        }
-
-        if (player.playerId.empty())
-        {
-            // 忽略未登录的连接
-            continue;
-        }
-        
-        if (!first)
-        {
-            oss << "|";
-        }
-        first = false;
-        
-        // 格式: userId,username,thLevel,gold,elixir
-        oss << player.playerId << ","
-            << player.playerName << ","
-            << "1" << ","  // 大本营等级（TODO: 从地图数据解析）
-            << player.gold << ","
-            << player.elixir;
+            ClanWarMember member;
+            member.memberId = memberId;
             
-        count++;
+            // 从在线玩家或数据库获取地图数据
+            SOCKET memberSocket = findSocketByPlayerId(memberId);
+            if (memberSocket != INVALID_SOCKET)
+            {
+                auto playerIt = onlinePlayers.find(memberSocket);
+                if (playerIt != onlinePlayers.end())
+                {
+                    member.memberName = playerIt->second.playerName;
+                    member.mapData = playerIt->second.mapData;
+                }
+            }
+            else if (playerDatabase.find(memberId) != playerDatabase.end())
+            {
+                member.memberName = playerDatabase[memberId].playerName;
+                member.mapData = playerDatabase[memberId].mapData;
+            }
+            
+            session.clan1Members.push_back(member);
+        }
     }
-
-    std::cout << "[UserList] Found " << count << " other players." << std::endl;
     
-    return oss.str();
-}
-
-std::string Server::generateClanId()
-
-{
-    static std::random_device rd;
-
-    static std::mt19937 gen(rd());
-
-    static std::uniform_int_distribution<> dis(100000, 999999);
-
-    return "CLAN_" + std::to_string(dis(gen));
-}
-
-std::string Server::generateWarId()
-
-{
-    static std::random_device rd;
-
-    static std::mt19937 gen(rd());
-
-    static std::uniform_int_distribution<> dis(100000, 999999);
-
-    return "WAR_" + std::to_string(dis(gen));
-}
-
-// ==================== 匹配系统 ====================
-
-void Server::addToMatchQueue(SOCKET socket)
-
-{
-    std::lock_guard<std::mutex> lock(matchQueueMutex);
-
-    auto& player = onlinePlayers[socket];
-
-    player.isSearchingMatch = true;
-
-    player.matchStartTime = std::chrono::steady_clock::now();
-
-    MatchQueueEntry entry;
-
-    entry.socket = socket;
-
-    entry.playerId = player.playerId;
-
-    entry.trophies = player.trophies;
-
-    entry.queueTime = std::chrono::steady_clock::now();
-
-    matchQueue.push_back(entry);
-
-    std::cout << "[Match] Player " << player.playerId << " joined queue (Trophies: " << player.trophies << ")"
-
-              << std::endl;
-
-    // 尝试立即匹配
-
-    processMatchQueue();
-}
-
-void Server::removeFromMatchQueue(SOCKET socket)
-
-{
-    std::lock_guard<std::mutex> lock(matchQueueMutex);
-
-    matchQueue.erase(std::remove_if(matchQueue.begin(), matchQueue.end(),
-
-                                    [socket](const MatchQueueEntry& e) { return e.socket == socket; }),
-
-                     matchQueue.end());
-
-    if (onlinePlayers.find(socket) != onlinePlayers.end())
-
+    // 初始化clan2成员
+    auto clan2It = clans.find(session.clan2Id);
+    if (clan2It != clans.end())
     {
-        onlinePlayers[socket].isSearchingMatch = false;
-    }
-}
-
-void Server::processMatchQueue()
-
-{
-    if (matchQueue.size() < 2)
-
-        return;
-
-    // 按奖杯数排序
-
-    std::sort(matchQueue.begin(), matchQueue.end(),
-
-              [](const MatchQueueEntry& a, const MatchQueueEntry& b) { return a.trophies < b.trophies; });
-
-    std::vector<std::pair<size_t, size_t>> matchedPairs;
-
-    // 寻找匹配对（奖杯差距在200以内）
-
-    for (size_t i = 0; i < matchQueue.size(); ++i)
-
-    {
-        for (size_t j = i + 1; j < matchQueue.size(); ++j)
-
+        for (const auto& memberId : clan2It->second.memberIds)
         {
-            int diff = std::abs(matchQueue[i].trophies - matchQueue[j].trophies);
-
-            // 等待时间越长，匹配范围越宽
-
-            auto now = std::chrono::steady_clock::now();
-
-            auto waitTime = std::chrono::duration_cast<std::chrono::seconds>(now - matchQueue[i].queueTime).count();
-
-            int maxDiff = 200 + static_cast<int>(waitTime * 10);  // 每秒增加10奖杯范围
-
-            if (diff <= maxDiff)
-
+            ClanWarMember member;
+            member.memberId = memberId;
+            
+            SOCKET memberSocket = findSocketByPlayerId(memberId);
+            if (memberSocket != INVALID_SOCKET)
             {
-                matchedPairs.push_back({i, j});
-
-                break;
+                auto playerIt = onlinePlayers.find(memberSocket);
+                if (playerIt != onlinePlayers.end())
+                {
+                    member.memberName = playerIt->second.playerName;
+                    member.mapData = playerIt->second.mapData;
+                }
             }
-        }
-    }
-
-    // 处理匹配成功的玩家
-
-    for (const auto& pair : matchedPairs)
-
-    {
-        auto& player1 = matchQueue[pair.first];
-
-        auto& player2 = matchQueue[pair.second];
-
-        // 发送匹配成功消息
-
-        std::string matchData1 = player2.playerId + "|" + std::to_string(player2.trophies);
-
-        std::string matchData2 = player1.playerId + "|" + std::to_string(player1.trophies);
-
-        sendPacket(player1.socket, PACKET_MATCH_FOUND, matchData1);
-
-        sendPacket(player2.socket, PACKET_MATCH_FOUND, matchData2);
-
-        std::cout << "[Match] Matched: " << player1.playerId << " vs " << player2.playerId << std::endl;
-
-        // 更新玩家状态
-
-        if (onlinePlayers.find(player1.socket) != onlinePlayers.end())
-
-        {
-            onlinePlayers[player1.socket].isSearchingMatch = false;
-        }
-
-        if (onlinePlayers.find(player2.socket) != onlinePlayers.end())
-
-        {
-            onlinePlayers[player2.socket].isSearchingMatch = false;
-        }
-    }
-
-    // 从队列中移除已匹配的玩家
-
-    std::vector<MatchQueueEntry> newQueue;
-
-    for (size_t i = 0; i < matchQueue.size(); ++i)
-
-    {
-        bool matched = false;
-
-        for (const auto& pair : matchedPairs)
-
-        {
-            if (i == pair.first || i == pair.second)
-
+            else if (playerDatabase.find(memberId) != playerDatabase.end())
             {
-                matched = true;
-
-                break;
+                member.memberName = playerDatabase[memberId].playerName;
+                member.mapData = playerDatabase[memberId].mapData;
             }
+            
+            session.clan2Members.push_back(member);
         }
+    }
+}
 
-        if (!matched)
-
+std::string Server::getClanWarMemberListJson(const std::string& warId, const std::string& requesterId)
+{
+    // 先获取战争会话的副本（避免长时间持锁）
+    ClanWarSession sessionCopy;
+    bool foundSession = false;
+    
+    {
+        std::lock_guard<std::mutex> lock(clanWarSessionMutex);
+        
+        auto sessionIt = clanWarSessions.find(warId);
+        if (sessionIt == clanWarSessions.end())
         {
-            newQueue.push_back(matchQueue[i]);
+            return "{\"error\":\"War not found\"}";
         }
+        
+        sessionCopy = sessionIt->second;
+        foundSession = true;
     }
-
-    matchQueue = std::move(newQueue);
-}
-
-// ==================== 部落系统 ====================
-
-bool Server::createClan(const std::string& playerId, const std::string& clanName)
-
-{
-    std::lock_guard<std::mutex> lock(clanMutex);
-
-    // 检查玩家是否已在部落中
-
-    SOCKET socket = findSocketByPlayerId(playerId);
-
-    if (socket != INVALID_SOCKET && !onlinePlayers[socket].clanId.empty())
-
+    
+    if (!foundSession)
     {
-        return false;
+        return "{\"error\":\"War not found\"}";
     }
-
-    ClanInfo clan;
-
-    clan.clanId = generateClanId();
-
-    clan.clanName = clanName;
-
-    clan.leaderId = playerId;
-
-    clan.memberIds.push_back(playerId);
-
-    clan.clanTrophies = 0;
-
-    clans[clan.clanId] = clan;
-
-    // 更新玩家的部落ID
-
-    if (socket != INVALID_SOCKET)
-
+    
+    // 判断请求者属于哪个部落
+    bool isInClan1 = false;
     {
-        onlinePlayers[socket].clanId = clan.clanId;
-    }
-
-    std::cout << "[Clan] Created: " << clanName << " (ID: " << clan.clanId << ") by " << playerId << std::endl;
-
-    return true;
-}
-
-bool Server::joinClan(const std::string& playerId, const std::string& clanId)
-
-{
-    std::lock_guard<std::mutex> lock(clanMutex);
-
-    if (clans.find(clanId) == clans.end())
-
-    {
-        return false;
-    }
-
-    SOCKET socket = findSocketByPlayerId(playerId);
-
-    if (socket == INVALID_SOCKET)
-
-    {
-        return false;
-    }
-
-    // 检查是否已在部落中
-
-    if (!onlinePlayers[socket].clanId.empty())
-
-    {
-        return false;
-    }
-
-    // 检查奖杯要求
-
-    auto& clan = clans[clanId];
-
-    if (onlinePlayers[socket].trophies < clan.requiredTrophies)
-
-    {
-        return false;
-    }
-
-    clan.memberIds.push_back(playerId);
-
-    onlinePlayers[socket].clanId = clanId;
-
-    // 更新部落总奖杯
-
-    clan.clanTrophies += onlinePlayers[socket].trophies;
-
-    std::cout << "[Clan] " << playerId << " joined " << clan.clanName << std::endl;
-
-    return true;
-}
-
-bool Server::leaveClan(const std::string& playerId)
-
-{
-    std::lock_guard<std::mutex> lock(clanMutex);
-
-    SOCKET socket = findSocketByPlayerId(playerId);
-
-    if (socket == INVALID_SOCKET)
-
-    {
-        return false;
-    }
-
-    std::string clanId = onlinePlayers[socket].clanId;
-
-    if (clanId.empty())
-
-    {
-        return false;
-    }
-
-    auto& clan = clans[clanId];
-
-    // 从成员列表中移除
-
-    clan.memberIds.erase(std::remove(clan.memberIds.begin(), clan.memberIds.end(), playerId), clan.memberIds.end());
-
-    // 更新部落总奖杯
-
-    clan.clanTrophies -= onlinePlayers[socket].trophies;
-
-    // 如果是首领且还有其他成员，转让首领
-
-    if (clan.leaderId == playerId && !clan.memberIds.empty())
-
-    {
-        clan.leaderId = clan.memberIds[0];
-    }
-
-    // 如果部落没有成员了，删除部落
-
-    if (clan.memberIds.empty())
-
-    {
-        clans.erase(clanId);
-
-        std::cout << "[Clan] Dissolved: " << clanId << std::endl;
-    }
-
-    onlinePlayers[socket].clanId = "";
-
-    std::cout << "[Clan] " << playerId << " left clan " << clanId << std::endl;
-
-    return true;
-}
-
-std::string Server::getClanListJson()
-
-{
-    std::lock_guard<std::mutex> lock(clanMutex);
-
-    std::ostringstream oss;
-
-    oss << "[";
-
-    bool first = true;
-
-    for (const auto& pair : clans)
-
-    {
-        if (!first)
-
-            oss << ",";
-
-        first = false;
-
-        const auto& clan = pair.second;
-
-        oss << "{\"id\":\"" << clan.clanId << "\""
-
-            << ",\"name\":\"" << clan.clanName << "\""
-
-            << ",\"members\":" << clan.memberIds.size() << ",\"trophies\":" << clan.clanTrophies
-
-            << ",\"required\":" << clan.requiredTrophies << ",\"open\":" << (clan.isOpen ? "true" : "false") << "}";
-    }
-
-    oss << "]";
-
-    return oss.str();
-}
-
-std::string Server::getClanMembersJson(const std::string& clanId)
-
-{
-    std::lock_guard<std::mutex> lock(clanMutex);
-
-    if (clans.find(clanId) == clans.end())
-
-    {
-        return "[]";
-    }
-
-    const auto& clan = clans[clanId];
-
-    std::ostringstream oss;
-
-    oss << "{\"clanId\":\"" << clan.clanId << "\""
-
-        << ",\"name\":\"" << clan.clanName << "\""
-
-        << ",\"leader\":\"" << clan.leaderId << "\""
-
-        << ",\"members\":[";
-
-    bool first = true;
-
-    for (const auto& memberId : clan.memberIds)
-
-    {
-        if (!first)
-
-            oss << ",";
-
-        first = false;
-
-        SOCKET socket = findSocketByPlayerId(memberId);
-
-        int trophies = 0;
-
-        std::string name = memberId;
-
-        if (socket != INVALID_SOCKET)
-
+        std::lock_guard<std::mutex> clanLock(clanMutex);
+        auto clan1It = clans.find(sessionCopy.clan1Id);
+        if (clan1It != clans.end())
         {
-            trophies = onlinePlayers[socket].trophies;
-
-            name = onlinePlayers[socket].playerName;
+            auto& members = clan1It->second.memberIds;
+            isInClan1 = std::find(members.begin(), members.end(), requesterId) != members.end();
         }
-
-        oss << "{\"id\":\"" << memberId << "\""
-
-            << ",\"name\":\"" << name << "\""
-
-            << ",\"trophies\":" << trophies << ",\"online\":" << (socket != INVALID_SOCKET ? "true" : "false") << "}";
     }
-
+    
+    // 构建JSON（返回敌方成员列表）
+    std::ostringstream oss;
+    oss << "{";
+    oss << "\"warId\":\"" << warId << "\",";
+    oss << "\"clan1TotalStars\":" << sessionCopy.clan1TotalStars << ",";
+    oss << "\"clan2TotalStars\":" << sessionCopy.clan2TotalStars << ",";
+    oss << "\"enemyMembers\":[";
+    
+    const auto& enemyMembers = isInClan1 ? sessionCopy.clan2Members : sessionCopy.clan1Members;
+    bool first = true;
+    for (const auto& member : enemyMembers)
+    {
+        if (!first) oss << ",";
+        first = false;
+        
+        oss << "{";
+        oss << "\"id\":\"" << member.memberId << "\",";
+        oss << "\"name\":\"" << member.memberName << "\",";
+        oss << "\"bestStars\":" << member.bestStars << ",";
+        oss << "\"bestDestruction\":" << member.bestDestructionRate << ",";
+        oss << "\"canAttack\":" << (!member.mapData.empty() ? "true" : "false");
+        oss << "}";
+    }
+    
     oss << "]}";
-
     return oss.str();
 }
 
-// ==================== 部落战争 ====================
-
-void Server::addToClanWarQueue(const std::string& clanId)
-
+void Server::handleClanWarAttackStart(SOCKET clientSocket, const std::string& warId, const std::string& targetId)
 {
-    std::lock_guard<std::mutex> lock(warMutex);
-
-    // 检查部落是否存在且未在战争中
-
-    if (clans.find(clanId) == clans.end())
-
-        return;
-
-    for (const auto& war : activeWars)
-
+    std::string attackerId;
+    std::string targetMapData;
+    std::string targetIdCopy = targetId;
+    
+    // 第一步：从dataMutex获取攻击者信息
     {
-        if (war.second.clan1Id == clanId || war.second.clan2Id == clanId)
-
+        std::lock_guard<std::mutex> dataLock(dataMutex);
+        auto attackerIt = onlinePlayers.find(clientSocket);
+        if (attackerIt == onlinePlayers.end())
         {
-            return;  // 已在战争中
-        }
-    }
-
-    // 检查是否已在队列中
-
-    if (std::find(clanWarQueue.begin(), clanWarQueue.end(), clanId) != clanWarQueue.end())
-
-    {
-        return;
-    }
-
-    clanWarQueue.push_back(clanId);
-
-    std::cout << "[ClanWar] Clan " << clanId << " searching for war..." << std::endl;
-
-    processClanWarQueue();
-}
-
-void Server::processClanWarQueue()
-
-{
-    if (clanWarQueue.size() < 2)
-
-        return;
-
-    // 按部落总奖杯排序
-
-    std::sort(clanWarQueue.begin(), clanWarQueue.end(), [this](const std::string& a, const std::string& b) {
-        return clans[a].clanTrophies < clans[b].clanTrophies;
-    });
-
-    // 匹配奖杯相近的部落
-
-    for (size_t i = 0; i < clanWarQueue.size() - 1; ++i)
-
-    {
-        int diff = std::abs(clans[clanWarQueue[i]].clanTrophies - clans[clanWarQueue[i + 1]].clanTrophies);
-
-        if (diff <= 500)
-
-        {  // 部落战奖杯差距500以内
-
-            startClanWar(clanWarQueue[i], clanWarQueue[i + 1]);
-
-            // 从队列中移除
-
-            clanWarQueue.erase(clanWarQueue.begin() + i + 1);
-
-            clanWarQueue.erase(clanWarQueue.begin() + i);
-
+            sendPacket(clientSocket, PACKET_CLAN_WAR_ATTACK_START, "FAIL|NOT_LOGGED_IN|");
             return;
         }
+        attackerId = attackerIt->second.playerId;
     }
-}
-
-void Server::startClanWar(const std::string& clan1Id, const std::string& clan2Id)
-
-{
-    ClanWarInfo war;
-
-    war.warId = generateWarId();
-
-    war.clan1Id = clan1Id;
-
-    war.clan2Id = clan2Id;
-
-    war.startTime = std::chrono::steady_clock::now();
-
-    war.endTime = war.startTime + std::chrono::hours(24);  // 24小时战争
-
-    war.isActive = true;
-
-    activeWars[war.warId] = war;
-
-    // 通知两个部落的所有在线成员
-
-    std::string warData = war.warId + "|" + clan1Id + "|" + clan2Id;
-
-    auto notifyClan = [this, &warData](const std::string& clanId) {
-        if (clans.find(clanId) != clans.end())
-
-        {
-            for (const auto& memberId : clans[clanId].memberIds)
-
-            {
-                SOCKET socket = findSocketByPlayerId(memberId);
-
-                if (socket != INVALID_SOCKET)
-
-                {
-                    sendPacket(socket, PACKET_CLAN_WAR_MATCH, warData);
-                }
-            }
-        }
-    };
-
-    notifyClan(clan1Id);
-
-    notifyClan(clan2Id);
-
-    std::cout << "[ClanWar] Started: " << clans[clan1Id].clanName << " vs " << clans[clan2Id].clanName << std::endl;
-}
-
-void Server::processClanWarAttack(const std::string& warId, const AttackResult& result)
-
-{
-    std::lock_guard<std::mutex> lock(warMutex);
-
-    if (activeWars.find(warId) == activeWars.end())
-
-        return;
-
-    auto& war = activeWars[warId];
-
-    war.attacks.push_back(result);
-
-    // 更新星星数
-
-    SOCKET attackerSocket = findSocketByPlayerId(result.attackerId);
-
-    if (attackerSocket != INVALID_SOCKET)
-
+    
+    // 第二步：从clanWarSessionMutex获取战争会话和目标地图数据
     {
-        std::string attackerClanId = onlinePlayers[attackerSocket].clanId;
-
-        if (attackerClanId == war.clan1Id)
-
+        std::lock_guard<std::mutex> sessionLock(clanWarSessionMutex);
+        
+        auto sessionIt = clanWarSessions.find(warId);
+        if (sessionIt == clanWarSessions.end())
         {
-            war.clan1Stars += result.starsEarned;
+            sendPacket(clientSocket, PACKET_CLAN_WAR_ATTACK_START, "FAIL|WAR_NOT_FOUND|");
+            return;
         }
-
-        else if (attackerClanId == war.clan2Id)
-
+        
+        ClanWarSession& session = sessionIt->second;
+        
+        // 查找目标成员的地图数据
+        ClanWarMember* targetMember = nullptr;
+        for (auto& member : session.clan1Members)
         {
-            war.clan2Stars += result.starsEarned;
-        }
-    }
-
-    // 广播战争状态更新
-
-    std::ostringstream oss;
-
-    oss << war.warId << "|" << war.clan1Stars << "|" << war.clan2Stars;
-
-    std::string statusData = oss.str();
-
-    auto broadcastToClan = [this, &statusData](const std::string& clanId) {
-        if (clans.find(clanId) != clans.end())
-
-        {
-            for (const auto& memberId : clans[clanId].memberIds)
-
+            if (member.memberId == targetId)
             {
-                SOCKET socket = findSocketByPlayerId(memberId);
-
-                if (socket != INVALID_SOCKET)
-
+                targetMember = &member;
+                break;
+            }
+        }
+        if (!targetMember)
+        {
+            for (auto& member : session.clan2Members)
+            {
+                if (member.memberId == targetId)
                 {
-                    sendPacket(socket, PACKET_CLAN_WAR_STATUS, statusData);
+                    targetMember = &member;
+                    break;
                 }
             }
         }
-    };
+        
+        if (!targetMember || targetMember->mapData.empty())
+        {
+            sendPacket(clientSocket, PACKET_CLAN_WAR_ATTACK_START, "FAIL|NO_MAP_DATA|");
+            return;
+        }
+        
+        targetMapData = targetMember->mapData;
+        
+        // 创建战斗会话（在同一个锁范围内）
+        PvpSession pvpSession;
+        pvpSession.attackerId = attackerId;
+        pvpSession.defenderId = targetId;
+        pvpSession.mapData = targetMapData;
+        pvpSession.isActive = true;
+        
+        session.activeBattles[attackerId] = pvpSession;
+    }
+    
+    std::cout << "[ClanWar] Attack started: " << attackerId << " -> " << targetId << " in " << warId << std::endl;
+    
+    // 第三步：发送响应（不需要持锁）
+    std::string response = "ATTACK|" + targetId + "|" + targetMapData;
+    sendPacket(clientSocket, PACKET_CLAN_WAR_ATTACK_START, response);
+}
 
-    broadcastToClan(war.clan1Id);
+void Server::handleClanWarAttackEnd(const std::string& warId, const AttackRecord& record)
+{
+    std::string defenderId;
+    bool isAttackerInClan1 = false;
+    bool needBroadcast = false;
+    
+    // 第一步：在战争会话中更新数据
+    {
+        std::lock_guard<std::mutex> sessionLock(clanWarSessionMutex);
+        
+        auto sessionIt = clanWarSessions.find(warId);
+        if (sessionIt == clanWarSessions.end()) return;
+        
+        ClanWarSession& session = sessionIt->second;
+        
+        // 从activeBattles中获取defenderId
+        auto battleIt = session.activeBattles.find(record.attackerId);
+        if (battleIt == session.activeBattles.end())
+        {
+            std::cout << "[ClanWar] Error: No active battle found for attacker " << record.attackerId << std::endl;
+            return;
+        }
+        
+        defenderId = battleIt->second.defenderId;
+        
+        // 检查攻击者所属部落（需要在clanMutex内）
+        {
+            std::lock_guard<std::mutex> clanLock(clanMutex);
+            auto clan1It = clans.find(session.clan1Id);
+            if (clan1It != clans.end())
+            {
+                auto& members = clan1It->second.memberIds;
+                isAttackerInClan1 = std::find(members.begin(), members.end(), record.attackerId) != members.end();
+            }
+        }
+        
+        // 目标在敌方部落，找到目标成员
+        auto& targetMembers = isAttackerInClan1 ? session.clan2Members : session.clan1Members;
+        
+        ClanWarMember* targetMember = nullptr;
+        for (auto& member : targetMembers)
+        {
+            if (member.memberId == defenderId)
+            {
+                targetMember = &member;
+                break;
+            }
+        }
+        
+        if (!targetMember)
+        {
+            std::cout << "[ClanWar] Error: Target member " << defenderId << " not found" << std::endl;
+            session.activeBattles.erase(record.attackerId);
+            return;
+        }
+        
+        // 更新目标成员的被攻击记录
+        targetMember->attacksReceived.push_back(record);
+        
+        // 更新最佳战绩
+        if (record.starsEarned > targetMember->bestStars ||
+            (record.starsEarned == targetMember->bestStars && record.destructionRate > targetMember->bestDestructionRate))
+        {
+            targetMember->bestStars = record.starsEarned;
+            targetMember->bestDestructionRate = record.destructionRate;
+        }
+        
+        // 更新部落总星数
+        if (isAttackerInClan1)
+        {
+            session.clan1TotalStars += record.starsEarned;
+        }
+        else
+        {
+            session.clan2TotalStars += record.starsEarned;
+        }
+        
+        std::cout << "[ClanWar] Attack ended: " << record.attackerId << " -> " << defenderId
+                  << " earned " << record.starsEarned << " stars ("
+                  << (record.destructionRate * 100) << "% destruction)" << std::endl;
+        
+        // 移除战斗会话
+        session.activeBattles.erase(record.attackerId);
+        needBroadcast = true;
+    }
+    
+    // 第二步：广播状态更新（在释放sessionLock后调用）
+    if (needBroadcast)
+    {
+        broadcastClanWarStateUpdate(warId);
+    }
+}
 
-    broadcastToClan(war.clan2Id);
+void Server::handleClanWarSpectate(SOCKET clientSocket, const std::string& warId, const std::string& targetId)
+{
+    std::string spectatorId;
+    std::string attackerId, defenderId, mapData;
+    bool found = false;
+    
+    // 第一步：获取观战者信息
+    {
+        std::lock_guard<std::mutex> dataLock(dataMutex);
+        auto spectatorIt = onlinePlayers.find(clientSocket);
+        if (spectatorIt == onlinePlayers.end())
+        {
+            sendPacket(clientSocket, PACKET_CLAN_WAR_SPECTATE, "0|||");
+            return;
+        }
+        spectatorId = spectatorIt->second.playerId;
+    }
+    
+    // 第二步：在战争会话中查找战斗并添加观战者
+    {
+        std::lock_guard<std::mutex> sessionLock(clanWarSessionMutex);
+        
+        auto sessionIt = clanWarSessions.find(warId);
+        if (sessionIt == clanWarSessions.end())
+        {
+            sendPacket(clientSocket, PACKET_CLAN_WAR_SPECTATE, "0|||");
+            return;
+        }
+        
+        ClanWarSession& session = sessionIt->second;
+        
+        // 查找目标的战斗会话
+        for (auto& pair : session.activeBattles)
+        {
+            if (pair.second.attackerId == targetId || pair.second.defenderId == targetId)
+            {
+                attackerId = pair.second.attackerId;
+                defenderId = pair.second.defenderId;
+                mapData = pair.second.mapData;
+                
+                // 添加观战者
+                pair.second.spectatorIds.push_back(spectatorId);
+                found = true;
+                break;
+            }
+        }
+    }
+    
+    if (!found || mapData.empty())
+    {
+        sendPacket(clientSocket, PACKET_CLAN_WAR_SPECTATE, "0|||");
+        return;
+    }
+    
+    std::cout << "[ClanWar] Spectator " << spectatorId 
+              << " watching " << attackerId << " vs " << defenderId << std::endl;
+    
+    // 发送响应
+    std::string response = "1|" + attackerId + "|" + defenderId + "|" + mapData;
+    sendPacket(clientSocket, PACKET_CLAN_WAR_SPECTATE, response);
+}
+
+void Server::broadcastClanWarStateUpdate(const std::string& warId)
+{
+    std::string stateJson;
+    std::vector<std::string> clan1MemberIds;
+    std::vector<std::string> clan2MemberIds;
+    std::string clan1Id, clan2Id;
+    
+    // 第一步：获取会话状态
+    {
+        std::lock_guard<std::mutex> sessionLock(clanWarSessionMutex);
+        
+        auto sessionIt = clanWarSessions.find(warId);
+        if (sessionIt == clanWarSessions.end()) return;
+        
+        const ClanWarSession& session = sessionIt->second;
+        clan1Id = session.clan1Id;
+        clan2Id = session.clan2Id;
+        
+        // 构建状态JSON
+        std::ostringstream oss;
+        oss << "{";
+        oss << "\"warId\":\"" << warId << "\",";
+        oss << "\"clan1Stars\":" << session.clan1TotalStars << ",";
+        oss << "\"clan2Stars\":" << session.clan2TotalStars;
+        oss << "}";
+        
+        stateJson = oss.str();
+    }
+    
+    // 第二步：获取两个部落的成员ID列表
+    {
+        std::lock_guard<std::mutex> clanLock(clanMutex);
+        
+        auto clan1It = clans.find(clan1Id);
+        if (clan1It != clans.end())
+        {
+            clan1MemberIds = clan1It->second.memberIds;
+        }
+        
+        auto clan2It = clans.find(clan2Id);
+        if (clan2It != clans.end())
+        {
+            clan2MemberIds = clan2It->second.memberIds;
+        }
+    }
+    
+    // 第三步：发送给所有在线成员
+    {
+        std::lock_guard<std::mutex> dataLock(dataMutex);
+        
+        auto sendToMembers = [&](const std::vector<std::string>& memberIds) {
+            for (const auto& memberId : memberIds)
+            {
+                SOCKET memberSocket = findSocketByPlayerId(memberId);
+                if (memberSocket != INVALID_SOCKET)
+                {
+                    sendPacket(memberSocket, PACKET_CLAN_WAR_STATE_UPDATE, stateJson);
+                }
+            }
+        };
+        
+        sendToMembers(clan1MemberIds);
+        sendToMembers(clan2MemberIds);
+    }
 }
 
 // ==================== 客户端处理 ====================
@@ -1042,147 +866,164 @@ void clientHandler(SOCKET clientSocket, Server& server)
     while (Server::recvPacket(clientSocket, msgType, msgData))
 
     {
-        std::lock_guard<std::mutex> lock(server.dataMutex);
+        // ⚠️ 不要在整个 switch 开始就持有 dataMutex，而是在每个case内部按需加锁
 
         switch (msgType)
 
         {
-                // ========== 基础功能 ==========
+            // ========== 基础功能 ==========
 
-            case PACKET_LOGIN: {
-                // 格式: playerId|playerName|trophies
+        case PACKET_LOGIN: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            // 格式: playerId|playerName|trophies
 
-                std::istringstream iss(msgData);
+            std::istringstream iss(msgData);
 
-                std::string playerId, playerName, trophiesStr;
+            std::string playerId, playerName, trophiesStr;
 
-                std::getline(iss, playerId, '|');
+            std::getline(iss, playerId, '|');
 
-                std::getline(iss, playerName, '|');
+            std::getline(iss, playerName, '|');
 
-                std::getline(iss, trophiesStr, '|');
+            std::getline(iss, trophiesStr, '|');
 
-                server.onlinePlayers[clientSocket].playerId = playerId;
+            server.onlinePlayers[clientSocket].playerId = playerId;
 
-                server.onlinePlayers[clientSocket].playerName = playerName.empty() ? playerId : playerName;
+            server.onlinePlayers[clientSocket].playerName = playerName.empty() ? playerId : playerName;
 
-                if (!trophiesStr.empty())
+            if (!trophiesStr.empty())
 
-                {
+            {
+                try {
                     server.onlinePlayers[clientSocket].trophies = std::stoi(trophiesStr);
-                }
-
-                std::cout << "[Login] User: " << playerId
-
-                          << " (Trophies: " << server.onlinePlayers[clientSocket].trophies << ")" << std::endl;
-
-                Server::sendPacket(clientSocket, PACKET_LOGIN, "Login Success");
-            }
-
-            break;
-
-            case PACKET_UPLOAD_MAP: {
-                std::string uid = server.onlinePlayers[clientSocket].playerId;
-
-                if (!uid.empty())
-
-                {
-                    server.savedMaps[uid] = msgData;
-
-                    server.onlinePlayers[clientSocket].mapData = msgData;
-
-                    std::cout << "[Map] Saved for: " << uid << " (Size: " << msgData.size() << ")" << std::endl;
+                } catch (...) {
+                    server.onlinePlayers[clientSocket].trophies = 0;
                 }
             }
 
-            break;
+            std::cout << "[Login] User: " << playerId
 
-            case PACKET_QUERY_MAP: {
-                std::string targetId = msgData;
+                      << " (Trophies: " << server.onlinePlayers[clientSocket].trophies << ")" << std::endl;
 
-                if (server.savedMaps.find(targetId) != server.savedMaps.end())
+            Server::sendPacket(clientSocket, PACKET_LOGIN, "Login Success");
+        }
 
-                {
-                    Server::sendPacket(clientSocket, PACKET_QUERY_MAP, server.savedMaps[targetId]);
+        break;
 
-                    std::cout << "[Query] Sent map of " << targetId << " to client." << std::endl;
-                }
+        case PACKET_UPLOAD_MAP: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            std::string uid = server.onlinePlayers[clientSocket].playerId;
 
-                else
+            if (!uid.empty())
 
-                {
-                    Server::sendPacket(clientSocket, PACKET_QUERY_MAP, "");
-                }
+            {
+                server.savedMaps[uid] = msgData;
+
+                server.onlinePlayers[clientSocket].mapData = msgData;
+
+                std::cout << "[Map] Saved for: " << uid << " (Size: " << msgData.size() << ")" << std::endl;
+            }
+        }
+
+        break;
+
+        case PACKET_QUERY_MAP: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            std::string targetId = msgData;
+
+            if (server.savedMaps.find(targetId) != server.savedMaps.end())
+
+            {
+                Server::sendPacket(clientSocket, PACKET_QUERY_MAP, server.savedMaps[targetId]);
+
+                std::cout << "[Query] Sent map of " << targetId << " to client." << std::endl;
             }
 
+            else
+
+            {
+                Server::sendPacket(clientSocket, PACKET_QUERY_MAP, "");
+            }
+        }
+
+        break;
+
+        case PACKET_ATTACK_DATA:
+
+            std::cout << "[Attack] Received replay data." << std::endl;
+
             break;
 
-            case PACKET_ATTACK_DATA:
-
-                std::cout << "[Attack] Received replay data." << std::endl;
-
+            // ========== 🆕 用户列表 ==========
+        case REQ_USER_LIST: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            if (server.onlinePlayers.find(clientSocket) == server.onlinePlayers.end())
+            {
+                std::cout << "[UserList] Error: clientSocket not found" << std::endl;
                 break;
-
-                // ========== 🆕 用户列表 ==========
-            case REQ_USER_LIST: {
-                // 🔴 修复：检查playerId是否有效
-                if (server.onlinePlayers.find(clientSocket) == server.onlinePlayers.end())
-                {
-                    std::cout << "[UserList] Error: clientSocket not found" << std::endl;
-                    break;
-                }
-                
-                std::string requesterId = server.onlinePlayers[clientSocket].playerId;
-                
-                if (requesterId.empty())
-                {
-                    std::cout << "[UserList] Error: Player not logged in" << std::endl;
-                    Server::sendPacket(clientSocket, RESP_USER_LIST, "");
-                    break;
-                }
-                
-                std::cout << "[UserList] Request from: " << requesterId << std::endl;
-                std::string userList = server.getUserListJson(requesterId);
-                Server::sendPacket(clientSocket, RESP_USER_LIST, userList);
-                std::cout << "[UserList] Sent list to: " << requesterId << " (Size: " << userList.size() << ")" << std::endl;
             }
-            break;
 
-                // ========== 玩家匹配对战 ==========
+            std::string requesterId = server.onlinePlayers[clientSocket].playerId;
 
-            case PACKET_FIND_MATCH:
-
-                server.addToMatchQueue(clientSocket);
-
+            if (requesterId.empty())
+            {
+                std::cout << "[UserList] Error: Player not logged in" << std::endl;
+                Server::sendPacket(clientSocket, RESP_USER_LIST, "");
                 break;
-
-            case PACKET_MATCH_CANCEL:
-
-                server.removeFromMatchQueue(clientSocket);
-
-                std::cout << "[Match] Player cancelled matchmaking." << std::endl;
-
-                break;
-
-            case PACKET_ATTACK_START: {
-                // 请求攻击目标的地图
-
-                std::string targetId = msgData;
-
-                if (server.savedMaps.find(targetId) != server.savedMaps.end())
-
-                {
-                    Server::sendPacket(clientSocket, PACKET_ATTACK_START, server.savedMaps[targetId]);
-
-                    std::cout << "[Battle] " << server.onlinePlayers[clientSocket].playerId << " attacking " << targetId
-
-                              << std::endl;
-                }
             }
+
+            std::cout << "[UserList] Request from: " << requesterId << std::endl;
+            std::string userList = server.getUserListJson(requesterId);
+            Server::sendPacket(clientSocket, RESP_USER_LIST, userList);
+            std::cout << "[UserList] Sent list to: " << requesterId << " (Size: " << userList.size() << ")"
+                      << std::endl;
+        }
+        break;
+
+            // ========== 玩家匹配对战 ==========
+
+        case PACKET_FIND_MATCH:
+
+            server.addToMatchQueue(clientSocket);
 
             break;
 
-            case PACKET_ATTACK_RESULT: {
+        case PACKET_MATCH_CANCEL:
+
+            server.removeFromMatchQueue(clientSocket);
+
+            std::cout << "[Match] Player cancelled matchmaking." << std::endl;
+
+            break;
+
+        case PACKET_ATTACK_START: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            // 请求攻击目标的地图
+
+            std::string targetId = msgData;
+
+            if (server.savedMaps.find(targetId) != server.savedMaps.end())
+
+            {
+                Server::sendPacket(clientSocket, PACKET_ATTACK_START, server.savedMaps[targetId]);
+
+                std::cout << "[Battle] " << server.onlinePlayers[clientSocket].playerId << " attacking " << targetId
+
+                          << std::endl;
+            }
+        }
+
+        break;
+
+        case PACKET_BATTLE_STATUS_LIST: {
+            std::string statusJson = server.getBattleStatusListJson();
+            Server::sendPacket(clientSocket, PACKET_BATTLE_STATUS_LIST, statusJson);
+            break;
+        }
+
+        case PACKET_ATTACK_RESULT: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            try {
                 AttackResult result = server.deserializeAttackResult(msgData);
 
                 // 更新攻击者资源
@@ -1214,177 +1055,284 @@ void clientHandler(SOCKET clientSocket, Server& server)
                 std::cout << "[Battle] Result - Stars: " << result.starsEarned << ", Gold: " << result.goldLooted
 
                           << ", Trophies: " << result.trophyChange << std::endl;
+            } catch (const std::exception& e) {
+                std::cout << "[Battle] Error deserializing result: " << e.what() << std::endl;
             }
+        }
 
-            break;
+        break;
 
-                // ========== 部落系统 ==========
+            // ========== 部落系统 ==========
 
-            case PACKET_CREATE_CLAN: {
-                std::string playerId = server.onlinePlayers[clientSocket].playerId;
+        case PACKET_CREATE_CLAN: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            std::string playerId = server.onlinePlayers[clientSocket].playerId;
 
-                if (server.createClan(playerId, msgData))
+            if (server.createClan(playerId, msgData))
 
-                {
-                    std::string clanId = server.onlinePlayers[clientSocket].clanId;
-
-                    Server::sendPacket(clientSocket, PACKET_CREATE_CLAN, "OK|" + clanId);
-                }
-
-                else
-
-                {
-                    Server::sendPacket(clientSocket, PACKET_CREATE_CLAN, "FAIL");
-                }
-            }
-
-            break;
-
-            case PACKET_JOIN_CLAN: {
-                std::string playerId = server.onlinePlayers[clientSocket].playerId;
-
-                if (server.joinClan(playerId, msgData))
-
-                {
-                    Server::sendPacket(clientSocket, PACKET_JOIN_CLAN, "OK");
-                }
-
-                else
-
-                {
-                    Server::sendPacket(clientSocket, PACKET_JOIN_CLAN, "FAIL");
-                }
-            }
-
-            break;
-
-            case PACKET_LEAVE_CLAN: {
-                std::string playerId = server.onlinePlayers[clientSocket].playerId;
-
-                if (server.leaveClan(playerId))
-
-                {
-                    Server::sendPacket(clientSocket, PACKET_LEAVE_CLAN, "OK");
-                }
-
-                else
-
-                {
-                    Server::sendPacket(clientSocket, PACKET_LEAVE_CLAN, "FAIL");
-                }
-            }
-
-            break;
-
-            case PACKET_CLAN_LIST: {
-                std::string clanList = server.getClanListJson();
-
-                Server::sendPacket(clientSocket, PACKET_CLAN_LIST, clanList);
-            }
-
-            break;
-
-            case PACKET_CLAN_MEMBERS: {
-                std::string members = server.getClanMembersJson(msgData);
-
-                Server::sendPacket(clientSocket, PACKET_CLAN_MEMBERS, members);
-            }
-
-            break;
-
-                // ========== 部落战争 ==========
-
-            case PACKET_CLAN_WAR_SEARCH: {
+            {
                 std::string clanId = server.onlinePlayers[clientSocket].clanId;
 
-                if (!clanId.empty())
-
-                {
-                    server.addToClanWarQueue(clanId);
-
-                    Server::sendPacket(clientSocket, PACKET_CLAN_WAR_SEARCH, "SEARCHING");
-                }
-
-                else
-
-                {
-                    Server::sendPacket(clientSocket, PACKET_CLAN_WAR_SEARCH, "NO_CLAN");
-                }
+                Server::sendPacket(clientSocket, PACKET_CREATE_CLAN, "OK|" + clanId);
             }
 
-            break;
+            else
 
-            case PACKET_CLAN_WAR_ATTACK: {
-                // 格式: warId|targetMemberId
+            {
+                Server::sendPacket(clientSocket, PACKET_CREATE_CLAN, "FAIL");
+            }
+        }
 
-                std::istringstream iss(msgData);
+        break;
 
-                std::string warId, targetId;
+        case PACKET_JOIN_CLAN: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            std::string playerId = server.onlinePlayers[clientSocket].playerId;
 
-                std::getline(iss, warId, '|');
+            if (server.joinClan(playerId, msgData))
 
-                std::getline(iss, targetId, '|');
-
-                if (server.savedMaps.find(targetId) != server.savedMaps.end())
-
-                {
-                    Server::sendPacket(clientSocket, PACKET_CLAN_WAR_ATTACK, warId + "|" + server.savedMaps[targetId]);
-                }
+            {
+                Server::sendPacket(clientSocket, PACKET_JOIN_CLAN, "OK");
             }
 
-            break;
+            else
 
-            case PACKET_CLAN_WAR_RESULT: {
-                // 格式: warId|attackResult
+            {
+                Server::sendPacket(clientSocket, PACKET_JOIN_CLAN, "FAIL");
+            }
+        }
 
-                size_t pos = msgData.find('|');
+        break;
 
-                if (pos != std::string::npos)
+        case PACKET_LEAVE_CLAN: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            std::string playerId = server.onlinePlayers[clientSocket].playerId;
 
-                {
-                    std::string warId = msgData.substr(0, pos);
+            if (server.leaveClan(playerId))
 
-                    std::string resultData = msgData.substr(pos + 1);
+            {
+                Server::sendPacket(clientSocket, PACKET_LEAVE_CLAN, "OK");
+            }
 
+            else
+
+            {
+                Server::sendPacket(clientSocket, PACKET_LEAVE_CLAN, "FAIL");
+            }
+        }
+
+        break;
+
+        case PACKET_CLAN_LIST: {
+            std::string clanList = server.getClanListJson();
+
+            Server::sendPacket(clientSocket, PACKET_CLAN_LIST, clanList);
+        }
+
+        break;
+
+        case PACKET_CLAN_MEMBERS: {
+            std::string members = server.getClanMembersJson(msgData);
+
+            Server::sendPacket(clientSocket, PACKET_CLAN_MEMBERS, members);
+        }
+
+        break;
+
+            // ========== 部落战争 ==========
+
+        case PACKET_CLAN_WAR_SEARCH: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            std::string clanId = server.onlinePlayers[clientSocket].clanId;
+
+            if (!clanId.empty())
+
+            {
+                server.addToClanWarQueue(clanId);
+
+                Server::sendPacket(clientSocket, PACKET_CLAN_WAR_SEARCH, "SEARCHING");
+            }
+
+            else
+
+            {
+                Server::sendPacket(clientSocket, PACKET_CLAN_WAR_SEARCH, "NO_CLAN");
+            }
+        }
+
+        break;
+
+        case PACKET_CLAN_WAR_ATTACK: {
+            std::lock_guard<std::mutex> lock(server.dataMutex);
+            // 格式: warId|targetMemberId
+
+            std::istringstream iss(msgData);
+
+            std::string warId, targetId;
+
+            std::getline(iss, warId, '|');
+
+            std::getline(iss, targetId, '|');
+
+            if (server.savedMaps.find(targetId) != server.savedMaps.end())
+
+            {
+                Server::sendPacket(clientSocket, PACKET_CLAN_WAR_ATTACK, warId + "|" + server.savedMaps[targetId]);
+            }
+        }
+
+        break;
+
+        case PACKET_CLAN_WAR_RESULT: {
+            // 格式: warId|attackResult
+
+            size_t pos = msgData.find('|');
+
+            if (pos != std::string::npos)
+
+            {
+                std::string warId = msgData.substr(0, pos);
+
+                std::string resultData = msgData.substr(pos + 1);
+
+                try {
                     AttackResult result = server.deserializeAttackResult(resultData);
-
                     server.processClanWarAttack(warId, result);
+                } catch (const std::exception& e) {
+                    std::cout << "[ClanWar] Error deserializing result: " << e.what() << std::endl;
                 }
             }
+        }
 
+        break;
+
+        // 🆕 PVP与观战处理
+        case PACKET_PVP_REQUEST:
+            server.handlePvpRequest(clientSocket, msgData);
             break;
 
-            // 🆕 PVP与观战处理
-            case PACKET_PVP_REQUEST:
-                server.handlePvpRequest(clientSocket, msgData);
-                break;
+        case PACKET_PVP_ACTION:
+            server.handlePvpAction(clientSocket, msgData);
+            break;
 
-            case PACKET_PVP_ACTION:
-                server.handlePvpAction(clientSocket, msgData);
-                break;
-
-            case PACKET_SPECTATE_REQUEST:
-                server.handleSpectateRequest(clientSocket, msgData);
-                break;
-
-            case PACKET_PVP_END:
+        case PACKET_PVP_END: {
+            std::string playerIdToClean;
+            {
+                std::lock_guard<std::mutex> lock(server.dataMutex);
+                auto it = server.onlinePlayers.find(clientSocket);
+                if (it != server.onlinePlayers.end())
                 {
-                    std::string attackerId = server.onlinePlayers[clientSocket].playerId;
-                    server.endPvpSession(attackerId);
+                    playerIdToClean = it->second.playerId;
                 }
-                break;
+            }
+            if (!playerIdToClean.empty())
+            {
+                server.endPvpSession(playerIdToClean);
+            }
+            break;
+        }
+        
+        case PACKET_SPECTATE_REQUEST:
+            server.handleSpectateRequest(clientSocket, msgData);
+            break;
 
-            default:
+        case PACKET_CLAN_WAR_MEMBER_LIST: {
+            std::string requesterId;
+            {
+                std::lock_guard<std::mutex> lock(server.dataMutex);
+                auto it = server.onlinePlayers.find(clientSocket);
+                if (it != server.onlinePlayers.end())
+                {
+                    requesterId = it->second.playerId;
+                }
+            }
+            if (!requesterId.empty())
+            {
+                std::string json = server.getClanWarMemberListJson(msgData, requesterId);
+                Server::sendPacket(clientSocket, PACKET_CLAN_WAR_MEMBER_LIST, json);
+            }
+            break;
+        }
+        
+        case PACKET_CLAN_WAR_ATTACK_START:
+        {
+            // data格式: "warId|targetId"
+            size_t pos = msgData.find('|');
+            if (pos != std::string::npos)
+            {
+                std::string warId = msgData.substr(0, pos);
+                std::string targetId = msgData.substr(pos + 1);
+                server.handleClanWarAttackStart(clientSocket, warId, targetId);
+            }
+            break;
+        }
+        
+        case PACKET_CLAN_WAR_ATTACK_END:
+        {
+            // data格式: "warId|attackerId|attackerName|stars|destruction"
+            try {
+                AttackRecord record;
+                std::istringstream iss(msgData);
+                std::string warId;
+                std::getline(iss, warId, '|');
+                std::getline(iss, record.attackerId, '|');
+                std::getline(iss, record.attackerName, '|');
+                std::string starsStr, destructionStr;
+                std::getline(iss, starsStr, '|');
+                std::getline(iss, destructionStr, '|');
+                
+                if (!starsStr.empty()) {
+                    record.starsEarned = std::stoi(starsStr);
+                }
+                if (!destructionStr.empty()) {
+                    record.destructionRate = std::stof(destructionStr);
+                }
+                record.attackTime = std::chrono::steady_clock::now();
+                
+                server.handleClanWarAttackEnd(warId, record);
+            } catch (const std::exception& e) {
+                std::cout << "[ClanWar] Error parsing attack end: " << e.what() << std::endl;
+            }
+            break;
+        }
+        
+        case PACKET_CLAN_WAR_SPECTATE:
+        {
+            // data格式: "warId|targetId"
+            size_t pos = msgData.find('|');
+            if (pos != std::string::npos)
+            {
+                std::string warId = msgData.substr(0, pos);
+                std::string targetId = msgData.substr(pos + 1);
+                server.handleClanWarSpectate(clientSocket, warId, targetId);
+            }
+            break;
+        }
 
-                break;
+        default:
+
+            break;
         }
     }
 
     // 玩家断开连接时的清理
+    std::string playerIdToClean;
+    {
+        std::lock_guard<std::mutex> lock(server.dataMutex);
+        auto it = server.onlinePlayers.find(clientSocket);
+        if (it != server.onlinePlayers.end())
+        {
+            playerIdToClean = it->second.playerId;
+        }
+    }
 
     server.removeFromMatchQueue(clientSocket);
+    
     // 🆕 清理PVP会话
-    server.endPvpSession(server.onlinePlayers[clientSocket].playerId);
+    if (!playerIdToClean.empty())
+    {
+        server.endPvpSession(playerIdToClean);
+    }
 
     server.closeClientSocket(clientSocket);
 }
@@ -1486,23 +1434,527 @@ void Server::handleConnections()
 }
 
 void Server::closeClientSocket(SOCKET clientSocket)
-
 {
     std::lock_guard<std::mutex> lock(dataMutex);
-
     std::string playerId = onlinePlayers[clientSocket].playerId;
-
     closesocket(clientSocket);
-
     onlinePlayers.erase(clientSocket);
-
     std::cout << "[Disconnect] Client: " << clientSocket;
-
     if (!playerId.empty())
-
     {
         std::cout << " (Player: " << playerId << ")";
     }
-
     std::cout << std::endl;
 }
+
+// ==================== 部落系统实现 ====================
+
+std::string Server::getUserListJson(const std::string& requesterId)
+{
+    // ⚠️ 调用此函数前应该已经持有 dataMutex
+    // 但为了安全，我们检查是否在持锁状态调用
+    
+    std::ostringstream oss;
+    bool first = true;
+    
+    for (const auto& pair : onlinePlayers)
+    {
+        const auto& player = pair.second;
+        if (player.playerId.empty() || player.playerId == requesterId)
+            continue;
+        
+        if (!first) oss << "|";
+        first = false;
+        
+        oss << player.playerId << ","
+            << player.playerName << ","
+            << player.trophies << ","
+            << player.gold << ","
+            << player.elixir;
+    }
+    
+    return oss.str();
+}
+
+// ==================== 🆕 战斗状态广播 ====================
+
+std::string Server::getBattleStatusListJson()
+{
+    std::lock_guard<std::mutex> pvpLock(pvpMutex);
+
+    std::ostringstream oss;
+    oss << "{\"statuses\":[";
+
+    bool first = true;
+    for (const auto& pair : pvpSessions)
+    {
+        const PvpSession& session = pair.second;
+        if (!session.isActive)
+            continue;
+
+        // 攻击方状态
+        if (!first)
+            oss << ",";
+        first = false;
+        oss << "{\"userId\":\"" << session.attackerId << "\","
+            << "\"inBattle\":true,"
+            << "\"opponentId\":\"" << session.defenderId << "\","
+            << "\"isAttacker\":true}";
+
+        // 防守方状态
+        oss << ",{\"userId\":\"" << session.defenderId << "\","
+            << "\"inBattle\":true,"
+            << "\"opponentId\":\"" << session.attackerId << "\","
+            << "\"isAttacker\":false}";
+    }
+
+    oss << "]}";
+    return oss.str();
+}
+
+void Server::broadcastBattleStatusToAll()
+{
+    std::string statusJson = getBattleStatusListJson();
+
+    std::lock_guard<std::mutex> lock(dataMutex);
+    for (const auto& pair : onlinePlayers)
+    {
+        if (!pair.second.playerId.empty())
+        {
+            sendPacket(pair.first, PACKET_BATTLE_STATUS_LIST, statusJson);
+        }
+    }
+}
+
+std::string Server::generateClanId()
+{
+    static int counter = 0;
+    return "CLAN_" + std::to_string(++counter);
+}
+
+bool Server::createClan(const std::string& playerId, const std::string& clanName)
+{
+    // ⚠️ 调用者已持有 dataMutex
+
+    SOCKET socket = findSocketByPlayerId(playerId);
+    if (socket == INVALID_SOCKET)
+    {
+        std::cout << "[Clan] createClan failed: player " << playerId << " not found" << std::endl;
+        return false;
+    }
+
+    if (!onlinePlayers[socket].clanId.empty())
+    {
+        std::cout << "[Clan] createClan failed: " << playerId << " already in a clan" << std::endl;
+        return false;
+    }
+
+    // ✅ 锁 clanMutex 来修改 clans
+    std::string clanId = generateClanId();
+
+    {
+        std::lock_guard<std::mutex> clanLock(clanMutex);
+
+        ClanInfo clan;
+        clan.clanId   = clanId;
+        clan.clanName = clanName;
+        clan.leaderId = playerId;
+        clan.memberIds.push_back(playerId);
+        clan.clanTrophies     = onlinePlayers[socket].trophies;
+        clan.requiredTrophies = 0;
+        clan.isOpen           = true;
+
+        clans[clanId] = clan;
+    }
+
+    // 在 dataMutex 保护下修改 onlinePlayers
+    onlinePlayers[socket].clanId = clanId;
+
+    std::cout << "[Clan] ✅ Created: " << clanName << " (ID: " << clanId << ") by " << playerId << std::endl;
+    return true;
+}
+
+bool Server::joinClan(const std::string& playerId, const std::string& clanId)
+{
+    // ⚠️ 重要：此函数被调用时，调用者已经持有 dataMutex
+    // 我们这里只锁 clanMutex
+
+    SOCKET socket = findSocketByPlayerId(playerId);
+    if (socket == INVALID_SOCKET)
+    {
+        std::cout << "[Clan] joinClan failed: player " << playerId << " not found" << std::endl;
+        return false;
+    }
+
+    // 检查玩家是否已在部落中
+    if (!onlinePlayers[socket].clanId.empty())
+    {
+        std::cout << "[Clan] joinClan failed: " << playerId << " already in clan " << onlinePlayers[socket].clanId
+                  << std::endl;
+        return false;
+    }
+
+    // ✅ 现在锁 clanMutex 来访问 clans
+    std::lock_guard<std::mutex> clanLock(clanMutex);
+
+    auto it = clans.find(clanId);
+    if (it == clans.end())
+    {
+        std::cout << "[Clan] joinClan failed: clan " << clanId << " not found" << std::endl;
+        return false;
+    }
+
+    if (!it->second.isOpen)
+    {
+        std::cout << "[Clan] joinClan failed: clan " << clanId << " is closed" << std::endl;
+        return false;
+    }
+
+    if (onlinePlayers[socket].trophies < it->second.requiredTrophies)
+    {
+        std::cout << "[Clan] joinClan failed: " << playerId << " has " << onlinePlayers[socket].trophies
+                  << " trophies, required " << it->second.requiredTrophies << std::endl;
+        return false;
+    }
+
+    // 加入部落
+    it->second.memberIds.push_back(playerId);
+    it->second.clanTrophies += onlinePlayers[socket].trophies;
+    onlinePlayers[socket].clanId = clanId;
+
+    std::cout << "[Clan] ✅ " << playerId << " successfully joined " << it->second.clanName << " (ID: " << clanId << ")"
+              << std::endl;
+    return true;
+}
+
+bool Server::leaveClan(const std::string& playerId)
+{
+    std::lock_guard<std::mutex> lock(clanMutex);
+    
+    SOCKET socket = findSocketByPlayerId(playerId);
+    if (socket == INVALID_SOCKET) return false;
+    
+    std::string clanId = onlinePlayers[socket].clanId;
+    if (clanId.empty()) return false;
+    
+    auto it = clans.find(clanId);
+    if (it == clans.end()) return false;
+    
+    auto& members = it->second.memberIds;
+    members.erase(std::remove(members.begin(), members.end(), playerId), members.end());
+    it->second.clanTrophies -= onlinePlayers[socket].trophies;
+    onlinePlayers[socket].clanId = "";
+    
+    if (members.empty())
+    {
+        clans.erase(it);
+        std::cout << "[Clan] Deleted empty clan: " << clanId << std::endl;
+    }
+    
+    std::cout << "[Clan] " << playerId << " left clan " << clanId << std::endl;
+    return true;
+}
+
+std::string Server::getClanListJson()
+{
+    std::lock_guard<std::mutex> lock(clanMutex);
+    
+    std::ostringstream oss;
+    oss << "[";
+    bool first = true;
+    
+    for (const auto& pair : clans)
+    {
+        const auto& clan = pair.second;
+        if (!first) oss << ",";
+        first = false;
+        
+        oss << "{"
+            << "\"id\":\"" << clan.clanId << "\","
+            << "\"name\":\"" << clan.clanName << "\","
+            << "\"members\":" << clan.memberIds.size() << ","
+            << "\"trophies\":" << clan.clanTrophies << ","
+            << "\"required\":" << clan.requiredTrophies << ","
+            << "\"open\":" << (clan.isOpen ? "true" : "false")
+            << "}";
+    }
+    
+    oss << "]";
+    return oss.str();
+}
+
+std::string Server::getClanMembersJson(const std::string& clanId)
+{
+    std::lock_guard<std::mutex> lock(clanMutex);
+    
+    auto it = clans.find(clanId);
+    if (it == clans.end())
+        return "{\"error\":\"CLAN_NOT_FOUND\"}";
+    
+    std::ostringstream oss;
+    oss << "{\"members\":[";
+    
+    bool first = true;
+    for (const auto& memberId : it->second.memberIds)
+    {
+        if (!first) oss << ",";
+        first = false;
+        
+        SOCKET socket = findSocketByPlayerId(memberId);
+        bool online = (socket != INVALID_SOCKET);
+        int trophies = 0;
+        std::string name = memberId;
+        
+        if (online)
+        {
+            trophies = onlinePlayers[socket].trophies;
+            name = onlinePlayers[socket].playerName;
+        }
+        
+        oss << "{"
+            << "\"id\":\"" << memberId << "\","
+            << "\"name\":\"" << name << "\","
+            << "\"trophies\":" << trophies << ","
+            << "\"online\":" << (online ? "true" : "false")
+            << "}";
+    }
+    
+    oss << "]}";
+    return oss.str();
+}
+
+// ==================== 部落战争实现 ====================
+
+std::string Server::generateWarId()
+{
+    static int counter = 0;
+    return "WAR_" + std::to_string(++counter);
+}
+
+void Server::addToClanWarQueue(const std::string& clanId)
+{
+    std::lock_guard<std::mutex> lock(warMutex);
+    
+    if (std::find(clanWarQueue.begin(), clanWarQueue.end(), clanId) != clanWarQueue.end())
+        return;
+    
+    clanWarQueue.push_back(clanId);
+    std::cout << "[ClanWar] Clan " << clanId << " added to queue" << std::endl;
+    
+    processClanWarQueue();
+}
+
+void Server::processClanWarQueue()
+{
+    if (clanWarQueue.size() < 2)
+        return;
+    
+    std::string clan1Id = clanWarQueue[0];
+    std::string clan2Id = clanWarQueue[1];
+    
+    clanWarQueue.erase(clanWarQueue.begin());
+    clanWarQueue.erase(clanWarQueue.begin());
+    
+    startClanWar(clan1Id, clan2Id);
+}
+
+void Server::startClanWar(const std::string& clan1Id, const std::string& clan2Id)
+{
+    std::string warId;
+    std::vector<std::string> clan1MemberIds;
+    std::vector<std::string> clan2MemberIds;
+    
+    // 第一步：生成warId并创建会话
+    {
+        std::lock_guard<std::mutex> warLock(warMutex);
+        warId = generateWarId();
+    }
+    
+    // 第二步：创建会话并初始化成员
+    {
+        std::lock_guard<std::mutex> sessionLock(clanWarSessionMutex);
+        
+        ClanWarSession session;
+        session.warId = warId;
+        session.clan1Id = clan1Id;
+        session.clan2Id = clan2Id;
+        session.startTime = std::chrono::steady_clock::now();
+        session.isActive = true;
+        
+        initClanWarMembers(session);
+        
+        clanWarSessions[warId] = session;
+        
+        std::cout << "[ClanWar] Started: " << warId << " between " << clan1Id << " and " << clan2Id << std::endl;
+    }
+    
+    // 第三步：获取两个部落的成员列表
+    {
+        std::lock_guard<std::mutex> clanLock(clanMutex);
+        
+        auto clan1It = clans.find(clan1Id);
+        if (clan1It != clans.end())
+        {
+            clan1MemberIds = clan1It->second.memberIds;
+        }
+        
+        auto clan2It = clans.find(clan2Id);
+        if (clan2It != clans.end())
+        {
+            clan2MemberIds = clan2It->second.memberIds;
+        }
+    }
+    
+    // 第四步：通知所有成员
+    {
+        std::lock_guard<std::mutex> dataLock(dataMutex);
+        
+        std::string msg = warId + "|" + clan1Id + "|" + clan2Id;
+        
+        auto notifyMembers = [&](const std::vector<std::string>& memberIds) {
+            for (const auto& memberId : memberIds)
+            {
+                SOCKET memberSocket = findSocketByPlayerId(memberId);
+                if (memberSocket != INVALID_SOCKET)
+                {
+                    sendPacket(memberSocket, PACKET_CLAN_WAR_MATCH, msg);
+                }
+            }
+        };
+        
+        notifyMembers(clan1MemberIds);
+        notifyMembers(clan2MemberIds);
+    }
+}
+
+void Server::processClanWarAttack(const std::string& warId, const AttackResult& result)
+{
+    std::lock_guard<std::mutex> lock(warMutex);
+    
+    auto it = activeWars.find(warId);
+    if (it == activeWars.end()) return;
+    
+    it->second.attacks.push_back(result);
+    
+    std::cout << "[ClanWar] Attack in " << warId << ": "
+              << result.attackerId << " earned " << result.starsEarned << " stars" << std::endl;
+}
+
+// ==================== 匹配系统实现 ====================
+
+void Server::addToMatchQueue(SOCKET socket)
+{
+    std::lock_guard<std::mutex> lock(matchQueueMutex);
+    
+    std::string playerId;
+    int trophies = 0;
+    
+    {
+        std::lock_guard<std::mutex> dataLock(dataMutex);
+        auto it = onlinePlayers.find(socket);
+        if (it == onlinePlayers.end()) return;
+        
+        // 检查是否已经在队列中
+        for (const auto& entry : matchQueue)
+        {
+            if (entry.socket == socket) return;
+        }
+        
+        playerId = it->second.playerId;
+        trophies = it->second.trophies;
+        it->second.isSearchingMatch = true;
+    }
+    
+    MatchQueueEntry entry;
+    entry.socket = socket;
+    entry.playerId = playerId;
+    entry.trophies = trophies;
+    entry.queueTime = std::chrono::steady_clock::now();
+    
+    matchQueue.push_back(entry);
+    
+    std::cout << "[Match] Player " << entry.playerId << " joined queue (Trophies: " << entry.trophies << ")" << std::endl;
+    
+    processMatchQueue();
+}
+
+void Server::removeFromMatchQueue(SOCKET socket)
+{
+    std::lock_guard<std::mutex> lock(matchQueueMutex);
+    
+    auto it = std::find_if(matchQueue.begin(), matchQueue.end(), 
+        [socket](const MatchQueueEntry& e) { return e.socket == socket; });
+    
+    if (it != matchQueue.end())
+    {
+        std::cout << "[Match] Player " << it->playerId << " left queue" << std::endl;
+        matchQueue.erase(it);
+    }
+    
+    {
+        std::lock_guard<std::mutex> dataLock(dataMutex);
+        auto playerIt = onlinePlayers.find(socket);
+        if (playerIt != onlinePlayers.end())
+        {
+            playerIt->second.isSearchingMatch = false;
+        }
+    }
+}
+
+void Server::processMatchQueue()
+{
+    // 已经在持有 matchQueueMutex 的情况下调用
+    if (matchQueue.size() < 2) return;
+    
+    auto now = std::chrono::steady_clock::now();
+    
+    for (size_t i = 0; i < matchQueue.size(); i++)
+    {
+        auto& entry1 = matchQueue[i];
+        auto waitTime = std::chrono::duration_cast<std::chrono::seconds>(now - entry1.queueTime).count();
+        
+        // 根据等待时间扩大匹配范围
+        int maxDiff = 200 + static_cast<int>(waitTime * 10);
+        
+        for (size_t j = i + 1; j < matchQueue.size(); j++)
+        {
+            auto& entry2 = matchQueue[j];
+            int trophyDiff = std::abs(entry1.trophies - entry2.trophies);
+            
+            if (trophyDiff <= maxDiff)
+            {
+                // 匹配成功
+                std::cout << "[Match] Matched: " << entry1.playerId << " vs " << entry2.playerId << std::endl;
+                
+                // 通知双方
+                std::string msg1 = entry2.playerId + "|" + std::to_string(entry2.trophies);
+                std::string msg2 = entry1.playerId + "|" + std::to_string(entry1.trophies);
+                
+                sendPacket(entry1.socket, PACKET_MATCH_FOUND, msg1);
+                sendPacket(entry2.socket, PACKET_MATCH_FOUND, msg2);
+                
+                // 更新状态
+                {
+                    std::lock_guard<std::mutex> dataLock(dataMutex);
+                    auto player1It = onlinePlayers.find(entry1.socket);
+                    auto player2It = onlinePlayers.find(entry2.socket);
+                    if (player1It != onlinePlayers.end()) player1It->second.isSearchingMatch = false;
+                    if (player2It != onlinePlayers.end()) player2It->second.isSearchingMatch = false;
+                }
+                
+                // 从队列中移除
+                matchQueue.erase(matchQueue.begin() + j);
+                matchQueue.erase(matchQueue.begin() + i);
+                
+                return;
+            }
+        }
+    }
+}
+
+PlayerContext* Server::findMatchForPlayer(const PlayerContext& player)
+{
+    // 这个函数目前未使用，保留作为备用
+    return nullptr;
+}
+

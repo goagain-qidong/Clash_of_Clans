@@ -88,7 +88,18 @@ enum PacketType
     PACKET_PVP_ACTION = 42,       // PVP操作（下兵）
     PACKET_PVP_END = 43,          // PVP结束
     PACKET_SPECTATE_REQUEST = 44, // 请求观战
-    PACKET_SPECTATE_JOIN = 45     // 加入观战通知
+    PACKET_SPECTATE_JOIN = 45,    // 加入观战通知
+    
+    // 🆕 部落战争增强
+    PACKET_CLAN_WAR_MEMBER_LIST = 50,   // 获取部落战成员列表
+    PACKET_CLAN_WAR_ATTACK_START = 51,  // 开始攻击部落战目标
+    PACKET_CLAN_WAR_ATTACK_END = 52,    // 部落战攻击结束
+    PACKET_CLAN_WAR_SPECTATE = 53,      // 观战部落战
+    PACKET_CLAN_WAR_STATE_UPDATE = 54,   // 部落战状态更新
+
+    // 🆕 战斗状态广播
+    PACKET_BATTLE_STATUS_LIST = 60,     // 请求/返回战斗状态列表
+    PACKET_BATTLE_STATUS_UPDATE = 61    // 战斗状态更新通知
 };
 
 // ==================== 数据包头 ====================
@@ -193,13 +204,56 @@ struct ClanWarInfo
     bool isActive = false;
 };
 
-// 🆕 PVP会话
+// ==================== 攻击记录 ====================
+struct AttackRecord
+{
+    std::string attackerId;
+    std::string attackerName;
+    int starsEarned = 0;
+    float destructionRate = 0.0f;  // 0.0 ~ 1.0
+    std::chrono::steady_clock::time_point attackTime;
+};
+
+// 🆕 PVP会话 (需要在ClanWarSession之前定义)
 struct PvpSession
 {
     std::string attackerId;
     std::string defenderId;
     std::vector<std::string> spectatorIds;
     std::string mapData; // 缓存地图数据
+    bool isActive = true;
+};
+
+// ==================== 部落战成员信息 ====================
+struct ClanWarMember
+{
+    std::string memberId;
+    std::string memberName;
+    std::string mapData;           // 成员的基地数据
+    int bestStars = 0;             // 被攻击的最高星数
+    float bestDestructionRate = 0.0f; // 被攻击的最高摧毁率
+    std::vector<AttackRecord> attacksReceived; // 受到的攻击记录
+};
+
+// ==================== 部落战会话 ====================
+struct ClanWarSession
+{
+    std::string warId;
+    std::string clan1Id;
+    std::string clan2Id;
+    
+    // 双方成员信息
+    std::vector<ClanWarMember> clan1Members;
+    std::vector<ClanWarMember> clan2Members;
+    
+    // 当前进行中的战斗
+    std::map<std::string, PvpSession> activeBattles; // key: attackerId
+    
+    // 战争状态
+    int clan1TotalStars = 0;
+    int clan2TotalStars = 0;
+    std::chrono::steady_clock::time_point startTime;
+    std::chrono::steady_clock::time_point endTime;
     bool isActive = true;
 };
 
@@ -271,6 +325,10 @@ private:
     // 🆕 PVP会话管理
     std::map<std::string, PvpSession> pvpSessions; // key: attackerId (or unique session id)
     std::mutex pvpMutex;
+    
+    // 🆕 部落战会话管理
+    std::map<std::string, ClanWarSession> clanWarSessions; // warId -> ClanWarSession
+    std::mutex clanWarSessionMutex;
 
     std::mutex dataMutex;
 
@@ -329,6 +387,15 @@ private:
     void handlePvpAction(SOCKET clientSocket, const std::string& actionData);
     void handleSpectateRequest(SOCKET clientSocket, const std::string& targetId);
     void endPvpSession(const std::string& attackerId);
+    
+    // 🆕 部落战争增强
+    ClanWarSession* getClanWarSession(const std::string& warId);
+    void initClanWarMembers(ClanWarSession& session);
+    std::string getClanWarMemberListJson(const std::string& warId, const std::string& requesterId);
+    void handleClanWarAttackStart(SOCKET clientSocket, const std::string& warId, const std::string& targetId);
+    void handleClanWarAttackEnd(const std::string& warId, const AttackRecord& record);
+    void handleClanWarSpectate(SOCKET clientSocket, const std::string& warId, const std::string& targetId);
+    void broadcastClanWarStateUpdate(const std::string& warId);
 
     // 辅助函数
 
@@ -340,6 +407,10 @@ private:
     
     // 🆕 获取用户列表
     std::string getUserListJson(const std::string& requesterId);
+
+    // 🆕 战斗状态广播
+    std::string getBattleStatusListJson();
+    void broadcastBattleStatusToAll();
 };
 
 #endif

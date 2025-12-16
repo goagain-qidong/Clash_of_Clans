@@ -272,7 +272,6 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     building->setGridSize(_selectedBuilding.gridSize);
     building->setAnchorPoint(Vec2(0.5f, 0.35f));
     
-    // 🔴 修复：不要覆盖建筑自身的缩放（如城墙已设置为0.6）
     // 只有当建筑没有设置缩放时，才使用buildingData的缩放
     float currentScale = building->getScale();
     if (currentScale == 1.0f || currentScale == 0.0f) // 默认缩放或未初始化

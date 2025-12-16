@@ -314,34 +314,40 @@ void SceneUIController::showConfirmButtons(const Vec2& worldPos)
     float offsetX = 60.0f;
     float offsetY = 80.0f;
     
-    // 确认按钮（绿色勾）
-    _confirmButton = Button::create();
-    _confirmButton->setTitleText("\xE2\x9C\x93");  // UTF-8编码的 ✓
-    _confirmButton->setTitleFontSize(30);
-    _confirmButton->setTitleColor(Color3B::WHITE);
-    _confirmButton->setContentSize(Size(buttonSize, buttonSize));
+    // 确认按钮（绿色勾 - 使用confirm_button.png）
+    _confirmButton = Button::create("icon/confirm_button.png");
+    if (_confirmButton->getContentSize().equals(Size::ZERO)) {
+        // 如果图片不存在，回退到文本模式
+        _confirmButton = Button::create();
+        _confirmButton->setTitleText("\xE2\x9C\x93");  // UTF-8编码的 ✓
+        _confirmButton->setTitleFontSize(30);
+        _confirmButton->setTitleColor(Color3B::WHITE);
+        _confirmButton->setContentSize(Size(buttonSize, buttonSize));
+    } else {
+        // 使用图片，设置缩放
+        _confirmButton->setScale(buttonSize / _confirmButton->getContentSize().width);
+    }
     _confirmButton->setPosition(Vec2(worldPos.x + offsetX, worldPos.y + offsetY));
-    
-    // auto confirmBg = LayerColor::create(Color4B(0, 200, 0, 200), buttonSize, buttonSize);
-    // confirmBg->setPosition(Vec2(-buttonSize / 2, -buttonSize / 2));
-    // _confirmButton->addChild(confirmBg, -1);
     
     _confirmButton->addClickEventListener([this](Ref*) {
         if (_onConfirmBuilding) _onConfirmBuilding();
     });
     this->addChild(_confirmButton, 10000);
     
-    // 取消按钮（红色叉）
-    _cancelButton = Button::create();
-    _cancelButton->setTitleText("\xE2\x9C\x97");  // UTF-8编码的 ✗
-    _cancelButton->setTitleFontSize(30);
-    _cancelButton->setTitleColor(Color3B::WHITE);
-    _cancelButton->setContentSize(Size(buttonSize, buttonSize));
+    // 取消按钮（红色叉 - 使用return_button.png）
+    _cancelButton = Button::create("icon/return_button.png");
+    if (_cancelButton->getContentSize().equals(Size::ZERO)) {
+        // 如果图片不存在，回退到文本模式
+        _cancelButton = Button::create();
+        _cancelButton->setTitleText("\xE2\x9C\x97");  // UTF-8编码的 ✗
+        _cancelButton->setTitleFontSize(30);
+        _cancelButton->setTitleColor(Color3B::WHITE);
+        _cancelButton->setContentSize(Size(buttonSize, buttonSize));
+    } else {
+        // 使用图片，设置缩放
+        _cancelButton->setScale(buttonSize / _cancelButton->getContentSize().width);
+    }
     _cancelButton->setPosition(Vec2(worldPos.x - offsetX, worldPos.y + offsetY));
-    
-    // auto cancelBg = LayerColor::create(Color4B(200, 0, 0, 200), buttonSize, buttonSize);
-    // cancelBg->setPosition(Vec2(-buttonSize / 2, -buttonSize / 2));
-    // _cancelButton->addChild(cancelBg, -1);
     
     _cancelButton->addClickEventListener([this](Ref*) {
         if (_onCancelBuilding) _onCancelBuilding();

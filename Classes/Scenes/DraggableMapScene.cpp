@@ -491,7 +491,7 @@ void DraggableMapScene::onAttackClicked()
 
     this->addChild(armyUI, 200);
 
-    armyUI->setOnConfirmed([this]() {
+    armyUI->setOnConfirmed([this](const TroopDeploymentMap&) {
         auto& client = SocketClient::getInstance();
         if (client.isConnected())
         {

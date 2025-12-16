@@ -14,6 +14,7 @@ class HUDLayer : public cocos2d::Layer {
 public:
     static HUDLayer* create();
     virtual bool init() override;
+    virtual ~HUDLayer();  // ⭐ 添加析构函数
 
     // 强制刷新显示
     void updateDisplay();

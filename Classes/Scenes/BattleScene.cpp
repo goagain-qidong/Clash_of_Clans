@@ -192,8 +192,9 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
 
     // Delay start battle
     this->scheduleOnce([this](float dt) {
-        if (_battleManager) _battleManager->startBattle();
-        if (_battleUI)
+            if (_battleManager)
+                _battleManager->startBattle(TroopDeploymentMap{});
+            if (_battleUI)
         {
             _battleUI->updateStatus("部署你的士兵进行攻击！", Color4B::YELLOW);
             _battleUI->showBattleHUD(true);
@@ -317,7 +318,8 @@ bool BattleScene::initWithReplayData(const std::string& replayDataStr)
     }
     
     // Start Battle immediately for replay
-    if (_battleManager) _battleManager->startBattle();
+    if (_battleManager)
+        _battleManager->startBattle(TroopDeploymentMap{});
 
     return true;
 }
@@ -674,10 +676,27 @@ void BattleScene::returnToMainScene()
     MusicManager::getInstance().stopMusic();
     // 禁用所有建筑的战斗模式
     disableAllBuildingsBattleMode();
-    Director::getInstance()->popScene();
-    Director::getInstance()->getScheduler()->performFunctionInCocosThread([](){
-        Director::getInstance()->getEventDispatcher()->dispatchCustomEvent("scene_resume");
-    });
+    
+    // 🔧 修复：检查场景栈深度，避免退出游戏
+    auto director = Director::getInstance();
+    auto sceneCount = director->getRunningScene() != nullptr ? 1 : 0;
+    
+    // 如果只有一个场景，创建新的主场景替换
+    // 如果有多个场景，弹出当前场景
+    if (sceneCount <= 1)
+    {
+        CCLOG("⚠️ 场景栈只有一个场景，创建新的主场景替换");
+        auto newScene = DraggableMapScene::createScene();
+        director->replaceScene(TransitionFade::create(0.3f, newScene));
+    }
+    else
+    {
+        CCLOG("✅ 弹出战斗场景，返回主场景");
+        director->popScene();
+        director->getScheduler()->performFunctionInCocosThread([](){
+            Director::getInstance()->getEventDispatcher()->dispatchCustomEvent("scene_resume");
+        });
+    }
 }
 
 void BattleScene::updateBoundary()

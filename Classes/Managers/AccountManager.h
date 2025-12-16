@@ -77,6 +77,10 @@ struct AccountGameData {
     // 🆕 添加士兵库存字段
     std::string troopInventory = "";  // JSON格式存储士兵库存
     
+    // 🆕 添加部落信息字段
+    std::string clanId = "";
+    std::string playerId = "";
+    
     std::vector<BuildingSerialData> buildings;
 
 

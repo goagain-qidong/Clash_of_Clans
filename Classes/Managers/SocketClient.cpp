@@ -85,11 +85,11 @@ bool SocketClient::connect(const std::string& host, int port)
         }
         return false;
     }
-    sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(port);
+    sockaddr_in serverAddr; // 服务器地址结构
+    serverAddr.sin_family = AF_INET; // IPv4
+    serverAddr.sin_port = htons(port); // 大小端转换端口号
 #ifdef _WIN32
-    serverAddr.sin_addr.s_addr = inet_addr(host.c_str());
+    serverAddr.sin_addr.s_addr = inet_addr(host.c_str()); // 手动指定IP地址，将字符串IP地址转换为整数IP地址
 #else
     inet_pton(AF_INET, host.c_str(), &serverAddr.sin_addr);
 #endif
@@ -296,7 +296,11 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data)
             info.opponentId = opponentId;
             if (!trophiesStr.empty())
             {
-                info.opponentTrophies = std::stoi(trophiesStr);
+                try {
+                    info.opponentTrophies = std::stoi(trophiesStr);
+                } catch (...) {
+                    info.opponentTrophies = 0;
+                }
             }
             _onMatchFound(info);
         }
@@ -317,7 +321,7 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data)
     case PACKET_CREATE_CLAN:
         if (_onClanCreated)
         {
-            bool success = data.substr(0, 2) == "OK";
+            bool success = (data.length() >= 2) && (data.substr(0, 2) == "OK");
             std::string clanId = "";
             if (success && data.length() > 3)
             {
@@ -393,8 +397,11 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data)
             std::getline(iss, warId, '|');
             std::getline(iss, stars1Str, '|');
             std::getline(iss, stars2Str, '|');
-            int stars1 = stars1Str.empty() ? 0 : std::stoi(stars1Str);
-            int stars2 = stars2Str.empty() ? 0 : std::stoi(stars2Str);
+            int stars1 = 0, stars2 = 0;
+            try {
+                if (!stars1Str.empty()) stars1 = std::stoi(stars1Str);
+                if (!stars2Str.empty()) stars2 = std::stoi(stars2Str);
+            } catch (...) {}
             _onClanWarStatus(warId, stars1, stars2);
         }
         break;
@@ -416,15 +423,22 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data)
         if (_onPvpAction)
         {
             // 格式: UnitType|X|Y
-            std::istringstream iss(data);
-            std::string token;
-            std::getline(iss, token, '|');
-            int unitType = std::stoi(token);
-            std::getline(iss, token, '|');
-            float x = std::stof(token);
-            std::getline(iss, token, '|');
-            float y = std::stof(token);
-            _onPvpAction(unitType, x, y);
+            try {
+                std::istringstream iss(data);
+                std::string token;
+                std::getline(iss, token, '|');
+                if (token.empty()) break;
+                int unitType = std::stoi(token);
+                std::getline(iss, token, '|');
+                if (token.empty()) break;
+                float x = std::stof(token);
+                std::getline(iss, token, '|');
+                if (token.empty()) break;
+                float y = std::stof(token);
+                _onPvpAction(unitType, x, y);
+            } catch (const std::exception& e) {
+                cocos2d::log("[SocketClient] Error parsing PVP_ACTION: %s", e.what());
+            }
         }
         break;
     case PACKET_PVP_END:
@@ -436,17 +450,17 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data)
     case PACKET_SPECTATE_JOIN:
         if (_onSpectateJoin)
         {
-            // 格式: SPECTATE|AttackerID|DefenderID|MapData
-            // 或 FAIL|Reason
-            if (data.substr(0, 4) == "FAIL")
+            // 服务器发送格式: "1|attackerId|defenderId|mapData" 成功
+            // 或 "0|||" 失败
+            if (data.empty() || data[0] == '0')
             {
                 _onSpectateJoin(false, "", "", "");
             }
             else
             {
                 std::istringstream iss(data);
-                std::string type, attackerId, defenderId, mapData;
-                std::getline(iss, type, '|');
+                std::string successFlag, attackerId, defenderId, mapData;
+                std::getline(iss, successFlag, '|');
                 std::getline(iss, attackerId, '|');
                 std::getline(iss, defenderId, '|');
                 std::getline(iss, mapData);
@@ -454,6 +468,73 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data)
             }
         }
         break;
+    
+    // 🆕 部落战争增强处理
+    case PACKET_CLAN_WAR_MEMBER_LIST:
+        if (_onClanWarMemberList)
+        {
+            _onClanWarMemberList(data);
+        }
+        break;
+    
+    case PACKET_CLAN_WAR_ATTACK_START:
+        if (_onClanWarAttackStart)
+        {
+            // 格式: ATTACK|TargetID|MapData 或 FAIL|Reason|
+            if (data.length() >= 4 && data.substr(0, 4) == "FAIL")
+            {
+                cocos2d::log("[SocketClient] 部落战攻击失败: %s", data.c_str());
+                _onClanWarAttackStart("FAIL", "", "");
+            }
+            else
+            {
+                std::istringstream iss(data);
+                std::string type, targetId, mapData;
+                std::getline(iss, type, '|');
+                std::getline(iss, targetId, '|');
+                std::getline(iss, mapData);
+                _onClanWarAttackStart(type, targetId, mapData);
+            }
+        }
+        break;
+    
+    case PACKET_CLAN_WAR_SPECTATE:
+        if (_onClanWarSpectate)
+        {
+            // 服务器发送格式: "1|attackerId|defenderId|mapData" 成功
+            // 或 "0|||" 失败
+            if (data.empty() || data[0] == '0')
+            {
+                cocos2d::log("[SocketClient] 部落战观战失败");
+                _onClanWarSpectate(false, "", "", "");
+            }
+            else
+            {
+                std::istringstream iss(data);
+                std::string successFlag, attackerId, defenderId, mapData;
+                std::getline(iss, successFlag, '|');
+                std::getline(iss, attackerId, '|');
+                std::getline(iss, defenderId, '|');
+                std::getline(iss, mapData);
+                _onClanWarSpectate(true, attackerId, defenderId, mapData);
+            }
+        }
+        break;
+    
+    case PACKET_CLAN_WAR_STATE_UPDATE:
+        if (_onClanWarStateUpdate)
+        {
+            _onClanWarStateUpdate(data);
+        }
+        break;
+
+    case PACKET_BATTLE_STATUS_LIST:
+        if (_onBattleStatusList)
+        {
+            _onBattleStatusList(data);
+        }
+        break;
+    
     default:
         cocos2d::log("[SocketClient] Unknown packet type: %d", type);
         break;
@@ -531,6 +612,52 @@ void SocketClient::submitClanWarResult(const std::string& warId, const AttackRes
     sendPacket(PACKET_CLAN_WAR_RESULT, warId + "|" + result.serialize());
 }
 
+// 🆕 部落战争增强实现
+void SocketClient::requestClanWarMemberList(const std::string& warId)
+{
+    sendPacket(PACKET_CLAN_WAR_MEMBER_LIST, warId);
+    cocos2d::log("[SocketClient] 请求部落战成员列表: %s", warId.c_str());
+}
+
+void SocketClient::startClanWarAttack(const std::string& warId, const std::string& targetId)
+{
+    std::string data = warId + "|" + targetId;
+    sendPacket(PACKET_CLAN_WAR_ATTACK_START, data);
+    cocos2d::log("[SocketClient] 发起部落战攻击: warId=%s, target=%s", warId.c_str(), targetId.c_str());
+}
+
+void SocketClient::endClanWarAttack(const std::string& warId, int stars, float destructionRate)
+{
+    // 获取当前玩家信息
+    std::string attackerId = "unknown";
+    std::string attackerName = "unknown";
+    
+    // TODO: 从AccountManager获取实际玩家信息
+    // auto& accMgr = AccountManager::getInstance();
+    // if (auto cur = accMgr.getCurrentAccount()) {
+    //     attackerId = cur->userId;
+    //     attackerName = cur->username;
+    // }
+    
+    std::ostringstream oss;
+    oss << warId << "|" 
+        << attackerId << "|"
+        << attackerName << "|"
+        << stars << "|"
+        << destructionRate;
+    
+    sendPacket(PACKET_CLAN_WAR_ATTACK_END, oss.str());
+    cocos2d::log("[SocketClient] 结束部落战攻击: warId=%s, stars=%d, destruction=%.2f", 
+                 warId.c_str(), stars, destructionRate);
+}
+
+void SocketClient::spectateClanWar(const std::string& warId, const std::string& targetId)
+{
+    std::string data = warId + "|" + targetId;
+    sendPacket(PACKET_CLAN_WAR_SPECTATE, data);
+    cocos2d::log("[SocketClient] 请求观战部落战: warId=%s, target=%s", warId.c_str(), targetId.c_str());
+}
+
 // 🆕 PVP系统实现
 void SocketClient::requestPvp(const std::string& targetId)
 {
@@ -552,6 +679,12 @@ void SocketClient::endPvp()
 void SocketClient::requestSpectate(const std::string& targetId)
 {
     sendPacket(PACKET_SPECTATE_REQUEST, targetId);
+}
+
+void SocketClient::requestBattleStatusList()
+{
+    sendPacket(PACKET_BATTLE_STATUS_LIST, "");
+    cocos2d::log("[SocketClient] 请求战斗状态列表");
 }
 
 // ==================== 回调设置 ====================
@@ -628,6 +761,32 @@ void SocketClient::setOnPvpEnd(std::function<void(const std::string&)> callback)
 void SocketClient::setOnSpectateJoin(std::function<void(bool, const std::string&, const std::string&, const std::string&)> callback)
 {
     _onSpectateJoin = callback;
+}
+
+void SocketClient::setOnBattleStatusList(std::function<void(const std::string&)> callback)
+{
+    _onBattleStatusList = callback;
+}
+
+// 🆕 部落战争增强回调设置
+void SocketClient::setOnClanWarMemberList(std::function<void(const std::string&)> callback)
+{
+    _onClanWarMemberList = callback;
+}
+
+void SocketClient::setOnClanWarAttackStart(std::function<void(const std::string&, const std::string&, const std::string&)> callback)
+{
+    _onClanWarAttackStart = callback;
+}
+
+void SocketClient::setOnClanWarSpectate(std::function<void(bool, const std::string&, const std::string&, const std::string&)> callback)
+{
+    _onClanWarSpectate = callback;
+}
+
+void SocketClient::setOnClanWarStateUpdate(std::function<void(const std::string&)> callback)
+{
+    _onClanWarStateUpdate = callback;
 }
 
 void SocketClient::setOnMapReceived(std::function<void(const std::string&)> callback)

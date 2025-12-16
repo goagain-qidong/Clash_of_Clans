@@ -649,3 +649,69 @@ void BattleManager::setNetworkDeployCallback(const std::function<void(UnitType, 
 {
     _onNetworkDeploy = callback;
 }
+
+void BattleManager::setBattleMode(BattleMode mode, const std::string& warId)
+{
+    _battleMode   = mode;
+    _currentWarId = warId;
+}
+
+bool BattleManager::canDeployUnit() const
+{
+    switch (_battleMode)
+    {
+    case BattleMode::LOCAL:
+    case BattleMode::PVP_ATTACK:
+    case BattleMode::CLAN_WAR_ATTACK:
+        return true;
+    case BattleMode::PVP_DEFEND:
+    case BattleMode::CLAN_WAR_DEFEND:
+    case BattleMode::SPECTATE:
+        return false;
+    }
+    return false;
+}
+
+int BattleManager::calculateStars() const
+{
+    int stars = 0;
+
+    // 检查是否摧毁大本营
+    bool townHallDestroyed = false;
+    for (auto* building : _enemyBuildings)
+    {
+        if (building && building->getBuildingType() == BuildingType::kTownHall && building->isDestroyed())
+        {
+            townHallDestroyed = true;
+            break;
+        }
+    }
+    if (townHallDestroyed)
+        stars++;
+
+    float destruction = calculateDestructionRate();
+    if (destruction >= 0.5f)
+        stars++;
+
+    if (destruction >= 1.0f)
+        stars++;
+
+    return stars;
+}
+
+float BattleManager::calculateDestructionRate() const
+{
+    if (_enemyBuildings.empty())
+        return 0.0f;
+    
+    int totalBuildings     = static_cast<int>(_enemyBuildings.size());
+    int destroyedBuildings = 0;
+
+    for (auto* building : _enemyBuildings)
+    {
+        if (building && building->isDestroyed())
+            destroyedBuildings++;
+    }
+
+    return totalBuildings > 0 ? static_cast<float>(destroyedBuildings) / totalBuildings : 0.0f;
+}
