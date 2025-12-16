@@ -877,6 +877,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\UnitHealthBarUI.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\UpgradeTimerUI.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\CombatStats.h" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\PathFinder.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\TrainingUI.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\unit.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.h" />
@@ -933,6 +934,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\SettingsPanel.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\UnitHealthBarUI.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\UI\UpgradeTimerUI.cpp" />
+    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\PathFinder.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\TrainingUI.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\unit.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.cpp" />
@@ -1162,6 +1164,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\crystal.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\defense_log_icon.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\end_battle_button.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\minus_button.png" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\plus_button.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\ranking_icon.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\return_button.png" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\icon\return_home_button.png" />

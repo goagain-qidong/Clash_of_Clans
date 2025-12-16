@@ -476,32 +476,38 @@ void DraggableMapScene::onShopClicked()
 
 void DraggableMapScene::onAttackClicked()
 {
-    if (_buildingManager) {
+    if (_buildingManager)
+    {
         _buildingManager->saveCurrentState();
+        CCLOG("✅ Saved current base before attacking");
     }
 
     auto armyUI = ArmySelectionUI::create();
-    // ... check null ...
+    if (!armyUI)
+    {
+        _uiController->showHint("创建军队选择UI失败！");
+        return;
+    }
+
     this->addChild(armyUI, 200);
 
-    // ✅ 修复：接收并保存 selectedTroops
-    armyUI->setOnConfirmed([this](const TroopDeploymentMap& selectedTroops) {
-
-        // 1. 保存选择的数据到成员变量
-        _pendingTroops = selectedTroops;
-
-        CCLOG("✅ 军队选择完成，准备寻找对手...");
-
+        armyUI->setOnConfirmed([this](const TroopDeploymentMap& deployment) {
         auto& client = SocketClient::getInstance();
-        if (client.isConnected()) {
+        if (client.isConnected())
+        {
             client.requestUserList();
         }
-        else {
+        else
+        {
             showLocalPlayerList();
         }
-        });
+    });
 
-    armyUI->setOnCancelled([this]() { /*...*/ });
+    armyUI->setOnCancelled([this]() {
+        CCLOG("❌ 取消攻击");
+        _uiController->showHint("已取消攻击");
+    });
+
     armyUI->show();
 }
 
@@ -1092,20 +1098,16 @@ void DraggableMapScene::startAttack(const std::string& targetUserId)
     auto& accMgr = AccountManager::getInstance();
     auto enemyGameData = accMgr.getPlayerGameData(targetUserId);
 
-    if (enemyGameData.buildings.empty()) {
-        _uiController->showHint("该玩家没有建筑！");
+    if (enemyGameData.buildings.empty())
+    {
+        _uiController->showHint(StringUtils::format("玩家 %s 还没有建筑！", targetUserId.c_str()));
         return;
     }
 
-    // ✅ 修复：使用新的 createWithEnemyData 传递 _pendingTroops
-    auto battleScene = BattleScene::createWithEnemyData(enemyGameData, targetUserId, _pendingTroops);
-
-    if (battleScene) {
-        // 清空暂存数据（可选，防止污染下一次）
-        // _pendingTroops.clear(); 
+    CCLOG("✅ 加载成功，进入战斗场景 (TH Level=%d, Buildings=%zu)", enemyGameData.townHallLevel, enemyGameData.buildings.size());
+    auto battleScene = BattleScene::createWithEnemyData(enemyGameData, targetUserId);
+    if (battleScene)
         Director::getInstance()->pushScene(TransitionFade::create(0.3f, battleScene));
-    }
-    else {
+    else
         _uiController->showHint("创建战斗场景失败！");
-    }
 }

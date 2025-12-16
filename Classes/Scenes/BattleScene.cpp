@@ -98,9 +98,124 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData)
 
 bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std::string& enemyUserId)
 {
-    // 旧接口实现：从 Inventory 获取所有兵力作为默认
-    auto allTroops = TroopInventory::getInstance().getAllTroops();
-    return initWithEnemyData(enemyData, enemyUserId, allTroops);
+    if (!Scene::init())
+    {
+        return false;
+    }
+
+    _visibleSize = Director::getInstance()->getVisibleSize();
+
+    setupMap();
+    setupUI();
+    setupTouchListeners();
+    
+    // Initialize Manager
+    if (_battleManager)
+    {
+        _battleManager->init(_mapSprite, enemyData, enemyUserId, false);
+        
+        // Setup callbacks
+        _battleManager->setUIUpdateCallback([this]() {
+            if (_battleUI && _battleManager)
+            {
+                _battleUI->updateTimer(static_cast<int>(_battleManager->getRemainingTime()));
+                _battleUI->updateStars(_battleManager->getStars());
+                _battleUI->updateDestruction(_battleManager->getDestructionPercent());
+            }
+        });
+        
+        _battleManager->setBattleEndCallback([this]() {
+            if (_battleUI && _battleManager)
+            {
+                int trophyChange = _battleManager->getStars() * 10 - (3 - _battleManager->getStars()) * 3;
+                _battleUI->showResultPanel(
+                    _battleManager->getStars(),
+                    _battleManager->getDestructionPercent(),
+                    _battleManager->getGoldLooted(),
+                    _battleManager->getElixirLooted(),
+                    trophyChange,
+                    _battleManager->isReplayMode()
+                );
+                
+                // 🆕 PVP End
+                if (_isPvpMode && _isAttacker)
+                {
+                    SocketClient::getInstance().endPvp();
+                }
+            }
+        });
+        
+        _battleManager->setTroopDeployCallback([this](UnitType type, int count) {
+            if (_battleUI && _battleManager)
+            {
+                _battleUI->updateTroopCounts(
+                    _battleManager->getTroopCount(UnitType::kBarbarian),
+                    _battleManager->getTroopCount(UnitType::kArcher),
+                    _battleManager->getTroopCount(UnitType::kGiant),
+                    _battleManager->getTroopCount(UnitType::kGoblin),
+                    _battleManager->getTroopCount(UnitType::kWallBreaker)
+                );
+            }
+        });
+    }
+    
+    // Load Buildings
+    if (_buildingManager && !enemyData.buildings.empty())
+    {
+        CCLOG("🏰 Loading enemy base with %zu buildings...", enemyData.buildings.size());
+        _buildingManager->loadBuildingsFromData(enemyData.buildings, true);
+        
+        // Pass buildings to manager
+        if (_battleManager)
+        {
+            const auto& buildings = _buildingManager->getBuildings();
+            // Convert list<BaseBuilding*> to vector<BaseBuilding*>
+            std::vector<BaseBuilding*> buildingVec(buildings.begin(), buildings.end());
+            _battleManager->setBuildings(buildingVec);
+        }
+
+        if (_battleUI)
+        {
+            _battleUI->updateStatus(StringUtils::format("攻击 %s 的村庄 (大本营 Lv.%d)", 
+                                                      enemyUserId.c_str(), 
+                                                      enemyData.townHallLevel), Color4B::GREEN);
+        }
+    }
+    else
+    {
+        if (_battleUI) _battleUI->updateStatus("错误：无法加载敌方基地！", Color4B::RED);
+        CCLOG("❌ Failed to load enemy base: no buildings data");
+    }
+
+    // 🎵 播放准备音乐
+    MusicManager::getInstance().playMusic(MusicType::BATTLE_PREPARING);
+
+    // Delay start battle
+    this->scheduleOnce([this](float dt) {
+            if (_battleManager)
+                _battleManager->startBattle({});
+        if (_battleUI)
+        {
+            _battleUI->updateStatus("部署你的士兵进行攻击！", Color4B::YELLOW);
+            _battleUI->showBattleHUD(true);
+            _battleUI->showTroopButtons(true);
+            // Initial troop counts update
+            if (_battleManager)
+            {
+                _battleUI->updateTroopCounts(
+                    _battleManager->getTroopCount(UnitType::kBarbarian),
+                    _battleManager->getTroopCount(UnitType::kArcher),
+                    _battleManager->getTroopCount(UnitType::kGiant),
+                    _battleManager->getTroopCount(UnitType::kGoblin),
+                    _battleManager->getTroopCount(UnitType::kWallBreaker)
+                );
+            }
+        }
+    }, 1.0f, "start_battle_delay");
+
+    scheduleUpdate();
+
+    return true;
 }
 
 bool BattleScene::initWithReplayData(const std::string& replayDataStr)
@@ -203,10 +318,8 @@ bool BattleScene::initWithReplayData(const std::string& replayDataStr)
     }
     
     // Start Battle immediately for replay
-    if (_battleManager) {
-        TroopDeploymentMap emptyDeployment;
-        _battleManager->startBattle(emptyDeployment);
-    }
+    if (_battleManager)
+        _battleManager->startBattle({});
 
     return true;
 }
@@ -592,99 +705,4 @@ void BattleScene::ensureMapInBoundary()
     if (currentPos.y < _mapBoundary.getMinY()) newPos.y = _mapBoundary.getMinY();
     else if (currentPos.y > _mapBoundary.getMaxY()) newPos.y = _mapBoundary.getMaxY();
     if (newPos != currentPos) _mapSprite->setPosition(newPos);
-}
-//
-
-// ... (现有的 createWithEnemyData 实现保持不变) ...
-
-// 🆕 新增实现：带兵力数据的创建函数
-BattleScene* BattleScene::createWithEnemyData(const AccountGameData& enemyData,
-    const std::string& enemyUserId,
-    const TroopDeploymentMap& deployedTroops)
-{
-    BattleScene* scene = new (std::nothrow) BattleScene();
-    if (scene && scene->initWithEnemyData(enemyData, enemyUserId, deployedTroops))
-    {
-        scene->autorelease();
-        return scene;
-    }
-    CC_SAFE_DELETE(scene);
-    return nullptr;
-}
-
-// 🆕 新增实现：带兵力数据的初始化函数
-bool BattleScene::initWithEnemyData(const AccountGameData& enemyData,
-    const std::string& enemyUserId,
-    const TroopDeploymentMap& deployedTroops)
-{
-    if (!Scene::init())
-    {
-        return false;
-    }
-
-    _visibleSize = Director::getInstance()->getVisibleSize();
-
-    // 保存传入的兵力数据
-    _initialTroops = deployedTroops;
-
-    setupMap();
-    setupUI();
-    setupTouchListeners();
-
-    // Initialize Manager
-    if (_battleManager)
-    {
-        _battleManager->init(_mapSprite, enemyData, enemyUserId, false);
-
-        // ... (设置回调的代码保持不变，与原 initWithEnemyData 一致) ...
-        _battleManager->setUIUpdateCallback([this]() { /*...*/ });
-        _battleManager->setBattleEndCallback([this]() { /*...*/ });
-        _battleManager->setTroopDeployCallback([this](UnitType type, int count) { /*...*/ });
-    }
-
-    // Load Buildings
-    if (_buildingManager && !enemyData.buildings.empty())
-    {
-        // ... (加载建筑代码保持不变) ...
-        _buildingManager->loadBuildingsFromData(enemyData.buildings, true);
-        if (_battleManager) {
-            const auto& buildings = _buildingManager->getBuildings();
-            std::vector<BaseBuilding*> buildingVec(buildings.begin(), buildings.end());
-            _battleManager->setBuildings(buildingVec);
-        }
-    }
-
-    // 🎵 播放准备音乐
-    MusicManager::getInstance().playMusic(MusicType::BATTLE_PREPARING);
-
-    // Delay start battle
-    this->scheduleOnce([this](float dt) {
-        if (_battleManager) {
-            // 🚨 关键修改：调用带参数的 startBattle
-            _battleManager->startBattle(_initialTroops);
-        }
-
-        if (_battleUI)
-        {
-            _battleUI->updateStatus("部署你的士兵进行攻击！", Color4B::YELLOW);
-            _battleUI->showBattleHUD(true);
-            _battleUI->showTroopButtons(true);
-
-            // Initial troop counts update (立即刷新 UI 显示)
-            if (_battleManager)
-            {
-                _battleUI->updateTroopCounts(
-                    _battleManager->getTroopCount(UnitType::kBarbarian),
-                    _battleManager->getTroopCount(UnitType::kArcher),
-                    _battleManager->getTroopCount(UnitType::kGiant),
-                    _battleManager->getTroopCount(UnitType::kGoblin),
-                    _battleManager->getTroopCount(UnitType::kWallBreaker)
-                );
-            }
-        }
-        }, 1.0f, "start_battle_delay");
-
-    scheduleUpdate();
-
-    return true;
 }

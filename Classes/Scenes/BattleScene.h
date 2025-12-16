@@ -49,19 +49,7 @@ public:
      * @param enemyData 敌方玩家的基地数据
      */
     static BattleScene* createWithEnemyData(const AccountGameData& enemyData);
-    /**
-     * @brief 创建战斗场景（带敌方数据和部署军队）- 🆕 新增
-     */
-    static BattleScene* createWithEnemyData(const AccountGameData& enemyData,
-        const std::string& enemyUserId,
-        const TroopDeploymentMap& deployedTroops);
 
-    /**
-     * @brief 初始化战斗场景（带敌方数据和部署军队）- 🆕 新增
-     */
-    virtual bool initWithEnemyData(const AccountGameData& enemyData,
-        const std::string& enemyUserId,
-        const TroopDeploymentMap& deployedTroops);
     /**
      * @brief 创建战斗场景（带敌方数据）
      * @param enemyData 敌方玩家的基地数据
@@ -105,8 +93,7 @@ public:
 private:
     BattleScene();
     ~BattleScene();
-    // 🆕 存储传入的部署数据
-    TroopDeploymentMap _initialTroops;
+    
     // ==================== 场景元素 ====================
     cocos2d::Size _visibleSize;
     cocos2d::Sprite* _mapSprite = nullptr;
