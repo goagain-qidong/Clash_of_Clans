@@ -219,24 +219,7 @@ bool GridMap::checkArea(Vec2 startGridPos, Size size)
     return true;
 }
 
-void GridMap::markArea(Vec2 startGridPos, Size size, bool occupied)
-{
-    int startX = static_cast<int>(startGridPos.x);
-    int startY = static_cast<int>(startGridPos.y);
-    int w = static_cast<int>(size.width);
-    int h = static_cast<int>(size.height);
 
-    if (startX < 0 || startY < 0 || startX + w > _gridWidth || startY + h > _gridHeight)
-        return;
-
-    for (int x = startX; x < startX + w; x++)
-    {
-        for (int y = startY; y < startY + h; y++)
-        {
-            _collisionMap[x][y] = occupied;
-        }
-    }
-}
 
 void GridMap::setStartPixel(const Vec2& pixel)
 {
@@ -283,4 +266,28 @@ bool GridMap::isBlocked(int x, int y) const
     if (x < 0 || y < 0 || x >= _gridWidth || y >= _gridHeight)
         return true;
     return _collisionMap[x][y];
+}
+void GridMap::markArea(cocos2d::Vec2 startGridPos, cocos2d::Size size, bool occupied)
+{
+    int startX = static_cast<int>(startGridPos.x);
+    int startY = static_cast<int>(startGridPos.y);
+    int w = static_cast<int>(size.width);
+    int h = static_cast<int>(size.height);
+
+    // 遍历建筑覆盖的每一个格子
+    for (int x = startX; x < startX + w; x++)
+    {
+        for (int y = startY; y < startY + h; y++)
+        {
+            // 边界检查，防止数组越界
+            if (x >= 0 && x < _gridWidth && y >= 0 && y < _gridHeight)
+            {
+                // _collisionMap 是你在 GridMap 中存储 true/false 的二维数组
+                _collisionMap[x][y] = occupied;
+
+                // 可选：如果是调试模式，把格子变红方便观察
+                // if (occupied) drawDebugRect(x, y, Color4F::RED);
+            }
+        }
+    }
 }

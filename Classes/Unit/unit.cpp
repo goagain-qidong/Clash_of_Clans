@@ -575,38 +575,18 @@ void Unit::PlayAnimation(UnitAction action, UnitDirection dir)
 // --------------------------------------------------------------------------
 void Unit::MoveTo(const Vec2& target_pos)
 {
-    // 如果已经死亡，不能移动
-    if (is_dead_)
-        return;
+    if (is_dead_) return;
 
     target_pos_ = target_pos;
-
     Vec2 current_pos = this->getPosition();
-    Vec2 diff        = target_pos_ - current_pos; // 向量：从当前点指向目标点
+    Vec2 diff = target_pos_ - current_pos;
 
-    // 如果距离太近 (< 1像素)，视为已到达，不移动
-    if (diff.getLength() < 1.0f)
-        return;
+    if (diff.getLength() < 1.0f) return;
 
-    // 1. 计算方向并播放跑步动画
     current_dir_ = CalculateDirection(diff);
-    
-    // 🔍 调试日志
-    if (type_ == UnitType::kGiant)
-    {
-        CCLOG("🏃 Giant MoveTo: pos=(%.1f,%.1f), target=(%.1f,%.1f), distance=%.1f, speed=%.1f", 
-              current_pos.x, current_pos.y, target_pos.x, target_pos.y, 
-              diff.getLength(), move_speed_);
-    }
-    
     PlayAnimation(UnitAction::kRun, current_dir_);
 
-    // 2. 计算每帧速度向量
-    // normalize() 将向量长度变为1 (单位向量)，保留方向
-    // 然后乘以 speed，得到实际每秒移动的像素偏移量
     move_velocity_ = diff.getNormalized() * move_speed_;
-
-    // 3. 标记状态为“正在移动”，update 函数会开始工作
     is_moving_ = true;
 }
 
@@ -616,36 +596,30 @@ void Unit::MoveTo(const Vec2& target_pos)
 // --------------------------------------------------------------------------
 void Unit::tick(float dt)
 {
-    if (!is_moving_)
-        return; // 如果没在移动，直接跳过
+    if (!is_moving_) return;
 
-    Vec2  current_pos = this->getPosition();
-    float distance    = current_pos.distance(target_pos_); // 离终点还有多远
-    float step        = move_speed_ * dt;                  // 这一帧能走多远 (速度 * 时间)
+    Vec2 current_pos = this->getPosition();
+    float distance = current_pos.distance(target_pos_);
+    float step = move_speed_ * dt;
 
-    // 🔍 调试日志：每60帧输出一次（约1秒）
-    static int frameCount = 0;
-    if (type_ == UnitType::kGiant && ++frameCount % 60 == 0)
-    {
-        CCLOG("🎮 Giant update: pos=(%.1f,%.1f), target=(%.1f,%.1f), distance=%.1f, step=%.1f",
-              current_pos.x, current_pos.y, target_pos_.x, target_pos_.y, distance, step);
-    }
-
-    // 如果 这一帧能走的距离 >= 剩余距离，说明到了
     if (step >= distance)
     {
-        this->setPosition(target_pos_);                 // 直接修正到终点 (防止跑过头)
-        is_moving_ = false;                             // 停止移动标记
-        if (type_ == UnitType::kGiant)
+        this->setPosition(target_pos_); // 修正位置到目标点
+
+        // 🆕 路径行走逻辑：到达当前点后，检查是否有下一个点
+        _currentPathIndex++;
+        if (_currentPathIndex < _pathPoints.size())
         {
-            CCLOG("🎯 Giant reached target!");
+            MoveTo(_pathPoints[_currentPathIndex]); // 继续走向下一个点
         }
-        PlayAnimation(UnitAction::kIdle, current_dir_); // 播放待机动画
+        else
+        {
+            // 路径走完了
+            StopMoving();
+        }
     }
     else
     {
-        // 还没到，按照速度向量移动一步
-        // 新位置 = 旧位置 + (速度向量 * 时间间隔)
         this->setPosition(current_pos + move_velocity_ * dt);
     }
 }
@@ -703,30 +677,39 @@ void Unit::Attack(bool useSecondAttack)
 // --------------------------------------------------------------------------
 void Unit::Die()
 {
-    // 如果已经死亡，不重复播放
-    if (is_dead_)
-        return;
+    if (is_dead_) return;
 
-    // 标记为已死亡
     is_dead_ = true;
+    StopMoving(); // 停止移动
 
-    // 停止移动
-    is_moving_ = false;
+    // 🆕 炸弹人特殊死亡逻辑
+    if (type_ == UnitType::kWallBreaker)
+    {
+        PlayAnimation(UnitAction::kDeath, current_dir_); // 播放爆炸动画
+        // 炸弹人爆炸后直接消失（不需要残留墓碑）
+        auto removeAction = Sequence::create(
+            DelayTime::create(0.5f), // 等待爆炸动画播完
+            RemoveSelf::create(),
+            nullptr
+        );
+        this->runAction(removeAction);
+    }
+    else
+    {
+        // 普通单位：播放死亡动画并残留墓碑
+        PlayAnimation(UnitAction::kDeath, current_dir_);
+        // 3秒后淡出移除
+        auto removeAction = Sequence::create(
+            DelayTime::create(3.0f),
+            FadeOut::create(1.0f),
+            RemoveSelf::create(),
+            nullptr
+        );
+        this->runAction(removeAction);
+    }
 
-    // 播放死亡动画（死亡动画不区分方向）
-    PlayAnimation(UnitAction::kDeath, current_dir_);
-
-    CCLOG("Unit died!");
-
-    // 可选：3秒后移除单位
-    auto removeAction = Sequence::create(
-        DelayTime::create(3.0f),
-        RemoveSelf::create(),
-        nullptr
-    );
-    this->runAction(removeAction);
+    CCLOG("Unit died: %d", (int)type_);
 }
-
 // ==================== 战斗系统实现 ⭐ 新增 ====================
 
 bool Unit::takeDamage(float damage)
@@ -834,4 +817,25 @@ void Unit::disableBattleMode()
 
     CCLOG("🛡️ Unit 离开战斗模式");
 }
+void Unit::MoveToPath(const std::vector<Vec2>& path)
+{
+    if (path.empty() || is_dead_) return;
 
+    _pathPoints = path;
+    _currentPathIndex = 0; // 从路径的第0个点开始
+
+    // 如果第0个点就是当前脚下（距离很近），直接去第1个点
+    if (_pathPoints.size() > 0 && this->getPosition().distance(_pathPoints[0]) < 10.0f) {
+        _currentPathIndex = 1;
+    }
+
+    if (_currentPathIndex < _pathPoints.size()) {
+        MoveTo(_pathPoints[_currentPathIndex]);
+    }
+}
+void Unit::StopMoving()
+{
+    is_moving_ = false;
+    _pathPoints.clear();
+    PlayAnimation(UnitAction::kIdle, current_dir_);
+}

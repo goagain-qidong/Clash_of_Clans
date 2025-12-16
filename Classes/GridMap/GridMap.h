@@ -48,7 +48,13 @@ public:
         BOTTOM_RIGHT,    ///< 右下角
         CENTER           ///< 中心点
     };
-
+    /**
+     * @brief 标记指定区域的通行状态
+     * @param startGridPos 建筑的起始网格坐标 (例如: 10, 10)
+     * @param size 建筑的尺寸 (例如: 2x2)
+     * @param occupied true=不可通行(有建筑), false=可通行(建筑被移除)
+     */
+    void markArea(cocos2d::Vec2 startGridPos, cocos2d::Size size, bool occupied);
     /**
      * @brief 创建GridMap实例
      * @param mapSize 地图的像素尺寸
@@ -125,13 +131,7 @@ public:
      */
     void showWholeGrid(bool visible, const cocos2d::Size& currentBuildingSize = cocos2d::Size::ZERO);
     
-    /**
-     * @brief 标记指定区域为占用或空闲状态
-     * @param startGridPos 起始网格坐标
-     * @param size 区域尺寸（网格单位）
-     * @param occupied true表示占用，false表示空闲
-     */
-    void markArea(cocos2d::Vec2 startGridPos, cocos2d::Size size, bool occupied);
+    
 
     // --- Pathfinding helpers ---
     
