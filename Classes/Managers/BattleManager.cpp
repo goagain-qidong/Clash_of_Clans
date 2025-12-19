@@ -98,11 +98,6 @@ void BattleManager::setBuildings(const std::vector<BaseBuilding*>& buildings)
     }
 }
 
-//
-// ... (包含头文件部分不变)
-
-// ... (init, setBuildings 函数保持不变)
-
 // ------------------------------------------------------------------------------------
 // 🆕 修正：startBattle 接受 TroopDeploymentMap
 // ------------------------------------------------------------------------------------
@@ -552,18 +547,30 @@ void BattleManager::endBattle(bool surrender)
     
     calculateBattleResult();
     
+    // ... existing code ...
     if (_starsEarned > 0)
         MusicManager::getInstance().playMusic(MusicType::BATTLE_WIN, false);
     else
         MusicManager::getInstance().playMusic(MusicType::BATTLE_LOSE, false);
-        
+
     if (!_isReplayMode && !_isNetworked) // 🆕 联网模式下不保存本地结果
     {
+        // 🆕 核心修改：战斗结束时，将剩余未使用的士兵返还到库存
+        // startBattle 时已消耗了所有带入的士兵，这里只需把没用完的加回去
+        auto& inventory = TroopInventory::getInstance();
+        inventory.addTroops(UnitType::kBarbarian, _barbarianCount);
+        inventory.addTroops(UnitType::kArcher, _archerCount);
+        inventory.addTroops(UnitType::kGiant, _giantCount);
+        inventory.addTroops(UnitType::kGoblin, _goblinCount);
+        inventory.addTroops(UnitType::kWallBreaker, _wallBreakerCount);
+
+        // 保存数据（此时 Inventory 已包含剩余士兵，会正确写入 JSON）
         AccountManager::getInstance().saveGameStateToFile();
         uploadBattleResult();
     }
-    
-    if (_onBattleEnd) _onBattleEnd();
+
+    if (_onBattleEnd)
+        _onBattleEnd();
 }
 
 void BattleManager::calculateBattleResult()

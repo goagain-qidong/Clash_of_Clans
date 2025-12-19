@@ -165,6 +165,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Classes\Scenes\BattleScene.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

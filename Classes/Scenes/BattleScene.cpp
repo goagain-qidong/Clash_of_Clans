@@ -191,27 +191,39 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
     MusicManager::getInstance().playMusic(MusicType::BATTLE_PREPARING);
 
     // Delay start battle
-    this->scheduleOnce([this](float dt) {
-            if (_battleManager)
-                _battleManager->startBattle(TroopDeploymentMap{});
-            if (_battleUI)
-        {
-            _battleUI->updateStatus("部署你的士兵进行攻击！", Color4B::YELLOW);
-            _battleUI->showBattleHUD(true);
-            _battleUI->showTroopButtons(true);
-            // Initial troop counts update
+    this->scheduleOnce(
+        [this](float dt) {
             if (_battleManager)
             {
-                _battleUI->updateTroopCounts(
-                    _battleManager->getTroopCount(UnitType::kBarbarian),
-                    _battleManager->getTroopCount(UnitType::kArcher),
-                    _battleManager->getTroopCount(UnitType::kGiant),
-                    _battleManager->getTroopCount(UnitType::kGoblin),
-                    _battleManager->getTroopCount(UnitType::kWallBreaker)
-                );
+                // 🆕 修改：自动带入所有库存士兵，移除选择环节
+                TroopDeploymentMap allTroops;
+                auto&              inventory      = TroopInventory::getInstance();
+                allTroops[UnitType::kBarbarian]   = inventory.getTroopCount(UnitType::kBarbarian);
+                allTroops[UnitType::kArcher]      = inventory.getTroopCount(UnitType::kArcher);
+                allTroops[UnitType::kGiant]       = inventory.getTroopCount(UnitType::kGiant);
+                allTroops[UnitType::kGoblin]      = inventory.getTroopCount(UnitType::kGoblin);
+                allTroops[UnitType::kWallBreaker] = inventory.getTroopCount(UnitType::kWallBreaker);
+
+                _battleManager->startBattle(allTroops);
             }
-        }
-    }, 1.0f, "start_battle_delay");
+
+            if (_battleUI)
+            {
+                _battleUI->updateStatus("部署你的士兵进行攻击！", Color4B::YELLOW);
+                _battleUI->showBattleHUD(true);
+                _battleUI->showTroopButtons(true);
+                // Initial troop counts update
+                if (_battleManager)
+                {
+                    _battleUI->updateTroopCounts(_battleManager->getTroopCount(UnitType::kBarbarian),
+                                                 _battleManager->getTroopCount(UnitType::kArcher),
+                                                 _battleManager->getTroopCount(UnitType::kGiant),
+                                                 _battleManager->getTroopCount(UnitType::kGoblin),
+                                                 _battleManager->getTroopCount(UnitType::kWallBreaker));
+                }
+            }
+        },
+        1.0f, "start_battle_delay");
 
     scheduleUpdate();
 
