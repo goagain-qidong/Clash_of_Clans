@@ -129,6 +129,9 @@ void BattleManager::setBuildings(const std::vector<BaseBuilding*>& buildings)
     CCLOG("📊 ========================================");
 }
 
+// ------------------------------------------------------------------------------------
+// 🆕 修正：startBattle 接受 TroopDeploymentMap
+// ------------------------------------------------------------------------------------
 void BattleManager::startBattle(const TroopDeploymentMap& deployment)
 {
     // 🆕 Prevent resetting state if already fighting (e.g. spectator catching up)
@@ -690,6 +693,9 @@ void BattleManager::endBattle(bool surrender)
     }
 
     calculateBattleResult();
+    
+    // ... existing code ...
+    if (_starsEarned > 0)
 
     // 🆕 改进的胜负音乐判定
     // 获得至少1星 或 破坏率>=50% 视为胜利
@@ -700,11 +706,23 @@ void BattleManager::endBattle(bool surrender)
     else
         MusicManager::getInstance().playMusic(MusicType::BATTLE_LOSE, false);
 
+    if (!_isReplayMode && !_isNetworked) // 🆕 联网模式下不保存本地结果
+
     CCLOG("🏆 Battle Result: Stars=%d, Destruction=%d%%, Reason=%d, Victory=%s", _starsEarned, _destructionPercent,
           static_cast<int>(_endReason), isVictory ? "YES" : "NO");
 
     if (!_isReplayMode && !_isNetworked)
     {
+        // 🆕 核心修改：战斗结束时，将剩余未使用的士兵返还到库存
+        // startBattle 时已消耗了所有带入的士兵，这里只需把没用完的加回去
+        auto& inventory = TroopInventory::getInstance();
+        inventory.addTroops(UnitType::kBarbarian, _barbarianCount);
+        inventory.addTroops(UnitType::kArcher, _archerCount);
+        inventory.addTroops(UnitType::kGiant, _giantCount);
+        inventory.addTroops(UnitType::kGoblin, _goblinCount);
+        inventory.addTroops(UnitType::kWallBreaker, _wallBreakerCount);
+
+        // 保存数据（此时 Inventory 已包含剩余士兵，会正确写入 JSON）
         auto& inventory = TroopInventory::getInstance();
         inventory.addTroops(UnitType::kBarbarian, _barbarianCount);
         inventory.addTroops(UnitType::kArcher, _archerCount);
