@@ -25,7 +25,6 @@
 #include "SceneUIController.h"
 #include "ShopLayer.h"
 #include "SocketClient.h"
-#include "UI/ArmySelectionUI.h"
 #include "UI/PlayerListLayer.h"
 #include "UI/ClanPanel.h" // 🆕 Include ClanPanel
 #include "Unit/unit.h"
@@ -482,33 +481,16 @@ void DraggableMapScene::onAttackClicked()
         CCLOG("✅ Saved current base before attacking");
     }
 
-    auto armyUI = ArmySelectionUI::create();
-    if (!armyUI)
+    // 🆕 直接显示玩家列表，跳过军队选择界面
+    auto& client = SocketClient::getInstance();
+    if (client.isConnected())
     {
-        _uiController->showHint("创建军队选择UI失败！");
-        return;
+        client.requestUserList();
     }
-
-    this->addChild(armyUI, 200);
-
-    armyUI->setOnConfirmed([this](const TroopDeploymentMap&) {
-        auto& client = SocketClient::getInstance();
-        if (client.isConnected())
-        {
-            client.requestUserList();
-        }
-        else
-        {
-            showLocalPlayerList();
-        }
-    });
-
-    armyUI->setOnCancelled([this]() {
-        CCLOG("❌ 取消攻击");
-        _uiController->showHint("已取消攻击");
-    });
-
-    armyUI->show();
+    else
+    {
+        showLocalPlayerList();
+    }
 }
 
 void DraggableMapScene::onClanClicked()
