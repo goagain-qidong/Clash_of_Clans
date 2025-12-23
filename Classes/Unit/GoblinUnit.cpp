@@ -1,12 +1,14 @@
 ﻿/****************************************************************
  * Project Name:  Clash_of_Clans
+ * File Name:     GoblinUnit.cpp
  * File Function: 哥布林单位类实现
  * Author:        赵崇治、薛毓哲
- * Update Date:   2025/12/22
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
 #include "GoblinUnit.h"
-#include "Unit/UnitConfig.h"
+
+#include "Unit/CombatStats.h"
 
 USING_NS_CC;
 
@@ -28,7 +30,7 @@ bool GoblinUnit::init(int level)
         return false;
 
     // 设置哥布林特有属性
-    _moveSpeed = 150.0f;  // 哥布林移动快
+    _moveSpeed   = 150.0f; // 哥布林移动快
     _combatStats = UnitConfig::getGoblin(level);
 
     return true;

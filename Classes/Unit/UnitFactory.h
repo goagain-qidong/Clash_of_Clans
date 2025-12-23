@@ -3,11 +3,16 @@
  * File Name:     UnitFactory.h
  * File Function: 单位工厂 - 统一创建单位
  * Author:        赵崇治
- * Update Date:   2025/12/22
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
-#pragma once
+#ifndef UNIT_FACTORY_H_
+#define UNIT_FACTORY_H_
+
 #include "BaseUnit.h"
+#include "UnitTypes.h"
+
+#include <string>
 
 /**
  * @class UnitFactory
@@ -23,14 +28,16 @@ public:
      * @return 单位指针
      */
     static BaseUnit* createUnit(UnitType type, int level = 1);
-    
+
     /**
      * @brief 获取兵种人口数
      */
     static int getUnitPopulation(UnitType type);
-    
+
     /**
      * @brief 获取兵种名称
      */
     static std::string getUnitName(UnitType type);
 };
+
+#endif // UNIT_FACTORY_H_

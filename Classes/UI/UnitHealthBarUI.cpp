@@ -3,15 +3,17 @@
  * File Name:     UnitHealthBarUI.cpp
  * File Function: 单位（小兵）血条UI显示组件实现
  * Author:        薛毓哲
- * Update Date:   2025/12/14
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
 
 #include "UnitHealthBarUI.h"
 
+#include "Unit/BaseUnit.h"
+
 USING_NS_CC;
 
-UnitHealthBarUI* UnitHealthBarUI::create(Unit* unit)
+UnitHealthBarUI* UnitHealthBarUI::create(BaseUnit* unit)
 {
     UnitHealthBarUI* ui = new (std::nothrow) UnitHealthBarUI();
     if (ui && ui->init(unit))
@@ -23,7 +25,7 @@ UnitHealthBarUI* UnitHealthBarUI::create(Unit* unit)
     return nullptr;
 }
 
-bool UnitHealthBarUI::init(Unit* unit)
+bool UnitHealthBarUI::init(BaseUnit* unit)
 {
     if (!Node::init() || !unit)
     {
@@ -48,7 +50,7 @@ bool UnitHealthBarUI::init(Unit* unit)
     // ==================== 初始状态设置 ====================
     int currentHP = unit->getCurrentHP();
     int maxHP     = unit->getMaxHP();
-    
+
     // 战斗中始终显示血条
     this->setVisible(true);
     _isVisible = true;
@@ -157,5 +159,5 @@ bool UnitHealthBarUI::isUnitDead() const
         return true;
     }
 
-    return _unit->IsDead();
+    return _unit->isDead();
 }

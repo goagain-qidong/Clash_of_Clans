@@ -2,62 +2,23 @@
  * Project Name:  Clash_of_Clans
  * File Name:     BaseUnit.h
  * File Function: 单位基类 - 所有士兵的父类
- * Author:        赵崇治 、薛毓哲
- * Update Date:   2025/12/22
+ * Author:        赵崇治、薛毓哲
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
-#pragma once
+#ifndef BASE_UNIT_H_
+#define BASE_UNIT_H_
 
 #include "Unit/CombatStats.h"
+#include "Unit/UnitTypes.h"
 #include "cocos2d.h"
+
 #include <map>
 #include <string>
 #include <vector>
 
 class BaseBuilding;
 class UnitHealthBarUI;
-
-/**
- * @enum UnitAction
- * @brief 单位动作枚举
- */
-enum class UnitAction
-{
-    kRun,
-    kIdle,
-    kAttack,
-    kAttack2,
-    kDeath
-};
-
-/**
- * @enum UnitDirection
- * @brief 单位朝向枚举（支持8方向）
- */
-enum class UnitDirection
-{
-    kUp,
-    kUpRight,
-    kRight,
-    kDownRight,
-    kDown,
-    kDownLeft,
-    kLeft,
-    kUpLeft
-};
-
-/**
- * @enum UnitType
- * @brief 单位类型枚举
- */
-enum class UnitType
-{
-    kBarbarian,
-    kArcher,
-    kGiant,
-    kGoblin,
-    kWallBreaker
-};
 
 /**
  * @class BaseUnit
@@ -179,3 +140,5 @@ protected:
     UnitHealthBarUI* _healthBarUI;
     bool             _battleModeEnabled;
 };
+
+#endif // BASE_UNIT_H_

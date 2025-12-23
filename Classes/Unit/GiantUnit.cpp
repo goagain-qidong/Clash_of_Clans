@@ -3,11 +3,12 @@
  * File Name:     GiantUnit.cpp
  * File Function: 巨人单位类实现
  * Author:        赵崇治、薛毓哲
- * Update Date:   2025/12/22
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
 #include "GiantUnit.h"
-#include "Unit/UnitConfig.h"
+
+#include "Unit/CombatStats.h"
 
 USING_NS_CC;
 
@@ -29,7 +30,7 @@ bool GiantUnit::init(int level)
         return false;
 
     // 设置巨人特有属性
-    _moveSpeed = 60.0f;  // 巨人移动慢
+    _moveSpeed   = 60.0f; // 巨人移动慢
     _combatStats = UnitConfig::getGiant(level);
 
     return true;

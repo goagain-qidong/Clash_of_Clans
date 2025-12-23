@@ -3,18 +3,20 @@
  * File Name:     DefenseBuilding.h
  * File Function: 防御建筑类
  * Author:        薛毓哲
- * Update Date:   2025/12/07
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
-#pragma once
+#ifndef DEFENSE_BUILDING_H_
+#define DEFENSE_BUILDING_H_
 
 #include "BaseBuilding.h"
 #include "cocos2d.h"
+
 #include <string>
 #include <vector>
 
 // Forward declaration
-class Unit;
+class BaseUnit;
 class BuildingHealthBarUI;
 
 enum class DefenseType
@@ -57,45 +59,43 @@ public:
     /**
      * @brief 检测敌方士兵并自动选择目标
      */
-    void detectEnemies(const std::vector<Unit*>& units);
+    void detectEnemies(const std::vector<BaseUnit*>& units);
 
     /**
      * @brief 攻击目标
      */
-    virtual void attackTarget(Unit* target) override;
+    virtual void attackTarget(BaseUnit* target) override;
 
     /**
      * @brief 发射炮弹并造成伤害
      */
-    void fireProjectile(Unit* target);
+    void fireProjectile(BaseUnit* target);
 
     /**
      * @brief 播放攻击动画
      */
     void playAttackAnimation();
 
-    
-
     /**
      * @brief 检查是否在战斗模式中
      */
     bool isBattleModeEnabled() const { return _battleModeEnabled; }
-    
+
     /**
      * @brief 显示攻击范围（半透明圆圈）
      */
     void showAttackRange();
-    
+
     /**
      * @brief 隐藏攻击范围
      */
     void hideAttackRange();
-    
+
     /**
      * @brief 旋转建筑朝向目标
      */
     void rotateToTarget(const cocos2d::Vec2& targetPos);
-    
+
     /**
      * @brief 获取防御建筑类型
      */
@@ -109,13 +109,13 @@ protected:
 private:
     // ==================== 初始化方法 ====================
     void initCombatStats();
-    
+
     // ==================== 视觉效果 ====================
     /**
      * @brief 创建炮弹精灵（加农炮）
      */
     cocos2d::Sprite* createCannonballSprite();
-    
+
     /**
      * @brief 创建箭矢精灵（箭塔）
      */
@@ -125,8 +125,9 @@ private:
     DefenseType _defenseType;
     std::string _customImagePath;
     std::string _customName;
-    
+
     // ==================== 攻击范围显示 ====================
-    cocos2d::DrawNode* _rangeCircle = nullptr;  // 攻击范围圆圈
-    
+    cocos2d::DrawNode* _rangeCircle = nullptr; // 攻击范围圆圈
 };
+
+#endif // DEFENSE_BUILDING_H_

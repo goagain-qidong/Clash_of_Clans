@@ -3,17 +3,16 @@
  * File Name:     BattleUI.h
  * File Function: 战斗界面 - 负责管理游戏中的战斗相关UI
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
+#ifndef BATTLE_UI_H_
+#define BATTLE_UI_H_
 
-#pragma once
-#ifndef __BATTLE_UI_H__
-#define __BATTLE_UI_H__
-
-#include "Unit/unit.h" // For UnitType
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
+
+#include "Unit/UnitTypes.h"
 
 class BattleUI : public cocos2d::Layer
 {
@@ -25,7 +24,6 @@ public:
     void setEndBattleCallback(const std::function<void()>& callback);
     void setReturnCallback(const std::function<void()>& callback);
     void setTroopSelectionCallback(const std::function<void(UnitType)>& callback);
-    // 🆕 取消选中回调
     void setTroopDeselectionCallback(const std::function<void()>& callback);
 
     // Updates
@@ -107,7 +105,7 @@ private:
     std::function<void()>         _onEndBattle;
     std::function<void()>         _onReturn;
     std::function<void(UnitType)> _onTroopSelected;
-    std::function<void()>         _onTroopDeselected; // 🆕
+    std::function<void()>         _onTroopDeselected;
 };
 
-#endif // __BATTLE_UI_H__
+#endif // BATTLE_UI_H_

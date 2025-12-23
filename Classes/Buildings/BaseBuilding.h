@@ -3,17 +3,20 @@
  * File Name:     BaseBuilding.h
  * File Function: 建筑基类 - 定义所有建筑的统一接口
  * Author:        赵崇治
- * Update Date:   2025/11/29
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
-#pragma once
+#ifndef BASE_BUILDING_H_
+#define BASE_BUILDING_H_
+
 #include "ResourceManager.h"
 #include "Unit/CombatStats.h"
 #include "cocos2d.h"
+
 #include <functional>
 
 // 前向声明
-class Unit;
+class BaseUnit;
 class BuildingHealthBarUI;
 /** @brief 建筑类型枚举 */
 enum class BuildingType
@@ -49,47 +52,51 @@ public:
     virtual int getMaxLevel() const = 0;
     /** @brief 是否已达到最高等级 */
     bool isMaxLevel() const { return _level >= getMaxLevel(); }
-    
+
     // ==================== 生命值系统 ====================
     /** @brief 获取当前生命值 */
     int getHitpoints() const { return _currentHitpoints; }
     /** @brief 获取最大生命值 */
     int getMaxHitpoints() const { return _maxHitpoints; }
     /** @brief 设置最大生命值（用于初始化和升级） */
-    void setMaxHitpoints(int hp) { _maxHitpoints = hp; _currentHitpoints = hp; }
+    void setMaxHitpoints(int hp)
+    {
+        _maxHitpoints     = hp;
+        _currentHitpoints = hp;
+    }
     /** @brief 受到伤害 */
     void takeDamage(int damage);
     /** @brief 修复建筑（恢复生命值） */
     void repair(int amount);
     /** @brief 是否已被摧毁 */
     bool isDestroyed() const { return _currentHitpoints <= 0; }
-    
+
     // ==================== 战斗系统 ⭐ 新增 ====================
     /** @brief 获取战斗属性 */
-    CombatStats& getCombatStats() { return _combatStats; }
+    CombatStats&       getCombatStats() { return _combatStats; }
     const CombatStats& getCombatStats() const { return _combatStats; }
-    
+
     /** @brief 是否是防御建筑（可以攻击） */
     virtual bool isDefenseBuilding() const { return getBuildingType() == BuildingType::kDefense; }
-    
+
     /** @brief 获取攻击伤害 */
     int getDamage() const { return _combatStats.damage; }
-    
+
     /** @brief 获取攻击范围 */
     float getAttackRange() const { return _combatStats.attackRange; }
-    
+
     /** @brief 设置攻击目标（仅防御建筑使用） */
-    void setTarget(Unit* target);
-    
+    void setTarget(BaseUnit* target);
+
     /** @brief 获取当前目标 */
-    Unit* getTarget() const { return _currentTarget; }
-    
+    BaseUnit* getTarget() const { return _currentTarget; }
+
     /** @brief 清除目标 */
     void clearTarget() { _currentTarget = nullptr; }
-    
+
     /** @brief 攻击目标（由子类实现具体逻辑） */
-    virtual void attackTarget(Unit* target);
-    
+    virtual void attackTarget(BaseUnit* target);
+
     // ==================== 升级相关（统一接口） ====================
     /** @brief 获取升级所需费用 */
     virtual int getUpgradeCost() const = 0;
@@ -103,14 +110,14 @@ public:
     virtual std::string getUpgradeInfo() const { return ""; }
     /** @brief 获取当前等级的图片文件 */
     virtual std::string getImageFile() const { return ""; }
-    
+
     /**
      * @brief 尝试升级建筑（❗️ 已弃用，请使用 BuildingUpgradeService::tryUpgrade()）
      * @deprecated 请使用 BuildingUpgradeService::tryUpgrade() 代替
      * @return 是否升级成功
      */
     virtual bool upgrade();
-    
+
     /**
      * @brief 检查是否可以升级（❗️ 已弃用，请使用 BuildingUpgradeService::canUpgrade()）
      * @deprecated 请使用 BuildingUpgradeService::canUpgrade() 代替
@@ -121,17 +128,17 @@ public:
     bool isUpgrading() const { return _isUpgrading; }
     /** @brief 设置升级状态 */
     void setUpgrading(bool upgrading) { _isUpgrading = upgrading; }
-    
+
     /**
      * @brief 升级完成时调用（由 UpgradeManager 调用）
      */
     void onUpgradeComplete();
-    
+
     /**
      * @brief 获取升级进度（0.0 ~ 1.0）
      */
     float getUpgradeProgress() const;
-    
+
     /**
      * @brief 获取升级剩余时间（秒）
      */
@@ -141,9 +148,9 @@ public:
     /** @brief 设置升级回调 */
     void setUpgradeCallback(const UpgradeCallback& callback) { _upgradeCallback = callback; }
     // ==================== 网格位置 ====================
-    void setGridPosition(const cocos2d::Vec2& pos) { _gridPosition = pos; }
+    void          setGridPosition(const cocos2d::Vec2& pos) { _gridPosition = pos; }
     cocos2d::Vec2 getGridPosition() const { return _gridPosition; }
-    void setGridSize(const cocos2d::Size& size) { _gridSize = size; }
+    void          setGridSize(const cocos2d::Size& size) { _gridSize = size; }
     cocos2d::Size getGridSize() const { return _gridSize; }
     // ==================== 每帧更新 ====================
     virtual void tick(float dt) {}
@@ -153,10 +160,10 @@ protected:
      * @brief 初始化建筑
      * @param level 初始等级，血条
      */
-    virtual bool init(int level);
-    void initHealthBarUI();
-    BuildingHealthBarUI* _healthBarUI = nullptr;
-    bool _battleModeEnabled = false;
+    virtual bool         init(int level);
+    void                 initHealthBarUI();
+    BuildingHealthBarUI* _healthBarUI       = nullptr;
+    bool                 _battleModeEnabled = false;
     /**
      * @brief 初始化建筑（带图片）
      * @param level 初始等级
@@ -171,18 +178,20 @@ protected:
     virtual void updateAppearance();
 
 protected:
-    int _level = 1;              // 当前等级
-    bool _isUpgrading = false;   // 是否正在升级
-    cocos2d::Vec2 _gridPosition; // 网格位置
-    cocos2d::Size _gridSize;     // 占用网格大小
+    int             _level       = 1;     // 当前等级
+    bool            _isUpgrading = false; // 是否正在升级
+    cocos2d::Vec2   _gridPosition;        // 网格位置
+    cocos2d::Size   _gridSize;            // 占用网格大小
     UpgradeCallback _upgradeCallback = nullptr;
-    
+
     // 生命值系统
-    int _maxHitpoints = 100;     // 最大生命值
+    int _maxHitpoints     = 100; // 最大生命值
     int _currentHitpoints = 100; // 当前生命值
-    
+
     // ==================== 战斗系统 ⭐ 新增 ====================
-    CombatStats _combatStats;    // 战斗属性
-    Unit* _currentTarget = nullptr; // 当前攻击目标
-    float _attackCooldown = 0.0f;   // 攻击冷却计时器
+    CombatStats _combatStats;              // 战斗属性
+    BaseUnit*   _currentTarget  = nullptr; // 当前攻击目标
+    float       _attackCooldown = 0.0f;    // 攻击冷却计时器
 };
+
+#endif // BASE_BUILDING_H_

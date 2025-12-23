@@ -1,15 +1,18 @@
-﻿#pragma once
-/****************************************************************
+﻿/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     UnitHealthBarUI.h
  * File Function: 单位（小兵）血条UI显示组件
  * Author:        薛毓哲
- * Update Date:   2025/12/14
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
+#ifndef UNIT_HEALTH_BAR_UI_H_
+#define UNIT_HEALTH_BAR_UI_H_
 
-#include "Unit/unit.h"
 #include "cocos2d.h"
+
+// Forward declaration
+class BaseUnit;
 
 /**
  * @class UnitHealthBarUI
@@ -28,9 +31,9 @@ public:
      * @brief 创建血条UI
      * @param unit 关联的单位对象
      */
-    static UnitHealthBarUI* create(Unit* unit);
+    static UnitHealthBarUI* create(BaseUnit* unit);
 
-    virtual bool init(Unit* unit);
+    virtual bool init(BaseUnit* unit);
 
     /**
      * @brief 更新血条显示
@@ -61,7 +64,7 @@ private:
     UnitHealthBarUI() = default;
 
     // ==================== 关联的单位 ====================
-    Unit* _unit = nullptr;
+    BaseUnit* _unit = nullptr;
 
     // ==================== 血条UI组件 ====================
     cocos2d::LayerColor* _healthBarBg   = nullptr; // 血条背景（红色）
@@ -69,13 +72,15 @@ private:
 
     // ==================== 血条状态 ====================
     int   _lastHealthValue = -1;    // 上一帧的生命值（用于检测变化）
-    float _hideTimer       = 0.0f;  // 隐藏计时器：血量恢复满后，3秒内自动隐藏血条
+    float _hideTimer       = 0.0f;  // 隐藏计时器
     bool  _isVisible       = false; // 血条是否可见
     bool  _alwaysVisible   = true;  // 战斗中始终显示
 
     // ==================== 血条外观设置 ====================
-    static constexpr float BAR_WIDTH  = 40.0f; // 血条宽度（小兵比建筑小）
-    static constexpr float BAR_HEIGHT = 4.0f;  // 血条高度（小兵比建筑小）
+    static constexpr float BAR_WIDTH  = 40.0f; // 血条宽度
+    static constexpr float BAR_HEIGHT = 4.0f;  // 血条高度
     static constexpr float HIDE_DELAY = 3.0f;  // 血量满后多少秒隐藏血条
     static constexpr float OFFSET_Y   = 30.0f; // 血条相对于单位的高度偏移
 };
+
+#endif // UNIT_HEALTH_BAR_UI_H_

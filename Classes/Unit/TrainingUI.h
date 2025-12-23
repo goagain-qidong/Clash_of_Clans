@@ -3,14 +3,16 @@
  * File Name:     TrainingUI.h
  * File Function: 训练小兵UI界面
  * Author:        薛毓哲
- * Update Date:   2025/01/09
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
+#ifndef TRAINING_UI_H_
+#define TRAINING_UI_H_
 
-#pragma once
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
-#include "unit.h"
+
+#include "UnitTypes.h"
 
 // 前向声明
 class ArmyBuilding;
@@ -43,7 +45,7 @@ public:
      * @brief 隐藏UI
      */
     void hide();
-    
+
     /**
      * @brief 每帧更新（用于实时同步人口显示）
      */
@@ -63,9 +65,9 @@ private:
      * @param cost 训练费用
      * @param housingSpace 占用人口数
      */
-    void createUnitCard(cocos2d::ui::ListView* scrollView, UnitType unitType, 
-                        const std::string& name, int cost, int housingSpace);
-    
+    void createUnitCard(cocos2d::ui::ListView* scrollView, UnitType unitType, const std::string& name, int cost,
+                        int housingSpace);
+
     /**
      * @brief 更新人口显示
      */
@@ -88,12 +90,14 @@ private:
     std::string getUnitName(UnitType type) const;
 
 private:
-    ArmyBuilding* _barracks = nullptr;          // 兵营建筑
-    cocos2d::ui::Layout* _panel = nullptr;      // 背景面板
-    cocos2d::Label* _titleLabel = nullptr;      // 标题
+    ArmyBuilding*        _barracks    = nullptr; // 兵营建筑
+    cocos2d::ui::Layout* _panel       = nullptr; // 背景面板
+    cocos2d::Label*      _titleLabel  = nullptr; // 标题
     cocos2d::ui::Button* _closeButton = nullptr; // 关闭按钮
-    
-    // 🆕 用于检测人口变化的缓存值
-    int _lastTroopCount = 0;
+
+    // 用于检测人口变化的缓存值
+    int _lastTroopCount    = 0;
     int _lastTroopCapacity = 0;
 };
+
+#endif // TRAINING_UI_H_

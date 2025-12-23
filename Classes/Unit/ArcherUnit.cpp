@@ -3,11 +3,12 @@
  * File Name:     ArcherUnit.cpp
  * File Function: 弓箭手单位类实现
  * Author:        赵崇治、薛毓哲
- * Update Date:   2025/12/22
+ * Update Date:   2025/12/23
  * License:       MIT License
  ****************************************************************/
 #include "ArcherUnit.h"
-#include "Unit/UnitConfig.h"
+
+#include "Unit/CombatStats.h"
 
 USING_NS_CC;
 
@@ -29,7 +30,7 @@ bool ArcherUnit::init(int level)
         return false;
 
     // 设置弓箭手特有属性
-    _moveSpeed = 100.0f;
+    _moveSpeed   = 100.0f;
     _combatStats = UnitConfig::getArcher(level);
 
     return true;
@@ -38,18 +39,16 @@ bool ArcherUnit::init(int level)
 void ArcherUnit::loadAnimations()
 {
     // 弓箭手使用单独的PNG文件，不需要plist
-    
+
     // 先加载一帧作为初始精灵
     auto texture = Director::getInstance()->getTextureCache()->addImage("units/archer/archer_side_walk_01.png");
     if (texture)
     {
         auto frame = SpriteFrame::createWithTexture(
-            texture,
-            Rect(0, 0, texture->getContentSize().width, texture->getContentSize().height)
-        );
+            texture, Rect(0, 0, texture->getContentSize().width, texture->getContentSize().height));
         _sprite = Sprite::createWithSpriteFrame(frame);
     }
-    
+
     if (_sprite)
     {
         this->addChild(_sprite);

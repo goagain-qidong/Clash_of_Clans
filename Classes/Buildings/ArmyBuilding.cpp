@@ -1,15 +1,19 @@
 ﻿/****************************************************************
+/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     ArmyBuilding.cpp
  * File Function: 军事建筑类实现
- * Author:        
- * Update Date:   2025/11/29
+ * Author:
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
 #include "ArmyBuilding.h"
-#include "ArmyCampBuilding.h"  // 🆕 添加军营头文件
-#include "GameConfig.h" // 如果需要引用配置
-#include "Managers/TroopInventory.h"  // 🆕 添加士兵库存管理
+
+#include "ArmyCampBuilding.h"
+#include "GameConfig.h"
+#include "Managers/TroopInventory.h"
+#include "Unit/UnitFactory.h"
+
 USING_NS_CC;
 ArmyBuilding* ArmyBuilding::create(int level)
 {
@@ -25,12 +29,12 @@ ArmyBuilding* ArmyBuilding::create(int level)
 // 兵营生命值 (1-18级)
 static const int BARRACKS_HP[] = {0,   250, 270, 300, 330, 360,  400,  450,  500, 560,
                                   620, 700, 780, 860, 950, 1050, 1150, 1250, 1350};
-float ArmyBuilding::getUpgradeTime() const
+float            ArmyBuilding::getUpgradeTime() const
 {
     // 升级时间（秒）
     static const float times[] = {
         0,      // Level 0 (无效)
-        30,      // Level 1 (即时)
+        30,     // Level 1 (即时)
         60,     // Level 2 (1分钟)
         300,    // Level 3 (5分钟)
         900,    // Level 4 (15分钟)
@@ -45,8 +49,8 @@ float ArmyBuilding::getUpgradeTime() const
         259200, // Level 13 (3天)
         345600, // Level 14 (4天)
         432000, // Level 15 (5天)
-        518400,  // Level 16 (6天)
-        604800 // Level 17 (7天)
+        518400, // Level 16 (6天)
+        604800  // Level 17 (7天)
     };
 
     if (_level < 1 || _level > 17)
@@ -89,34 +93,34 @@ bool ArmyBuilding::init(int level, const std::string& imageFile)
     {
         return false;
     }
-    
+
     // 保存自定义图片路径模板
     // 例如: "buildings/ArcherTower/Archer_Tower1.png" -> "buildings/ArcherTower/Archer_Tower"
     _customImagePath = imageFile;
-    
+
     // 移除文件名中的等级数字和扩展名
     size_t lastSlash = _customImagePath.find_last_of('/');
-    size_t lastDot = _customImagePath.find_last_of('.');
-    
+    size_t lastDot   = _customImagePath.find_last_of('.');
+
     if (lastSlash != std::string::npos && lastDot != std::string::npos)
     {
         std::string fileName = _customImagePath.substr(lastSlash + 1, lastDot - lastSlash - 1);
-        
+
         // 移除末尾的数字（如 "Archer_Tower1" -> "Archer_Tower"）
         size_t i = fileName.length();
         while (i > 0 && std::isdigit(fileName[i - 1]))
         {
             i--;
         }
-        
+
         if (i < fileName.length())
         {
             fileName = fileName.substr(0, i);
         }
-        
+
         // 重新组合路径模板
         _customImagePath = _customImagePath.substr(0, lastSlash + 1) + fileName;
-        
+
         // 提取建筑名称（用于显示）
         // "Archer_Tower" -> "箭塔", "Cannon" -> "炮塔"
         if (fileName.find("Archer") != std::string::npos)
@@ -152,27 +156,9 @@ std::string ArmyBuilding::getDisplayName() const
 int ArmyBuilding::getUpgradeCost() const
 {
     // 升级费用随等级递增
-    static const int costs[] = {
-        0, 
-        1000, 
-        2000, 
-        4000, 
-        8000, 
-        15000, 
-        30000, 
-        60000, 
-        120000, 
-        200000,
-        280000,
-        360000,
-        440000,
-		520000,
-        600000,
-        700000,
-        800000,
-		900000
-    };
-    int idx = std::min(_level, getMaxLevel());
+    static const int costs[] = {0,      1000,   2000,   4000,   8000,   15000,  30000,  60000,  120000,
+                                200000, 280000, 360000, 440000, 520000, 600000, 700000, 800000, 900000};
+    int              idx     = std::min(_level, getMaxLevel());
     return costs[idx];
 }
 
@@ -202,11 +188,11 @@ std::string ArmyBuilding::getImageForLevel(int level) const
     {
         return _customImagePath + std::to_string(level) + ".png";
     }
-    
+
     // 否则使用默认的兵营图片（支持1-18级）
     if (level < 1 || level > 18)
         level = 1;
-    
+
     return "buildings/Barracks/Barracks" + std::to_string(level) + ".png";
 }
 
@@ -220,52 +206,62 @@ bool ArmyBuilding::addTrainingTask(UnitType unitType)
         CCLOG("训练队列已满！容量：%d", getTrainingCapacity());
         return false;
     }
-    
+
     // 🔧 修复：检查人口空间（根据兵种类型）
-    auto& resMgr = ResourceManager::getInstance();
-    int population = getUnitPopulation(unitType);  // ✅ 获取正确的人口数
-    
+    auto& resMgr     = ResourceManager::getInstance();
+    int   population = getUnitPopulation(unitType); // ✅ 获取正确的人口数
+
     if (!resMgr.hasTroopSpace(population))
     {
-        CCLOG("人口不足！需要 %d 人口，当前：%d/%d", 
-              population,
-              resMgr.getCurrentTroopCount(), 
+        CCLOG("人口不足！需要 %d 人口，当前：%d/%d", population, resMgr.getCurrentTroopCount(),
               resMgr.getMaxTroopCapacity());
         return false;
     }
-    
+
     // 获取训练费用和时间
-    int cost = getUnitTrainingCost(unitType);
+    int   cost     = getUnitTrainingCost(unitType);
     float baseTime = getUnitBaseTrainingTime(unitType);
-    
+
     // 应用训练速度加成
     float actualTime = baseTime / (1.0f + getTrainingSpeedBonus());
-    
+
     // 检查资源是否足够
     if (!resMgr.consume(ResourceType::kElixir, cost))
     {
         CCLOG("圣水不足！需要 %d 圣水", cost);
         return false;
     }
-    
+
     // 添加到训练队列
     _trainingQueue.push(TrainingTask(unitType, actualTime, cost));
-    
+
     // 获取兵种名称
     std::string unitName;
     switch (unitType)
     {
-    case UnitType::kBarbarian: unitName = "野蛮人"; break;
-    case UnitType::kArcher: unitName = "弓箭手"; break;
-    case UnitType::kGiant: unitName = "巨人"; break;
-    case UnitType::kGoblin: unitName = "哥布林"; break;
-    case UnitType::kWallBreaker: unitName = "炸弹人"; break;
-    default: unitName = "未知兵种"; break;
+    case UnitType::kBarbarian:
+        unitName = "野蛮人";
+        break;
+    case UnitType::kArcher:
+        unitName = "弓箭手";
+        break;
+    case UnitType::kGiant:
+        unitName = "巨人";
+        break;
+    case UnitType::kGoblin:
+        unitName = "哥布林";
+        break;
+    case UnitType::kWallBreaker:
+        unitName = "炸弹人";
+        break;
+    default:
+        unitName = "未知兵种";
+        break;
     }
-    
-    CCLOG("✅ 开始训练 %s，预计 %.1f 秒完成（队列：%d/%d）",
-          unitName.c_str(), actualTime, getQueueLength(), getTrainingCapacity());
-    
+
+    CCLOG("✅ 开始训练 %s，预计 %.1f 秒完成（队列：%d/%d）", unitName.c_str(), actualTime, getQueueLength(),
+          getTrainingCapacity());
+
     return true;
 }
 
@@ -273,15 +269,15 @@ void ArmyBuilding::cancelCurrentTask()
 {
     if (_trainingQueue.empty())
         return;
-    
+
     // 退还部分资源（50%）
-    auto& task = _trainingQueue.front();
-    int refund = task.cost / 2;
+    auto& task   = _trainingQueue.front();
+    int   refund = task.cost / 2;
     ResourceManager::getInstance().addResource(ResourceType::kElixir, refund);
-    
+
     // 移除任务
     _trainingQueue.pop();
-    
+
     CCLOG("❌ 取消训练，退还 %d 圣水", refund);
 }
 
@@ -294,7 +290,7 @@ void ArmyBuilding::clearTrainingQueue()
         totalRefund += _trainingQueue.front().cost / 2;
         _trainingQueue.pop();
     }
-    
+
     if (totalRefund > 0)
     {
         ResourceManager::getInstance().addResource(ResourceType::kElixir, totalRefund);
@@ -306,7 +302,7 @@ float ArmyBuilding::getTrainingProgress() const
 {
     if (_trainingQueue.empty())
         return 0.0f;
-    
+
     const auto& task = _trainingQueue.front();
     return task.elapsedTime / task.trainingTime;
 }
@@ -314,15 +310,15 @@ float ArmyBuilding::getTrainingProgress() const
 void ArmyBuilding::tick(float dt)
 {
     BaseBuilding::tick(dt);
-    
+
     // 如果队列为空，不处理
     if (_trainingQueue.empty())
         return;
-    
+
     // 更新当前训练任务
     auto& task = _trainingQueue.front();
     task.elapsedTime += dt;
-    
+
     // 检查是否完成
     if (task.elapsedTime >= task.trainingTime)
     {
@@ -334,26 +330,25 @@ void ArmyBuilding::completeCurrentTask()
 {
     if (_trainingQueue.empty())
         return;
-    
+
     auto task = _trainingQueue.front();
     _trainingQueue.pop();
-    
+
     // 🆕 使用工厂类创建单位
     std::string unitName = UnitFactory::getUnitName(task.unitType);
-    
+
     // 添加士兵到库存
-    auto& troopInv = TroopInventory::getInstance();
-    int addedCount = troopInv.addTroops(task.unitType, 1);
-    
+    auto& troopInv   = TroopInventory::getInstance();
+    int   addedCount = troopInv.addTroops(task.unitType, 1);
+
     if (addedCount > 0)
     {
         auto& resMgr = ResourceManager::getInstance();
-        CCLOG("🎉 训练完成：%s！（剩余队列：%d，人口：%d/%d）", 
-              unitName.c_str(), getQueueLength(),
+        CCLOG("🎉 训练完成：%s！（剩余队列：%d，人口：%d/%d）", unitName.c_str(), getQueueLength(),
               resMgr.getCurrentTroopCount(), resMgr.getMaxTroopCapacity());
-        
+
         notifyArmyCampsToDisplayTroop(task.unitType);
-        
+
         if (_onTrainingComplete)
         {
             _onTrainingComplete(nullptr);
@@ -375,15 +370,15 @@ float ArmyBuilding::getUnitBaseTrainingTime(UnitType type)
     switch (type)
     {
     case UnitType::kBarbarian:
-        return 1.0f;   // 野蛮人
+        return 1.0f; // 野蛮人
     case UnitType::kArcher:
-        return 1.0f;   // 弓箭手
+        return 1.0f; // 弓箭手
     case UnitType::kGoblin:
-        return 1.0f;   // 哥布林
+        return 1.0f; // 哥布林
     case UnitType::kGiant:
-        return 1.0f;  // 巨人
+        return 1.0f; // 巨人
     case UnitType::kWallBreaker:
-        return 1.0f;  // 炸弹人
+        return 1.0f; // 炸弹人
     default:
         return 1.0f;
     }
@@ -395,15 +390,15 @@ int ArmyBuilding::getUnitTrainingCost(UnitType type)
     switch (type)
     {
     case UnitType::kBarbarian:
-        return 25;     // 野蛮人：25圣水
+        return 25; // 野蛮人：25圣水
     case UnitType::kArcher:
-        return 50;     // 弓箭手：50圣水
+        return 50; // 弓箭手：50圣水
     case UnitType::kGoblin:
-        return 40;     // 哥布林：40圣水
+        return 40; // 哥布林：40圣水
     case UnitType::kGiant:
-        return 250;    // 巨人：250圣水
+        return 250; // 巨人：250圣水
     case UnitType::kWallBreaker:
-        return 600;    // 炸弹人：600圣水
+        return 600; // 炸弹人：600圣水
     default:
         return 50;
     }
@@ -415,15 +410,15 @@ int ArmyBuilding::getUnitPopulation(UnitType type)
     switch (type)
     {
     case UnitType::kBarbarian:
-        return 1;      // 野蛮人：1人口
+        return 1; // 野蛮人：1人口
     case UnitType::kArcher:
-        return 1;      // 弓箭手：1人口
+        return 1; // 弓箭手：1人口
     case UnitType::kGoblin:
-        return 1;      // 哥布林：1人口
+        return 1; // 哥布林：1人口
     case UnitType::kGiant:
-        return 5;      // 巨人：5人口 ✅ 修复
+        return 5; // 巨人：5人口 ✅ 修复
     case UnitType::kWallBreaker:
-        return 2;      // 炸弹人：2人口
+        return 2; // 炸弹人：2人口
     default:
         return 1;
     }
@@ -437,18 +432,18 @@ void ArmyBuilding::notifyArmyCampsToDisplayTroop(UnitType type)
     // 注意：这需要访问 BuildingManager 或场景
     // 由于架构限制，这里暂时使用简化方案：
     // 通过父节点查找兄弟节点（同样是建筑）
-    
+
     auto parent = this->getParent();
     if (!parent)
     {
         CCLOG("⚠️ ArmyBuilding: No parent node, cannot notify ArmyCamps");
         return;
     }
-    
+
     // 遍历父节点的所有子节点，查找军营
     auto& children = parent->getChildren();
-    bool found = false;
-    
+    bool  found    = false;
+
     for (auto child : children)
     {
         // 尝试转换为 ArmyCampBuilding
@@ -459,10 +454,10 @@ void ArmyBuilding::notifyArmyCampsToDisplayTroop(UnitType type)
             armyCamp->addTroopDisplay(type);
             found = true;
             CCLOG("✅ Notified ArmyCamp to display troop");
-            break;  // 只通知第一个军营（简化处理）
+            break; // 只通知第一个军营（简化处理）
         }
     }
-    
+
     if (!found)
     {
         CCLOG("⚠️ No ArmyCamp found to display troop");

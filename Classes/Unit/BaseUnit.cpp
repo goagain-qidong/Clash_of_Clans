@@ -3,10 +3,11 @@
  * File Name:     BaseUnit.cpp
  * File Function: 单位基类实现
  * Author:        薛毓哲、赵崇治
- * Update Date:   2025/12/22
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
 #include "BaseUnit.h"
+
 #include "UI/UnitHealthBarUI.h"
 
 USING_NS_CC;
@@ -14,21 +15,10 @@ USING_NS_CC;
 // ==================== 生命周期管理 ====================
 
 BaseUnit::BaseUnit()
-    : _sprite(nullptr)
-    , _isMoving(false)
-    , _targetPos(Vec2::ZERO)
-    , _moveVelocity(Vec2::ZERO)
-    , _moveSpeed(100.0f)
-    , _currentDir(UnitDirection::kRight)
-    , _currentPathIndex(0)
-    , _currentTarget(nullptr)
-    , _attackCooldown(0.0f)
-    , _unitLevel(1)
-    , _isDead(false)
-    , _healthBarUI(nullptr)
-    , _battleModeEnabled(false)
-{
-}
+    : _sprite(nullptr), _isMoving(false), _targetPos(Vec2::ZERO), _moveVelocity(Vec2::ZERO), _moveSpeed(100.0f),
+      _currentDir(UnitDirection::kRight), _currentPathIndex(0), _currentTarget(nullptr), _attackCooldown(0.0f),
+      _unitLevel(1), _isDead(false), _healthBarUI(nullptr), _battleModeEnabled(false)
+{}
 
 BaseUnit::~BaseUnit()
 {
@@ -46,10 +36,10 @@ bool BaseUnit::init(int level)
         return false;
 
     _unitLevel = level;
-    
+
     // 子类在loadAnimations()中创建精灵和加载动画
     loadAnimations();
-    
+
     // 初始化血条UI
     initHealthBarUI();
 
@@ -64,9 +54,9 @@ void BaseUnit::tick(float dt)
     // 更新移动
     if (_isMoving)
     {
-        Vec2 current_pos = this->getPosition();
-        float distance = current_pos.distance(_targetPos);
-        float step = _moveSpeed * dt;
+        Vec2  current_pos = this->getPosition();
+        float distance    = current_pos.distance(_targetPos);
+        float step        = _moveSpeed * dt;
 
         if (step >= distance)
         {
@@ -100,9 +90,9 @@ void BaseUnit::moveTo(const cocos2d::Vec2& target_pos)
     if (_isDead)
         return;
 
-    _targetPos = target_pos;
+    _targetPos       = target_pos;
     Vec2 current_pos = this->getPosition();
-    Vec2 diff = _targetPos - current_pos;
+    Vec2 diff        = _targetPos - current_pos;
 
     if (diff.getLength() < 1.0f)
         return;
@@ -111,7 +101,7 @@ void BaseUnit::moveTo(const cocos2d::Vec2& target_pos)
     playAnimation(UnitAction::kRun, _currentDir);
 
     _moveVelocity = diff.getNormalized() * _moveSpeed;
-    _isMoving = true;
+    _isMoving     = true;
 }
 
 void BaseUnit::moveToPath(const std::vector<cocos2d::Vec2>& path)
@@ -119,7 +109,7 @@ void BaseUnit::moveToPath(const std::vector<cocos2d::Vec2>& path)
     if (path.empty() || _isDead)
         return;
 
-    _pathPoints = path;
+    _pathPoints       = path;
     _currentPathIndex = 0;
 
     if (_pathPoints.size() > 0 && this->getPosition().distance(_pathPoints[0]) < 10.0f)
@@ -167,9 +157,8 @@ bool BaseUnit::takeDamage(float damage)
 
     float actualDamage = _combatStats.takeDamage(damage);
 
-    CCLOG("%s took %.1f damage, HP: %d/%d",
-          getDisplayName().c_str(), actualDamage,
-          _combatStats.currentHitpoints, _combatStats.maxHitpoints);
+    CCLOG("%s took %.1f damage, HP: %d/%d", getDisplayName().c_str(), actualDamage, _combatStats.currentHitpoints,
+          _combatStats.maxHitpoints);
 
     // 调用子类钩子
     onTakeDamage(actualDamage);
@@ -177,9 +166,9 @@ bool BaseUnit::takeDamage(float damage)
     // 播放受击效果
     if (_sprite)
     {
-        auto tint = TintTo::create(0.1f, 255, 0, 0);
+        auto tint    = TintTo::create(0.1f, 255, 0, 0);
         auto restore = TintTo::create(0.1f, 255, 255, 255);
-        auto seq = Sequence::create(tint, restore, nullptr);
+        auto seq     = Sequence::create(tint, restore, nullptr);
         _sprite->runAction(seq);
     }
 
@@ -207,11 +196,7 @@ void BaseUnit::die()
     playAnimation(UnitAction::kDeath, _currentDir);
 
     // 3秒后淡出移除
-    auto removeAction = Sequence::create(
-        DelayTime::create(3.0f),
-        FadeOut::create(1.0f),
-        RemoveSelf::create(),
-        nullptr);
+    auto removeAction = Sequence::create(DelayTime::create(3.0f), FadeOut::create(1.0f), RemoveSelf::create(), nullptr);
     this->runAction(removeAction);
 
     CCLOG("%s died", getDisplayName().c_str());
@@ -244,42 +229,42 @@ void BaseUnit::playAnimation(UnitAction action, UnitDirection dir)
         return;
 
     std::string anim_key = "";
-    bool flip_x = false;
+    bool        flip_x   = false;
 
     // 计算动画键和翻转
     switch (dir)
     {
     case UnitDirection::kRight:
         anim_key = "right";
-        flip_x = false;
+        flip_x   = false;
         break;
     case UnitDirection::kUpRight:
         anim_key = "up_right";
-        flip_x = false;
+        flip_x   = false;
         break;
     case UnitDirection::kDownRight:
         anim_key = "down_right";
-        flip_x = false;
+        flip_x   = false;
         break;
     case UnitDirection::kLeft:
         anim_key = "right";
-        flip_x = true;
+        flip_x   = true;
         break;
     case UnitDirection::kUpLeft:
         anim_key = "up_right";
-        flip_x = true;
+        flip_x   = true;
         break;
     case UnitDirection::kDownLeft:
         anim_key = "down_right";
-        flip_x = true;
+        flip_x   = true;
         break;
     case UnitDirection::kUp:
         anim_key = "up_right";
-        flip_x = false;
+        flip_x   = false;
         break;
     case UnitDirection::kDown:
         anim_key = "down_right";
-        flip_x = false;
+        flip_x   = false;
         break;
     }
 
@@ -317,7 +302,7 @@ void BaseUnit::playAnimation(UnitAction action, UnitDirection dir)
         if (action == UnitAction::kAttack || action == UnitAction::kAttack2)
         {
             // 攻击动画播放一次
-            auto animate = Animate::create(_animCache[final_key]);
+            auto animate  = Animate::create(_animCache[final_key]);
             auto callback = CallFunc::create([this]() {
                 if (!_isDead && !_isMoving)
                 {
@@ -343,14 +328,13 @@ void BaseUnit::addAnimation(const std::string& key, cocos2d::Animation* anim)
     }
 }
 
-void BaseUnit::addAnimFromFrames(const std::string& unitName, const std::string& key,
-                                int start, int end, float delay)
+void BaseUnit::addAnimFromFrames(const std::string& unitName, const std::string& key, int start, int end, float delay)
 {
     Vector<SpriteFrame*> frames;
     for (int i = start; i <= end; ++i)
     {
-        std::string name = StringUtils::format("%s%d.0.png", unitName.c_str(), i);
-        auto frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(name);
+        std::string name  = StringUtils::format("%s%d.0.png", unitName.c_str(), i);
+        auto        frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(name);
         if (frame)
             frames.pushBack(frame);
     }
@@ -362,8 +346,8 @@ void BaseUnit::addAnimFromFrames(const std::string& unitName, const std::string&
     }
 }
 
-void BaseUnit::addAnimFromFiles(const std::string& basePath, const std::string& namePattern,
-                               const std::string& key, int start, int end, float delay)
+void BaseUnit::addAnimFromFiles(const std::string& basePath, const std::string& namePattern, const std::string& key,
+                                int start, int end, float delay)
 {
     Vector<SpriteFrame*> frames;
 
@@ -377,8 +361,7 @@ void BaseUnit::addAnimFromFiles(const std::string& basePath, const std::string& 
         if (texture)
         {
             auto frame = SpriteFrame::createWithTexture(
-                texture,
-                Rect(0, 0, texture->getContentSize().width, texture->getContentSize().height));
+                texture, Rect(0, 0, texture->getContentSize().width, texture->getContentSize().height));
             if (frame)
                 frames.pushBack(frame);
         }

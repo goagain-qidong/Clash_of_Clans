@@ -3,11 +3,12 @@
  * File Name:     BarbarianUnit.cpp
  * File Function: 野蛮人单位类实现
  * Author:        薛毓哲
- * Update Date:   2025/12/22
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
 #include "BarbarianUnit.h"
-#include "Unit/UnitConfig.h"
+
+#include "Unit/CombatStats.h"
 
 USING_NS_CC;
 

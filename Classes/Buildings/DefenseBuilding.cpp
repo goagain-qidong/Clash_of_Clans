@@ -3,12 +3,13 @@
  * File Name:     DefenseBuilding.cpp
  * File Function: 防御建筑实现
  * Author:        薛毓哲
- * Update Date:   2025/12/07
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
 #include "DefenseBuilding.h"
+
 #include "UI/BuildingHealthBarUI.h"
-#include "Unit/unit.h"
+#include "Unit/BaseUnit.h"
 
 USING_NS_CC;
 
@@ -51,7 +52,7 @@ bool DefenseBuilding::init(DefenseType defenseType, int level)
     _level       = level;
 
     initCombatStats();
-    initHealthBarUI();  // ✅ 添加血条初始化
+    initHealthBarUI(); // ✅ 添加血条初始化
 
     return true;
 }
@@ -103,7 +104,6 @@ void DefenseBuilding::initCombatStats()
     CCLOG("🏹 %s 初始化：攻击力=%d, 攻击范围=%.1f, 血量=%d", getDisplayName().c_str(), _combatStats.damage,
           _combatStats.attackRange, _maxHitpoints);
 }
-
 
 std::string DefenseBuilding::getDisplayName() const
 {
@@ -218,7 +218,7 @@ void DefenseBuilding::tick(float dt)
 
     if (_currentTarget)
     {
-        if (_currentTarget->IsDead())
+        if (_currentTarget->isDead())
         {
             clearTarget();
             return;
@@ -241,21 +241,21 @@ void DefenseBuilding::tick(float dt)
     }
 }
 
-void DefenseBuilding::detectEnemies(const std::vector<Unit*>& units)
+void DefenseBuilding::detectEnemies(const std::vector<BaseUnit*>& units)
 {
     if (!_battleModeEnabled || isDestroyed())
         return;
 
-    if (_currentTarget && !_currentTarget->IsDead())
+    if (_currentTarget && !_currentTarget->isDead())
         return;
 
-    Vec2  myPos           = this->getPosition();
-    Unit* closestUnit     = nullptr;
-    float closestDistance = _combatStats.attackRange;
+    Vec2      myPos           = this->getPosition();
+    BaseUnit* closestUnit     = nullptr;
+    float     closestDistance = _combatStats.attackRange;
 
     for (auto* unit : units)
     {
-        if (!unit || unit->IsDead())
+        if (!unit || unit->isDead())
             continue;
 
         Vec2  unitPos  = unit->getPosition();
@@ -274,9 +274,9 @@ void DefenseBuilding::detectEnemies(const std::vector<Unit*>& units)
     }
 }
 
-void DefenseBuilding::attackTarget(Unit* target)
+void DefenseBuilding::attackTarget(BaseUnit* target)
 {
-    if (!target || target->IsDead())
+    if (!target || target->isDead())
         return;
 
     BaseBuilding::attackTarget(target);
@@ -285,41 +285,41 @@ void DefenseBuilding::attackTarget(Unit* target)
     playAttackAnimation();
 }
 
-void DefenseBuilding::fireProjectile(Unit* target)
+void DefenseBuilding::fireProjectile(BaseUnit* target)
 {
     if (!target)
         return;
 
     // ==================== 🚀 不再旋转建筑本身，只让炮弹飞向目标 ====================
-    
+
     // ==================== 💥 创建炮弹/箭矢视觉效果 ====================
-    Sprite* projectile = nullptr;
-    float projectileSpeed = 0.0f;  // 飞行速度（像素/秒）
-    
+    Sprite* projectile      = nullptr;
+    float   projectileSpeed = 0.0f; // 飞行速度（像素/秒）
+
     switch (_defenseType)
     {
-        case DefenseType::kCannon:
-            projectile = createCannonballSprite();
-            projectileSpeed = 600.0f;  // 炮弹较快
-            break;
-            
-        case DefenseType::kArcherTower:
-            projectile = createArrowSprite();
-            projectileSpeed = 800.0f;  // 箭矢最快
-            break;
-            
-        case DefenseType::kWizardTower:
-            // 法师塔可以用粒子效果或魔法球
-            projectile = createCannonballSprite();  // 临时用炮弹代替
-            projectileSpeed = 500.0f;
-            break;
-            
-        default:
-            projectile = createCannonballSprite();
-            projectileSpeed = 600.0f;
-            break;
+    case DefenseType::kCannon:
+        projectile      = createCannonballSprite();
+        projectileSpeed = 600.0f; // 炮弹较快
+        break;
+
+    case DefenseType::kArcherTower:
+        projectile      = createArrowSprite();
+        projectileSpeed = 800.0f; // 箭矢最快
+        break;
+
+    case DefenseType::kWizardTower:
+        // 法师塔可以用粒子效果或魔法球
+        projectile      = createCannonballSprite(); // 临时用炮弹代替
+        projectileSpeed = 500.0f;
+        break;
+
+    default:
+        projectile      = createCannonballSprite();
+        projectileSpeed = 600.0f;
+        break;
     }
-    
+
     if (!projectile || !this->getParent())
     {
         // 如果创建失败，直接造成伤害（无视觉效果）
@@ -327,47 +327,45 @@ void DefenseBuilding::fireProjectile(Unit* target)
         CCLOG("💥 %s 击中目标，造成 %d 点伤害", getDisplayName().c_str(), _combatStats.damage);
         return;
     }
-    
+
     // ==================== 🚀 炮弹飞行动画 ====================
     Vec2 startPos = this->getPosition();
-    Vec2 endPos = target->getPosition();
-    
+    Vec2 endPos   = target->getPosition();
+
     projectile->setPosition(startPos);
-    this->getParent()->addChild(projectile, 5000);  // 高Z-order，显示在最前面
-    
+    this->getParent()->addChild(projectile, 5000); // 高Z-order，显示在最前面
+
     // 计算飞行时间
     float distance = startPos.distance(endPos);
     float duration = distance / projectileSpeed;
-    
+
     // 箭矢需要旋转朝向目标（只旋转箭矢，不旋转建筑！）
     if (_defenseType == DefenseType::kArcherTower)
     {
-        Vec2 direction = endPos - startPos;
-        float angle = CC_RADIANS_TO_DEGREES(direction.getAngle());
+        Vec2  direction = endPos - startPos;
+        float angle     = CC_RADIANS_TO_DEGREES(direction.getAngle());
         projectile->setRotation(-angle);
     }
-    
-    
+
     // 移动到目标位置
     auto moveTo = MoveTo::create(duration, endPos);
-    
+
     // 命中回调：造成伤害并移除炮弹
     auto hitCallback = CallFunc::create([this, target, projectile]() {
-        if (target && !target->IsDead())
+        if (target && !target->isDead())
         {
             target->takeDamage(_combatStats.damage);
             CCLOG("💥 %s 击中目标，造成 %.1f 点伤害", getDisplayName().c_str(), _combatStats.damage);
         }
-        
+
         // 移除炮弹
         projectile->removeFromParent();
     });
-    
+
     // 执行动画序列
     auto sequence = Sequence::create(moveTo, hitCallback, nullptr);
     projectile->runAction(sequence);
 }
-
 
 void DefenseBuilding::playAttackAnimation()
 {
@@ -386,34 +384,34 @@ void DefenseBuilding::showAttackRange()
         _rangeCircle->setVisible(true);
         return;
     }
-    
+
     // 创建半透明圆圈显示攻击范围
     _rangeCircle = DrawNode::create();
-    
+
     // 根据建筑类型选择不同的颜色
     Color4F circleColor;
     switch (_defenseType)
     {
-        case DefenseType::kCannon:
-            circleColor = Color4F(1.0f, 0.0f, 0.0f, 0.3f);  // 红色 - 加农炮
-            break;
-        case DefenseType::kArcherTower:
-            circleColor = Color4F(0.0f, 1.0f, 0.0f, 0.3f);  // 绿色 - 箭塔
-            break;
-        case DefenseType::kWizardTower:
-            circleColor = Color4F(0.5f, 0.0f, 1.0f, 0.3f);  // 紫色 - 法师塔
-            break;
-        default:
-            circleColor = Color4F(1.0f, 1.0f, 0.0f, 0.3f);  // 黄色
-            break;
+    case DefenseType::kCannon:
+        circleColor = Color4F(1.0f, 0.0f, 0.0f, 0.3f); // 红色 - 加农炮
+        break;
+    case DefenseType::kArcherTower:
+        circleColor = Color4F(0.0f, 1.0f, 0.0f, 0.3f); // 绿色 - 箭塔
+        break;
+    case DefenseType::kWizardTower:
+        circleColor = Color4F(0.5f, 0.0f, 1.0f, 0.3f); // 紫色 - 法师塔
+        break;
+    default:
+        circleColor = Color4F(1.0f, 1.0f, 0.0f, 0.3f); // 黄色
+        break;
     }
-    
+
     // 绘制圆圈（中心在建筑位置，半径为攻击范围）
     _rangeCircle->drawCircle(Vec2::ZERO, _combatStats.attackRange, 0, 100, false, 2.0f, 2.0f, circleColor);
-    
+
     // 添加到建筑节点
-    this->addChild(_rangeCircle, -1);  // Z-order为-1，显示在建筑下方
-    
+    this->addChild(_rangeCircle, -1); // Z-order为-1，显示在建筑下方
+
     CCLOG("🎯 %s 显示攻击范围：%.1f 像素", getDisplayName().c_str(), _combatStats.attackRange);
 }
 
@@ -442,9 +440,9 @@ Sprite* DefenseBuilding::createCannonballSprite()
         // 如果没有图片资源，用DrawNode画一个黑色圆球
         auto drawNode = DrawNode::create();
         drawNode->drawSolidCircle(Vec2::ZERO, 8.0f, 0, 20, Color4F::BLACK);
-        return (Sprite*)drawNode;  // 临时方案
+        return (Sprite*)drawNode; // 临时方案
     }
-    
+
     cannonball->setScale(0.5f);
     return cannonball;
 }
@@ -456,17 +454,14 @@ Sprite* DefenseBuilding::createArrowSprite()
     if (!arrow)
     {
         // 如果没有图片资源，用DrawNode画一个箭头
-        auto drawNode = DrawNode::create();
+        auto drawNode      = DrawNode::create();
         Vec2 arrowPoints[] = {
-            Vec2(-15, 0),  // 尾部
-            Vec2(15, 0),   // 尖端
+            Vec2(-15, 0), // 尾部
+            Vec2(15, 0),  // 尖端
         };
         drawNode->drawSegment(arrowPoints[0], arrowPoints[1], 2.0f, Color4F(0.6f, 0.3f, 0.0f, 1.0f));
-        return (Sprite*)drawNode;  // 临时方案
+        return (Sprite*)drawNode; // 临时方案
     }
-    
+
     return arrow;
 }
-
-
-
