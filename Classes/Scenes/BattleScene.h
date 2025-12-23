@@ -1,26 +1,28 @@
 ﻿/****************************************************************
+/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     BattleScene.h
  * File Function: 战斗场景
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
-#pragma once
-#ifndef __BATTLE_SCENE_H__
-#define __BATTLE_SCENE_H__
+#ifndef BATTLE_SCENE_H_
+#define BATTLE_SCENE_H_
 
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
-#include "AccountManager.h"
-#include "Unit/unit.h"
+
 #include "Buildings/DefenseBuilding.h"
+#include "Managers/AccountManager.h"
+#include "Managers/BattleManager.h"
 #include "Managers/ReplaySystem.h"
-#include "Managers/BattleManager.h" // 🆕 Include BattleManager
 #include "UI/BattleUI.h"
+#include "Unit/UnitTypes.h"
+
+#include <map>
 #include <string>
 #include <vector>
-#include <map> // ✅ 新增
 
 // Forward declarations
 class BuildingManager;
@@ -142,9 +144,9 @@ private:
      */
     void disableAllBuildingsBattleMode();
     
-    // 🆕 PVP State
+    // PVP State
     bool _isPvpMode = false;
     bool _isAttacker = false;
 };
 
-#endif // __BATTLE_SCENE_H__
+#endif  // BATTLE_SCENE_H_

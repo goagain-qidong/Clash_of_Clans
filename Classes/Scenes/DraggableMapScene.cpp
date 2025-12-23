@@ -3,6 +3,8 @@
  * @brief 主场景实现 - 重构后的精简版本
  */
 
+#include "DraggableMapScene.h"
+
 #include "AccountManager.h"
 #include "BaseBuilding.h"
 #include "BattleScene.h"
@@ -13,10 +15,10 @@
 #include "Buildings/ArmyCampBuilding.h"
 #include "Buildings/ResourceBuilding.h"
 #include "BuildingUpgradeUI.h"
-#include "DraggableMapScene.h"
 #include "HUDLayer.h"
 #include "InputController.h"
 #include "Managers/DefenseLogSystem.h"
+#include "Managers/MusicManager.h"
 #include "Managers/ResourceCollectionManager.h"
 #include "Managers/TroopInventory.h"
 #include "Managers/UpgradeManager.h"
@@ -25,12 +27,15 @@
 #include "SceneUIController.h"
 #include "ShopLayer.h"
 #include "SocketClient.h"
+#include "UI/ClanPanel.h"
 #include "UI/PlayerListLayer.h"
-#include "UI/ClanPanel.h" // 🆕 Include ClanPanel
-#include "Unit/unit.h"
+#include "Unit/UnitTypes.h"
 #include "ui/CocosGUI.h"
-#include "Managers/MusicManager.h" // ✅ 新增
+
 #include <ctime>
+
+// Forward declaration for callback
+class BaseUnit;
 
 USING_NS_CC;
 using namespace ui;
@@ -563,9 +568,9 @@ void DraggableMapScene::onBuildingPlaced(BaseBuilding* building)
         auto barracks = dynamic_cast<ArmyBuilding*>(building);
         if (barracks)
         {
-            // 🔴 方案A优化：训练完成时只显示提示，不在地图上创建独立 Unit
+            // 训练完成时只显示提示，不在地图上创建独立单位
             // 小兵会自动显示在军营中（由 ArmyBuilding::notifyArmyCampsToDisplayTroop 处理）
-            barracks->setOnTrainingComplete([this](Unit* unit) {
+            barracks->setOnTrainingComplete([this](BaseUnit* unit) {
                 // unit 参数现在总是 nullptr，不需要检查
                 // 只显示提示信息
                 CCLOG("🎉 Unit training complete!");

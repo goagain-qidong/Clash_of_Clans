@@ -3,16 +3,19 @@
  * File Name:     BattleManager.cpp
  * File Function: 战斗逻辑实现 - 管理战斗流程和状态
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
 
 #include "BattleManager.h"
+
 #include "Managers/DefenseLogSystem.h"
 #include "Managers/MusicManager.h"
 #include "Managers/TroopInventory.h"
 #include "PathFinder.h"
 #include "ResourceManager.h"
+#include "Unit/UnitFactory.h"
+
 #include <ctime>
 
 USING_NS_CC;
@@ -193,7 +196,7 @@ void BattleManager::updateBattleState(float dt)
     // Update Z-Order
     for (auto* unit : _deployedUnits)
     {
-        if (unit && !unit->IsDead())
+        if (unit && !unit->isDead())
         {
             int newZOrder = 10000 - static_cast<int>(unit->getPositionY());
             unit->setLocalZOrder(newZOrder);
@@ -214,7 +217,7 @@ void BattleManager::updateBattleState(float dt)
 
     for (auto* unit : _deployedUnits)
     {
-        if (unit && !unit->IsDead())
+        if (unit && !unit->isDead())
         {
             unit->tick(dt);
         }
@@ -365,27 +368,27 @@ void BattleManager::checkBattleEndConditions()
     }
 }
 
-// 🆕 检查是否所有单位都已死亡或已部署
+// 检查是否所有单位都已死亡或已部署
 bool BattleManager::checkAllUnitsDeadOrDeployed() const
 {
     // 检查是否还有存活的已部署单位
     for (auto* unit : _deployedUnits)
     {
-        if (unit && !unit->IsDead())
+        if (unit && !unit->isDead())
         {
-            return false; // 还有存活单位
+            return false;  // 还有存活单位
         }
     }
     return true;
 }
 
-// 🆕 统计存活单位数量
+// 统计存活单位数量
 int BattleManager::countAliveUnits() const
 {
     int count = 0;
     for (auto* unit : _deployedUnits)
     {
-        if (unit && !unit->IsDead())
+        if (unit && !unit->isDead())
         {
             count++;
         }
@@ -458,7 +461,7 @@ void BattleManager::deployUnitRemote(UnitType type, const cocos2d::Vec2& positio
 
 void BattleManager::spawnUnit(UnitType type, const cocos2d::Vec2& position)
 {
-    Unit* unit = Unit::create(type);
+    BaseUnit* unit = UnitFactory::createUnit(type);
     if (!unit)
         return;
 
@@ -487,8 +490,8 @@ void BattleManager::updateUnitAI(float dt)
 
     for (auto it = _deployedUnits.begin(); it != _deployedUnits.end();)
     {
-        Unit* unit = *it;
-        if (!unit || unit->IsDead())
+        BaseUnit* unit = *it;
+        if (!unit || unit->isDead())
         {
             ++it;
             continue;
@@ -521,16 +524,16 @@ void BattleManager::updateUnitAI(float dt)
                 return closest;
             };
 
-            if (unit->GetType() == UnitType::kGiant)
+            if (unit->getUnitType() == UnitType::kGiant)
             {
                 bestTarget = findTargetWithFilter([](BaseBuilding* b) { return b->isDefenseBuilding(); });
             }
-            else if (unit->GetType() == UnitType::kGoblin)
+            else if (unit->getUnitType() == UnitType::kGoblin)
             {
                 bestTarget = findTargetWithFilter(
                     [](BaseBuilding* b) { return b->getBuildingType() == BuildingType::kResource; });
             }
-            else if (unit->GetType() == UnitType::kWallBreaker)
+            else if (unit->getUnitType() == UnitType::kWallBreaker)
             {
                 bestTarget =
                     findTargetWithFilter([](BaseBuilding* b) { return b->getBuildingType() == BuildingType::kWall; });
@@ -545,7 +548,7 @@ void BattleManager::updateUnitAI(float dt)
             {
                 unit->setTarget(bestTarget);
                 target = bestTarget;
-                unit->StopMoving();
+                unit->stopMoving();
             }
         }
 
@@ -556,22 +559,22 @@ void BattleManager::updateUnitAI(float dt)
             if (unit->isInAttackRange(targetPos))
             {
                 if (unit->isMoving())
-                    unit->StopMoving();
+                    unit->stopMoving();
 
                 unit->updateAttackCooldown(dt);
                 if (unit->isAttackReady())
                 {
-                    if (unit->GetType() == UnitType::kWallBreaker)
+                    if (unit->getUnitType() == UnitType::kWallBreaker)
                     {
-                        unit->Attack(false);
+                        unit->attack(false);
                         float damage = unit->getDamage() * 40.0f;
-                        target->takeDamage(damage);
-                        unit->Die();
+                        target->takeDamage(static_cast<int>(damage));
+                        unit->die();
                     }
                     else
                     {
-                        unit->Attack(false);
-                        target->takeDamage(unit->getDamage());
+                        unit->attack(false);
+                        target->takeDamage(static_cast<int>(unit->getDamage()));
                         unit->resetAttackCooldown();
                     }
 
@@ -596,11 +599,11 @@ void BattleManager::updateUnitAI(float dt)
                         std::vector<Vec2> path =
                             PathFinder::getInstance().findPath(gridMap, unit->getPosition(), targetPos, false);
 
-                        unit->MoveToPath(path);
+                        unit->moveToPath(path);
                     }
                     else
                     {
-                        unit->MoveTo(targetPos);
+                        unit->moveTo(targetPos);
                     }
                 }
             }

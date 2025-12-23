@@ -1,14 +1,18 @@
 ﻿/****************************************************************
+/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     ArmyCampBuilding.h
  * File Function: 军营建筑类（存放士兵的营地）
  * Author:        薛毓哲
- * Update Date:   2025/01/09
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
-#pragma once
+#ifndef ARMY_CAMP_BUILDING_H_
+#define ARMY_CAMP_BUILDING_H_
+
 #include "BaseBuilding.h"
-#include "Unit/unit.h"
+#include "Unit/UnitTypes.h"
+
 #include <vector>
 
 /**
@@ -57,9 +61,11 @@ protected:
 private:
     ArmyCampBuilding() = default;
     
-    // 🆕 存储显示的小兵（改为 Node* 以支持 Unit）
+    // 存储显示的小兵
     std::vector<cocos2d::Node*> _troopSprites;
     
-    // 🆕 获取小兵应该显示的位置（相对于军营）
+    // 获取小兵应该显示的位置（相对于军营）
     cocos2d::Vec2 getTroopDisplayPosition(int index) const;
 };
+
+#endif  // ARMY_CAMP_BUILDING_H_

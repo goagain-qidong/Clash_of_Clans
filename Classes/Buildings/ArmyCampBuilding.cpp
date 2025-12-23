@@ -3,11 +3,14 @@
  * File Name:     ArmyCampBuilding.cpp
  * File Function: 军营建筑类实现
  * Author:        薛毓哲
- * Update Date:   2025/01/09
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
 #include "ArmyCampBuilding.h"
+
 #include "Managers/TroopInventory.h"
+#include "Unit/UnitFactory.h"
+
 USING_NS_CC;
 // 军营生命值 (1-13级)
 static const int  CAMP_HP[] = {0, 250, 280, 320, 360, 400, 450, 500, 550, 620, 700, 800, 1000, 1200};
@@ -176,12 +179,12 @@ void ArmyCampBuilding::onLevelUp()
     }
 }
 
-// ==================== 🆕 小兵显示功能实现 ====================
+// ==================== 小兵显示功能实现 ====================
 
 void ArmyCampBuilding::addTroopDisplay(UnitType type)
 {
-    // 🎮 创建真实的站立小兵（使用 Unit 类）
-    Unit* troopUnit = Unit::create(type);
+    // 创建真实的站立小兵（使用 UnitFactory）
+    BaseUnit* troopUnit = UnitFactory::createUnit(type);
     if (!troopUnit)
     {
         CCLOG("❌ Failed to create troop unit for display");
@@ -202,7 +205,7 @@ void ArmyCampBuilding::addTroopDisplay(UnitType type)
     // 添加到军营建筑
     this->addChild(troopUnit, 50);  // Z-Order 50，在建筑上方
     
-    // 保存到列表（注意：这里存的是 Sprite* 指针，但实际是 Unit*）
+    // 保存到列表
     _troopSprites.push_back(troopUnit);
     
     CCLOG("✅ Added troop unit to Army Camp (total: %zu)", _troopSprites.size());

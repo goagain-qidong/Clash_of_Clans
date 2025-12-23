@@ -1,15 +1,14 @@
 ﻿/****************************************************************
+/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     BattleManager.h
  * File Function: 战斗逻辑管理器
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
-
-#pragma once
-#ifndef __BATTLE_MANAGER_H__
-#define __BATTLE_MANAGER_H__
+#ifndef BATTLE_MANAGER_H_
+#define BATTLE_MANAGER_H_
 
 #include "AccountManager.h"
 #include "Buildings/BaseBuilding.h"
@@ -17,8 +16,10 @@
 #include "GridMap.h"
 #include "Managers/ReplaySystem.h"
 #include "PathFinder.h"
-#include "Unit/unit.h"
+#include "Unit/BaseUnit.h"
+#include "Unit/UnitTypes.h"
 #include "cocos2d.h"
+
 #include <functional>
 #include <map>
 #include <string>
@@ -146,7 +147,7 @@ private:
     bool            _hasDeployedAnyUnit = false; // 是否曾部署过单位
 
     // Units & Buildings
-    std::vector<Unit*>         _deployedUnits;
+    std::vector<BaseUnit*>     _deployedUnits;
     std::vector<BaseBuilding*> _enemyBuildings;
     int                        _totalBuildingHP     = 0;
     int                        _destroyedBuildingHP = 0;
@@ -174,4 +175,4 @@ private:
     std::function<void(UnitType, const cocos2d::Vec2&)> _onNetworkDeploy;
 };
 
-#endif // __BATTLE_MANAGER_H__
+#endif  // BATTLE_MANAGER_H_

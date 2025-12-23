@@ -244,18 +244,27 @@ bool TroopInventory::fromJson(const std::string& jsonStr)
 
 // ==================== 文件保存/加载 ====================
 
-void TroopInventory::save()
+void TroopInventory::save(const std::string& forceUserId)
 {
     auto& accMgr = AccountManager::getInstance();
     const auto* account = accMgr.getCurrentAccount();
     
-    if (!account)
+    std::string userId;
+    if (!forceUserId.empty())
+    {
+        userId = forceUserId;
+    }
+    else if (account)
+    {
+        userId = account->userId;
+    }
+    else
     {
         CCLOG("⚠️ 无当前账号，无法保存士兵库存");
         return;
     }
     
-    std::string filename = "troop_inv_" + account->userId + ".json";
+    std::string filename = "troop_inv_" + userId + ".json";
     std::string path = FileUtils::getInstance()->getWritablePath() + filename;
     std::string json = toJson();
     

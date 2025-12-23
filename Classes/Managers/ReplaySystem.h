@@ -1,21 +1,22 @@
 ﻿/****************************************************************
+/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     ReplaySystem.h
  * File Function: 回放系统 - 负责游戏的回放录制和回放
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/01/10
  * License:       MIT License
  ****************************************************************/
-#pragma once
-#ifndef __REPLAY_SYSTEM_H__
-#define __REPLAY_SYSTEM_H__
+#ifndef REPLAY_SYSTEM_H_
+#define REPLAY_SYSTEM_H_
 
 #include "cocos2d.h"
-#include "Unit/unit.h"
-#include <string>
-#include <vector>
+#include "Unit/UnitTypes.h"
+
 #include <functional>
 #include <sstream>
+#include <string>
+#include <vector>
 
 /**
  * @enum ReplayEventType
@@ -164,4 +165,4 @@ private:
     std::function<void()> _endBattleCallback;
 };
 
-#endif // __REPLAY_SYSTEM_H__
+#endif  // REPLAY_SYSTEM_H_
