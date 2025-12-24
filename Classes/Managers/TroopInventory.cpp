@@ -67,7 +67,7 @@ int TroopInventory::addTroops(UnitType type, int count)
     
     if (availablePop <= 0)
     {
-        CCLOG("⚠️ 人口已满，无法添加士兵！");
+        CCLOG("TroopInventory: Population full, cannot add troops");
         return 0;
     }
     
@@ -81,7 +81,7 @@ int TroopInventory::addTroops(UnitType type, int count)
         // 更新人口计数
         resMgr.addTroops(actualCount * unitPop);
         
-        CCLOG("✅ 添加 %d 个士兵（类型：%d），当前库存：%d", 
+        CCLOG("TroopInventory: Added %d troops (type: %d), current: %d", 
               actualCount, static_cast<int>(type), _troops[type]);
         
         // 通知UI更新
@@ -102,7 +102,7 @@ bool TroopInventory::consumeTroops(UnitType type, int count)
     // 检查是否有足够的士兵
     if (!hasEnoughTroops(type, count))
     {
-        CCLOG("⚠️ 士兵不足！需要：%d，拥有：%d", count, getTroopCount(type));
+        CCLOG("TroopInventory: Not enough troops! need: %d, have: %d", count, getTroopCount(type));
         return false;
     }
     
@@ -113,7 +113,7 @@ bool TroopInventory::consumeTroops(UnitType type, int count)
     int unitPop = getUnitPopulation(type);
     ResourceManager::getInstance().consume(ResourceType::kTroopPopulation, count * unitPop);
     
-    CCLOG("✅ 消耗 %d 个士兵（类型：%d），剩余：%d", 
+    CCLOG("TroopInventory: Consumed %d troops (type: %d), remaining: %d", 
           count, static_cast<int>(type), _troops[type]);
     
     // 通知UI更新
@@ -151,7 +151,7 @@ void TroopInventory::clearAll()
     // 清空人口计数
     ResourceManager::getInstance().setResourceCount(ResourceType::kTroopPopulation, 0);
     
-    CCLOG("⚠️ 清空所有士兵库存");
+    CCLOG("TroopInventory: Cleared all troops");
     
     // 通知UI更新
     for (const auto& pair : _troops)
@@ -195,7 +195,7 @@ bool TroopInventory::fromJson(const std::string& jsonStr)
 {
     if (jsonStr.empty())
     {
-        CCLOG("⚠️ 士兵库存JSON为空，使用默认值");
+        CCLOG("TroopInventory: JSON empty, using defaults");
         return false;
     }
     
@@ -204,13 +204,13 @@ bool TroopInventory::fromJson(const std::string& jsonStr)
     
     if (doc.HasParseError() || !doc.IsObject())
     {
-        CCLOG("❌ 解析士兵库存JSON失败！");
+        CCLOG("TroopInventory: Failed to parse JSON");
         return false;
     }
     
     if (!doc.HasMember("troops") || !doc["troops"].IsObject())
     {
-        CCLOG("⚠️ JSON中缺少troops字段");
+        CCLOG("TroopInventory: Missing troops field");
         return false;
     }
     
@@ -230,14 +230,14 @@ bool TroopInventory::fromJson(const std::string& jsonStr)
         UnitType type = static_cast<UnitType>(typeInt);
         _troops[type] = count;
         
-        CCLOG("📦 加载士兵：类型=%d，数量=%d", typeInt, count);
+        CCLOG("TroopInventory: Loaded type=%d, count=%d", typeInt, count);
     }
     
     // 重新计算人口数
     int totalPop = getTotalPopulation();
     ResourceManager::getInstance().setResourceCount(ResourceType::kTroopPopulation, totalPop);
     
-    CCLOG("✅ 士兵库存加载完成，总人口：%d", totalPop);
+    CCLOG("TroopInventory: Load complete, total population: %d", totalPop);
     
     return true;
 }
@@ -260,7 +260,7 @@ void TroopInventory::save(const std::string& forceUserId)
     }
     else
     {
-        CCLOG("⚠️ 无当前账号，无法保存士兵库存");
+        CCLOG("TroopInventory: No current account, cannot save");
         return;
     }
     
@@ -273,11 +273,11 @@ void TroopInventory::save(const std::string& forceUserId)
     {
         fputs(json.c_str(), file);
         fclose(file);
-        CCLOG("💾 士兵库存已保存：%s", filename.c_str());
+        CCLOG("TroopInventory: Saved to %s", filename.c_str());
     }
     else
     {
-        CCLOG("❌ 保存士兵库存失败：%s", filename.c_str());
+        CCLOG("TroopInventory: Failed to save %s", filename.c_str());
     }
 }
 
@@ -288,7 +288,7 @@ void TroopInventory::load()
     
     if (!account)
     {
-        CCLOG("⚠️ 无当前账号，无法加载士兵库存");
+        CCLOG("TroopInventory: No current account, cannot load");
         return;
     }
     
@@ -297,14 +297,14 @@ void TroopInventory::load()
     
     if (!FileUtils::getInstance()->isFileExist(path))
     {
-        CCLOG("⚠️ 士兵库存文件不存在，使用默认值：%s", filename.c_str());
+        CCLOG("TroopInventory: File not found, using defaults: %s", filename.c_str());
         return;
     }
     
     std::string json = FileUtils::getInstance()->getStringFromFile(path);
     if (fromJson(json))
     {
-        CCLOG("📂 士兵库存已加载：%s", filename.c_str());
+        CCLOG("TroopInventory: Loaded from %s", filename.c_str());
     }
 }
 

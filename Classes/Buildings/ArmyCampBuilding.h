@@ -60,6 +60,9 @@ public:
     /** @brief 根据士兵库存刷新军营显示 */
     void refreshDisplayFromInventory();
 
+    /** @brief 获取当前显示的士兵数量 */
+    int getTroopDisplayCount() const;
+
 protected:
     /**
      * @brief 初始化军营
@@ -73,8 +76,6 @@ protected:
 
 private:
     ArmyCampBuilding() = default;
-
-    std::vector<cocos2d::Node*> _troopSprites;  ///< 存储显示的小兵
 
     /**
      * @brief 获取小兵应该显示的位置

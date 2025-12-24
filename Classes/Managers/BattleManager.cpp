@@ -745,6 +745,10 @@ void BattleManager::uploadBattleResult()
     if (!currentAccount)
         return;
 
+    // 如果敌方ID和当前账号相同，跳过上传（自己攻击自己的情况）
+    if (_enemyUserId == currentAccount->account.userId)
+        return;
+
     DefenseLog defenseLog;
     defenseLog.attackerId   = currentAccount->account.userId;
     defenseLog.attackerName = currentAccount->account.username;
@@ -757,13 +761,18 @@ void BattleManager::uploadBattleResult()
     defenseLog.replayData   = ReplaySystem::getInstance().stopRecording();
 
     std::string attackerUserId = currentAccount->account.userId;
-    if (accMgr.switchAccount(_enemyUserId, true))
-    {
-        DefenseLogSystem::getInstance().load();
-        DefenseLogSystem::getInstance().addDefenseLog(defenseLog);
-        accMgr.switchAccount(attackerUserId, true);
-        DefenseLogSystem::getInstance().load();
-    }
+    
+    // 使用延迟调用，确保在主线程安全执行账号切换
+    Director::getInstance()->getScheduler()->performFunctionInCocosThread([=]() {
+        auto& accMgrLocal = AccountManager::getInstance();
+        if (accMgrLocal.switchAccount(_enemyUserId, true))
+        {
+            DefenseLogSystem::getInstance().load();
+            DefenseLogSystem::getInstance().addDefenseLog(defenseLog);
+            accMgrLocal.switchAccount(attackerUserId, true);
+            DefenseLogSystem::getInstance().load();
+        }
+    });
 }
 
 std::string BattleManager::getCurrentTimestamp()

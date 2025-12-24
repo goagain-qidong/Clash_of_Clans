@@ -9,6 +9,7 @@
 #include "ArmyCampBuilding.h"
 #include "Managers/TroopInventory.h"
 #include "Unit/UnitFactory.h"
+#include "Unit/BaseUnit.h"
 
 USING_NS_CC;
 
@@ -69,46 +70,70 @@ void ArmyCampBuilding::addTroopDisplay(UnitType type)
         return;
     
     troopUnit->setScale(0.5f);
+    troopUnit->setName("troop_display");
     
-    int index = static_cast<int>(_troopSprites.size());
+    int index = getTroopDisplayCount();
     Vec2 pos = getTroopDisplayPosition(index);
     troopUnit->setPosition(pos);
     troopUnit->PlayAnimation(UnitAction::kIdle, UnitDirection::kRight);
     
     this->addChild(troopUnit, 50);
-    _troopSprites.push_back(troopUnit);
 }
 
 void ArmyCampBuilding::removeTroopDisplay(UnitType type)
 {
-    if (_troopSprites.empty())
-        return;
-    
-    auto lastSprite = _troopSprites.back();
-    lastSprite->removeFromParent();
-    _troopSprites.pop_back();
-    updateTroopPositions();
+    auto& children = this->getChildren();
+    for (auto it = children.rbegin(); it != children.rend(); ++it)
+    {
+        Node* child = *it;
+        if (child && child->getName() == "troop_display")
+        {
+            child->removeFromParent();
+            break;
+        }
+    }
 }
 
 void ArmyCampBuilding::clearTroopDisplays()
 {
-    for (auto* sprite : _troopSprites)
+    std::vector<Node*> toRemove;
+    for (auto* child : this->getChildren())
     {
-        if (sprite)
-            sprite->removeFromParent();
+        if (child && child->getName() == "troop_display")
+        {
+            toRemove.push_back(child);
+        }
     }
-    _troopSprites.clear();
+    
+    for (auto* node : toRemove)
+    {
+        node->removeFromParent();
+    }
+}
+
+int ArmyCampBuilding::getTroopDisplayCount() const
+{
+    int count = 0;
+    for (auto* child : this->getChildren())
+    {
+        if (child && child->getName() == "troop_display")
+        {
+            count++;
+        }
+    }
+    return count;
 }
 
 void ArmyCampBuilding::updateTroopPositions()
 {
-    for (size_t i = 0; i < _troopSprites.size(); ++i)
+    int index = 0;
+    for (auto* child : this->getChildren())
     {
-        if (_troopSprites[i])
+        if (child && child->getName() == "troop_display")
         {
-            Vec2 pos = getTroopDisplayPosition(static_cast<int>(i));
-            auto moveTo = MoveTo::create(0.3f, pos);
-            _troopSprites[i]->runAction(moveTo);
+            Vec2 pos = getTroopDisplayPosition(index);
+            child->runAction(MoveTo::create(0.3f, pos));
+            index++;
         }
     }
 }

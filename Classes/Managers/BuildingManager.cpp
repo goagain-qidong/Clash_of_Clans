@@ -1042,13 +1042,13 @@ void BuildingManager::restoreArmyCampTroopDisplays()
         
         for (int i = 0; i < count; ++i)
         {
-            if (armyCampIndex >= armyCamps.size())
+            if (armyCampIndex >= static_cast<int>(armyCamps.size()))
                 armyCampIndex = 0;
             
             armyCamps[armyCampIndex]->addTroopDisplay(unitType);
             
             if ((i + 1) % 5 == 0)
-                armyCampIndex = (armyCampIndex + 1) % armyCamps.size();
+                armyCampIndex = (armyCampIndex + 1) % static_cast<int>(armyCamps.size());
         }
     }
 }

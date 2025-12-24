@@ -74,9 +74,10 @@ bool DraggableMapScene::init()
 
     scheduleUpdate();
 
-    // 监听场景恢复事件
+    // 监听场景恢复事件（使用固定优先级，确保场景被push后仍能接收事件）
     auto listener = EventListenerCustom::create("scene_resume", [this](EventCustom* event) { this->onSceneResume(); });
-    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+    _eventDispatcher->addEventListenerWithFixedPriority(listener, 1);
+    _sceneResumeListener = listener;  // 保存引用以便析构时移除
 
     // HUD 层（已在 initializeManagers 中创建为成员 _hudLayer）
     if (_hudLayer)
@@ -122,7 +123,7 @@ void DraggableMapScene::initializeManagers()
     if (currentAccount && !currentAccount->assignedMapName.empty())
     {
         assignedMap = currentAccount->assignedMapName;
-        CCLOG("✅ Loading assigned map for account %s: %s", currentAccount->account.username.c_str(), assignedMap.c_str());
+        CCLOG("Loading assigned map for account %s: %s", currentAccount->account.username.c_str(), assignedMap.c_str());
     }
 
     _mapController = MapController::create();
@@ -183,7 +184,6 @@ void DraggableMapScene::setupUpgradeManagerCallbacks()
     upgradeMgr->setOnAvailableBuilderChanged([this](int availableBuilders) {
         if (_hudLayer)
             _hudLayer->updateDisplay();
-        CCLOG("👷 工人数量已更新：可用=%d", availableBuilders);
     });
 }
 
@@ -223,10 +223,7 @@ bool DraggableMapScene::onTouchBegan(Touch* touch, Event* event)
     _activeTouches[touch->getID()] = touchPos; // ✅ 记录触摸点，支持多点触控
 
     if (_collectionMgr && _collectionMgr->handleTouch(touchPos))
-    {
-        CCLOG("✅ 资源收集：触摸已处理");
         return true;
-    }
 
     if (_currentUpgradeUI && _currentUpgradeUI->isVisible())
     {
@@ -483,17 +480,13 @@ void DraggableMapScene::onAttackClicked()
     if (_buildingManager)
     {
         _buildingManager->saveCurrentState();
-        CCLOG("✅ Saved current base before attacking");
     }
 
-    // 🆕 直接显示玩家列表，跳过军队选择界面
     auto& client = SocketClient::getInstance();
     if (client.isConnected())
     {
-        // 🔴 修复：重新注册回调，防止被ClanPanel覆盖
         client.setOnUserListReceived([this](const std::string& data){
             CCLOG("[Socket] User list received, len=%zu", data.size());
-            // Ensure UI update runs on main thread
             Director::getInstance()->getScheduler()->performFunctionInCocosThread([this, data](){
                 showPlayerListFromServerData(data);
             });
@@ -588,9 +581,6 @@ void DraggableMapScene::onBuildingPlaced(BaseBuilding* building)
             // 训练完成时只显示提示，不在地图上创建独立单位
             // 小兵会自动显示在军营中（由 ArmyBuilding::notifyArmyCampsToDisplayTroop 处理）
             barracks->setOnTrainingComplete([this](BaseUnit* unit) {
-                // unit 参数现在总是 nullptr，不需要检查
-                // 只显示提示信息
-                CCLOG("🎉 Unit training complete!");
                 _uiController->showHint("士兵训练完成！");
             });
         }
@@ -604,11 +594,9 @@ void DraggableMapScene::onBuildingClicked(BaseBuilding* building)
     if (!building)
         return;
     
-    // 🆕 显示占用网格覆盖层（淡入效果，不自动淡出）
+    // 显示占用网格覆盖层
     if (_buildingManager)
-    {
-        _buildingManager->showOccupiedGrids(false); // false表示不自动淡出
-    }
+        _buildingManager->showOccupiedGrids(false);
     
     showUpgradeUI(building);
 }
@@ -661,10 +649,9 @@ void DraggableMapScene::hideUpgradeUI()
     if (!_currentUpgradeUI)
         return;
 
-    // 先淡出占用网格覆盖层，再隐藏UI
+    // 淡出占用网格覆盖层
     if (_buildingManager)
     {
-        // 延迟淡出，让用户看到效果
         auto delay = DelayTime::create(0.2f);
         auto call  = CallFunc::create([this]() {
             if (_buildingManager)
@@ -701,10 +688,7 @@ void DraggableMapScene::cleanupUpgradeUI()
 void DraggableMapScene::registerResourceBuilding(ResourceBuilding* building)
 {
     if (_collectionMgr && building)
-    {
         _collectionMgr->registerBuilding(building);
-        CCLOG("✅ 注册资源建筑收集：%s", building->getDisplayName().c_str());
-    }
 }
 
 // ========== 网络 ==========
@@ -717,49 +701,41 @@ void DraggableMapScene::connectToServer()
     sock.setOnConnected([](bool success) {
         if (success)
         {
-            CCLOG("[Socket] ✅ 连接成功！");
+            CCLOG("[Socket] Connected successfully");
             
-            // 自动登录并上传地图
             auto& accMgr = AccountManager::getInstance();
             auto currentAccount = accMgr.getCurrentAccount();
             if (currentAccount)
             {
-                // 登录
                 SocketClient::getInstance().login(currentAccount->account.userId, currentAccount->account.username, currentAccount->gameData.trophies);
-                CCLOG("[Socket] 📤 Sent login: %s", currentAccount->account.userId.c_str());
                 
-                // 上传地图数据
                 std::string mapData = currentAccount->gameData.toJson();
                 SocketClient::getInstance().uploadMap(mapData);
-                CCLOG("[Socket] 📤 Uploaded map data (size: %zu bytes)", mapData.size());
             }
         }
         else
         {
-            CCLOG("[Socket] ❌ 连接失败");
+            CCLOG("[Socket] Connection failed");
         }
     });
 
-    // 尝试连接到服务器（使用正确的端口）
     const std::string host = "127.0.0.1";
-    const int port = 8888; // 🔴 修正：使用服务器默认端口 8888
+    const int port = 8888;
 
     if (!sock.isConnected())
     {
-        CCLOG("[Socket] 🔌 正在连接到服务器 %s:%d...", host.c_str(), port);
+        CCLOG("[Socket] Connecting to %s:%d...", host.c_str(), port);
         sock.connect(host, port);
     }
     else
     {
-        CCLOG("[Socket] ✅ 已连接到服务器");
-        // 如果已连接，直接上传地图
+        CCLOG("[Socket] Already connected");
         auto& accMgr = AccountManager::getInstance();
         auto currentAccount = accMgr.getCurrentAccount();
         if (currentAccount)
         {
             std::string mapData = currentAccount->gameData.toJson();
             sock.uploadMap(mapData);
-            CCLOG("[Socket] 📤 Re-uploaded map data");
         }
     }
 }
@@ -790,16 +766,14 @@ void DraggableMapScene::setupNetworkCallbacks()
 
             DefenseLogSystem::getInstance().addDefenseLog(log);
             
-            CCLOG("🛡️ Defense log added for defender: %s, attacked by: %s", 
+            CCLOG("Defense log added for defender: %s, attacked by: %s", 
                   result.defenderId.c_str(), result.attackerId.c_str());
 
-            // 🔧 修复内存泄漏：使用 performFunctionInCocosThread 避免循环引用
+            // 显示防守日志UI
             if (DefenseLogSystem::getInstance().hasUnviewedLogs())
             {
-                // 直接在主线程显示，不使用 scheduleOnce 捕获 this
                 Director::getInstance()->getScheduler()->performFunctionInCocosThread([](){
                     DefenseLogSystem::getInstance().showDefenseLogUI();
-                    CCLOG("🔔 Displaying defense log UI after receiving attack result");
                 });
             }
         }
@@ -881,14 +855,17 @@ void DraggableMapScene::update(float dt)
 
 DraggableMapScene::~DraggableMapScene()
 {
-    // Clear network callbacks to prevent crash
+    // 移除场景恢复事件监听器
+    if (_sceneResumeListener)
+    {
+        _eventDispatcher->removeEventListener(_sceneResumeListener);
+        _sceneResumeListener = nullptr;
+    }
+    
     SocketClient::getInstance().setOnAttackResult(nullptr);
     SocketClient::getInstance().setOnUserListReceived(nullptr);
 
-    // 🔧 修复内存泄漏：清理所有 schedule 回调
     this->unscheduleAllCallbacks();
-    
-    // 🔧 修复内存泄漏：移除所有事件监听器
     _eventDispatcher->removeEventListenersForTarget(this);
     
     if (_currentUpgradeUI)
@@ -897,61 +874,43 @@ DraggableMapScene::~DraggableMapScene()
         _currentUpgradeUI = nullptr;
     }
 
-    // 🔴 关键修复：如果是切换账号或攻击模式，绝对不要保存状态！
-    // 否则会将旧账号的建筑数据保存到新切换的账号存档中（因为 AccountManager 已经切换了）
     if (_buildingManager && !_isAttackMode && !_isSwitchingAccount)
     {
         _buildingManager->saveCurrentState();
-        CCLOG("💾 Game state auto-saved on scene destruction");
     }
-    else
-    {
-        CCLOG("🚫 Auto-save skipped (Switching Account: %d, Attack Mode: %d)", 
-              _isSwitchingAccount, _isAttackMode);
-    }
-    
-    CCLOG("🗑️ DraggableMapScene destroyed, all callbacks cleaned");
 }
 
 void DraggableMapScene::onSceneResume()
 {
-    CCLOG("🔄 Scene resumed, refreshing ArmyCamp displays...");
+    CCLOG("Scene resumed, refreshing ArmyCamp displays...");
 
     // 重置触摸状态
     _activeTouches.clear();
     _isPinching        = false;
     _prevPinchDistance = 0.0f;
 
-    // 🎵 恢复背景音乐
+    // 恢复背景音乐
     MusicManager::getInstance().playMusic(MusicType::BATTLE_PREPARING);
 
-    // 🔧 修复：清除所有PVP相关回调，确保状态重置
+    // 清除所有PVP相关回调
     auto& client = SocketClient::getInstance();
     client.setOnPvpStart(nullptr);
     client.setOnPvpAction(nullptr);
     client.setOnPvpEnd(nullptr);
     client.setOnSpectateJoin(nullptr);
 
-    // 🔧 修复：重新设置DraggableMapScene的网络回调，防止被ClanPanel的回调覆盖
+    // 重新设置网络回调
     setupNetworkCallbacks();
 
-    CCLOG("🔴 [DraggableMapScene] PVP callbacks cleared and network callbacks restored on scene resume");
-
-    // 重新加载士兵库存
-    TroopInventory::getInstance().load();
-
+    // 刷新军营显示
     if (_buildingManager)
     {
+        _buildingManager->restoreArmyCampTroopDisplays();
+        
+        // 重新注册资源建筑
         const auto& buildings = _buildingManager->getBuildings();
         for (auto* building : buildings)
         {
-            auto armyCamp = dynamic_cast<ArmyCampBuilding*>(building);
-            if (armyCamp)
-            {
-                armyCamp->refreshDisplayFromInventory();
-                CCLOG("✅ Refreshed ArmyCamp display from inventory");
-            }
-
             auto resourceBuilding = dynamic_cast<ResourceBuilding*>(building);
             if (resourceBuilding && resourceBuilding->isProducer())
                 ResourceCollectionManager::getInstance()->registerBuilding(resourceBuilding);
@@ -961,10 +920,7 @@ void DraggableMapScene::onSceneResume()
     if (_hudLayer)
     {
         _hudLayer->updateDisplay();
-        CCLOG("✅ Refreshed HUD display");
     }
-
-    CCLOG("✅ Scene resume complete");
 }
 
 // ========== 多人游戏（保留接口） ==========
@@ -980,46 +936,34 @@ void DraggableMapScene::returnToOwnBase()
 
 void DraggableMapScene::onAccountSwitched()
 {
-    CCLOG("✅ Account switch initiated...");
+    CCLOG("Account switch initiated...");
     
-    // 1. 先保存当前账号的状态（此时 AccountManager 还是旧账号）
+    // 1. 先保存当前账号的状态
     if (_buildingManager)
     {
         _buildingManager->saveCurrentState();
-        CCLOG("✅ Saved current account state before switch");
     }
 
     std::string targetUserId = UserDefault::getInstance()->getStringForKey("switching_to_account", "");
     if (targetUserId.empty())
-    {
-        CCLOG("❌ No target account specified");
         return;
-    }
 
-    // 2. 🔴 设置标志位，告诉析构函数不要再保存了
+    // 2. 设置标志位
     _isSwitchingAccount = true;
 
-    // 3. 切换 AccountManager 的活动账号
+    // 3. 切换账号
     auto& accMgr = AccountManager::getInstance();
     if (!accMgr.switchAccount(targetUserId))
     {
-        CCLOG("❌ Failed to switch account");
-        _isSwitchingAccount = false; // 恢复标志位
+        _isSwitchingAccount = false;
         return;
     }
 
-    CCLOG("✅ Account switched successfully, reloading scene...");
     UserDefault::getInstance()->setStringForKey("switching_to_account", "");
     UserDefault::getInstance()->flush();
 
-    // 🆕 加载新账号的防守日志
+    // 加载新账号的防守日志
     DefenseLogSystem::getInstance().load();
-    
-    // 🆕 检查是否有未查看的日志
-    if (DefenseLogSystem::getInstance().hasUnviewedLogs())
-    {
-        CCLOG("🔔 Found unviewed defense logs for account: %s", targetUserId.c_str());
-    }
 
     auto newScene = DraggableMapScene::createScene();
     Director::getInstance()->replaceScene(TransitionFade::create(0.3f, newScene));
@@ -1120,7 +1064,7 @@ void DraggableMapScene::showPlayerListFromServerData(const std::string& serverDa
 
 void DraggableMapScene::startAttack(const std::string& targetUserId)
 {
-    CCLOG("⚔️ 开始攻击玩家: %s", targetUserId.c_str());
+    CCLOG("Starting attack on player: %s", targetUserId.c_str());
 
     auto& accMgr = AccountManager::getInstance();
     auto enemyGameData = accMgr.getPlayerGameData(targetUserId);
@@ -1131,7 +1075,7 @@ void DraggableMapScene::startAttack(const std::string& targetUserId)
         return;
     }
 
-    CCLOG("✅ 加载成功，进入战斗场景 (TH Level=%d, Buildings=%zu)", enemyGameData.townHallLevel, enemyGameData.buildings.size());
+    CCLOG("Loading battle scene (TH Level=%d, Buildings=%zu)", enemyGameData.townHallLevel, enemyGameData.buildings.size());
     auto battleScene = BattleScene::createWithEnemyData(enemyGameData, targetUserId);
     if (battleScene)
         Director::getInstance()->pushScene(TransitionFade::create(0.3f, battleScene));
