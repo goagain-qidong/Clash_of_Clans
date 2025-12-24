@@ -486,28 +486,24 @@ void BuildingManager::endPlacing()
 }
 void BuildingManager::update(float dt)
 {
-    // 1. 🆕 驱动升级管理器更新 (修复倒计时不动的核心)
     UpgradeManager::getInstance()->update(dt);
 
-    // 2. 遍历建筑
+    // 更新建筑状态和升级UI
     for (auto* building : _buildings)
     {
         if (building)
         {
             building->tick(dt);
 
-            // 3. 管理倒计时 UI
             if (building->isUpgrading())
             {
                 auto* existingUI = building->getChildByName("upgradeTimerUI");
                 if (!existingUI)
                 {
-                    // 创建 UI
                     auto* timerUI = UpgradeTimerUI::create(building);
                     if (timerUI)
                     {
                         timerUI->setName("upgradeTimerUI");
-                        // 确保 UI 位于最上层
                         building->addChild(timerUI, 9999);
                     }
                 }
@@ -776,10 +772,7 @@ void BuildingManager::loadBuildingsFromData(const std::vector<BuildingSerialData
     if (!_mapSprite || !_gridMap)
         return;
     
-    // 先设置只读模式标志，以便 clearAllBuildings 能正确判断
     _isReadOnlyMode = isReadOnly;
-    
-    // 清空现有建筑，只读模式不清空士兵库存
     clearAllBuildings(!isReadOnly);
     
     for (const auto& data : buildingsData)
@@ -885,10 +878,9 @@ void BuildingManager::loadBuildingsFromData(const std::vector<BuildingSerialData
             
             setupBuildingClickListener(building);
         }
-        // 🆕 只读模式（战斗场景）：不创建收集UI，不注册到 ResourceCollectionManager
     }
     
-    // 加载完建筑后更新草坪图层
+    // 更新草坪图层
     if (!isReadOnly)
     {
         updateGrassLayer();
@@ -909,11 +901,9 @@ void BuildingManager::clearAllBuildings(bool clearTroops)
         }
     }
     
-    // 只在非只读模式下清除全局管理器引用
-    // 因为这些是单例，只读模式（战斗场景）不应该影响主场景
+    // 非只读模式下清除单例管理器状态
     if (!_isReadOnlyMode)
     {
-        // 清除升级任务，防止野指针
         UpgradeManager::getInstance()->clearAllUpgradeTasks();
         
         ResourceCollectionManager::getInstance()->clearRegisteredBuildings();
@@ -930,7 +920,6 @@ void BuildingManager::clearAllBuildings(bool clearTroops)
     }
     
     _buildings.clear();
-    // 注意：不在这里重置 _isReadOnlyMode，由调用者控制
 }
 
 void BuildingManager::saveCurrentState()

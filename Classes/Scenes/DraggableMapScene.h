@@ -1,11 +1,11 @@
 ﻿/****************************************************************
- * Project Name:  Clash_of_Clans
- * File Name:     DraggableMapScene.h
- * File Function: 主场景类
- * Author:        赵崇治
- * Update Date:   2025/01/10
- * License:       MIT License
- ****************************************************************/
+* Project Name:  Clash_of_Clans
+* File Name:     DraggableMapScene.h
+* File Function: 主场景类
+* Author:        赵崇治、薛毓哲
+* Update Date:   2025/12/24
+* License:       MIT License
+****************************************************************/
 #ifndef __DRAGGABLE_MAP_SCENE_H__
 #define __DRAGGABLE_MAP_SCENE_H__
 
@@ -94,8 +94,7 @@ private:
     bool _isPinching = false;         ///< 是否在缩放
     float _prevPinchDistance = 0.0f;  ///< 上次缩放距离
 
-    // 🆕 新增标志位：防止切换账号时析构函数错误保存数据
-    bool _isSwitchingAccount = false;
+    bool _isSwitchingAccount = false;  ///< 防止切换账号时析构函数错误保存数据
     
     // 场景恢复事件监听器
     cocos2d::EventListenerCustom* _sceneResumeListener = nullptr;

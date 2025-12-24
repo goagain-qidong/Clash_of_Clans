@@ -89,10 +89,10 @@ bool DraggableMapScene::init()
         });
     }
 
-    // 🆕 延迟加载游戏状态，确保所有 manager 初始化完成
+    // 延迟加载游戏状态
     this->scheduleOnce([this](float) { loadGameState(); }, 0.1f, "load_game_state");
     
-    // 🆕 延迟检测并显示防守日志（确保场景完全加载后）
+    // 延迟检测并显示防守日志
     this->scheduleOnce([this](float) {
         // 确保日志已加载
         DefenseLogSystem::getInstance().load();
@@ -110,7 +110,7 @@ bool DraggableMapScene::init()
 void DraggableMapScene::onEnter()
 {
     Scene::onEnter();
-    // 🎵 播放背景音乐
+    // 播放背景音乐
     MusicManager::getInstance().playMusic(MusicType::BATTLE_PREPARING);
 }
 
@@ -167,7 +167,7 @@ void DraggableMapScene::setupCallbacks()
     _uiController->setOnLogout([this]() { onLogout(); });
     _uiController->setOnMapChanged([this](const std::string& newMap) { onMapChanged(newMap); });
     
-    // 🆕 防守日志按钮回调
+    // 防守日志按钮回调
     _uiController->setOnDefenseLogClicked([this]() {
         DefenseLogSystem::getInstance().showDefenseLogUI();
     });
@@ -286,7 +286,7 @@ void DraggableMapScene::onTouchMoved(Touch* touch, Event* event)
         _activeTouches[touch->getID()] = touch->getLocation();
     }
 
-    // 🆕 多点触控缩放
+    // 多点触控缩放
     if (_activeTouches.size() >= 2)
     {
         _isPinching = true;
@@ -432,7 +432,7 @@ void DraggableMapScene::onTouchEnded(Touch* touch, Event* event)
     _hasMoved = false;
 }
 
-// 🆕 添加 onTouchCancelled 处理
+// 添加 onTouchCancelled 处理
 void DraggableMapScene::onTouchCancelled(Touch* touch, Event* event)
 {
     _activeTouches.erase(touch->getID());
