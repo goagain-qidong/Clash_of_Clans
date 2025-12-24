@@ -1,7 +1,9 @@
 ﻿/**
- * @file ResourceBuilding.cpp
- * @brief 资源生产/存储建筑实现
- */
+* @file ResourceBuilding.cpp
+* @brief 资源生产/存储建筑实现
+* @author 赵崇治、薛毓哲
+* @date 2025/12/24
+*/
 #include "ResourceBuilding.h"
 #include "../Managers/ResourceManager.h"
 #include "../UI/ResourceCollectionUI.h"
@@ -442,20 +444,85 @@ ResourceCollectionUI* ResourceBuilding::getCollectionUI() const
 }
 void ResourceBuilding::onLevelUp()
 {
-    // 1. 调用基类逻辑（基类会处理外观更新等基础工作）
-    BaseBuilding::onLevelUp();
+    // 1. 不调用基类 onLevelUp()，避免 getStaticConfig 返回错误的图片路径
+    //    ResourceBuilding 有自己的图片路径逻辑
+    
+    // 2. 强制更新纹理，确保外观改变
+    std::string newImageFile = getImageForLevel(_level);
+    CCLOG("🔍 %s 尝试更新外观: level=%d, path=%s", 
+          getDisplayName().c_str(), _level, newImageFile.c_str());
+    
+    if (!newImageFile.empty())
+    {
+        // 先移除旧纹理缓存，确保加载最新的
+        auto textureCache = Director::getInstance()->getTextureCache();
+        auto texture = textureCache->addImage(newImageFile);
+        if (texture)
+        {
+            this->setTexture(texture);
+            // 重新设置纹理后需要更新内容大小
+            this->setTextureRect(Rect(0, 0, texture->getContentSize().width, 
+                                            texture->getContentSize().height));
+            CCLOG("🖼️ %s 外观更新成功: %s (size: %.0fx%.0f)", 
+                  getDisplayName().c_str(), newImageFile.c_str(),
+                  texture->getContentSize().width, texture->getContentSize().height);
+        }
+        else
+        {
+            CCLOG("❌ %s 外观更新失败：无法加载纹理 %s", 
+                  getDisplayName().c_str(), newImageFile.c_str());
+        }
+    }
+    
+    // 3. 更新生命值（根据新等级）
+    int hp = 400;
+    if (isProducer())
+    {
+        static const int PRODUCER_HP_TABLE[] = {0, 400, 450, 500, 550, 600, 640, 680, 720, 780, 840, 900, 960, 1020, 1080, 1180};
+        int idx = std::min(_level, (int)(sizeof(PRODUCER_HP_TABLE) / sizeof(int) - 1));
+        hp = PRODUCER_HP_TABLE[idx];
+    }
+    else if (isStorage())
+    {
+        static const int STORAGE_HP_TABLE[] = {0, 600, 700, 800, 900, 1000, 1200, 1300, 1400, 1600, 1800, 2100, 2400, 2700, 3000, 3400, 3800, 4200};
+        int idx = std::min(_level, (int)(sizeof(STORAGE_HP_TABLE) / sizeof(int) - 1));
+        hp = STORAGE_HP_TABLE[idx];
+    }
+    setMaxHitpoints(hp);
 
-    // 2. 如果是存储型建筑，通知 Capacity Manager 重新计算容量
+    // 4. 如果是存储型建筑，通知 Capacity Manager 重新计算容量
+    //    使用 this 指针的弱引用模式确保安全
     if (isStorage())
     {
-        // 注意：这里调用的是我们刚写的 BuildingCapacityManager
-        BuildingCapacityManager::getInstance().registerOrUpdateBuilding(this, true);
-
-        CCLOG("🎉 %s 升级到 Lv.%d 完成，已通知 CapacityManager 重新计算总容量。",
-            getDisplayName().c_str(), _level);
+        // 保存 this 指针用于延迟回调
+        ResourceBuilding* self = this;
+        ResourceType resType = _resourceType;  // 保存资源类型
+        
+        this->scheduleOnce([self, resType](float) {
+            // 验证建筑仍然有效
+            if (self && self->getReferenceCount() > 0 && !self->isDestroyed())
+            {
+                // 双重验证资源类型
+                if (self->getResourceType() == resType)
+                {
+                    BuildingCapacityManager::getInstance().registerOrUpdateBuilding(self, true);
+                    CCLOG("🎉 %s 升级到 Lv.%d 完成，资源类型: %s，已更新容量",
+                          self->getDisplayName().c_str(), self->getLevel(),
+                          resType == ResourceType::kGold ? "金币" : "圣水");
+                }
+            }
+        }, 0.0f, "capacity_update");
     }
 
-    // (可选) 如果是生产型建筑，在这里也可以处理生产效率变化的逻辑
+    // 5. 如果是生产型建筑，更新生产效率
+    if (isProducer())
+    {
+        CCLOG("📈 %s 升级到 Lv.%d，产量提升至: %d/周期",
+              getDisplayName().c_str(), _level, getProductionRate());
+    }
+    
+    // 6. 更新名称
+    this->setName(getDisplayName());
 }
 
 // 🆕 新增：初始化资源收集UI（仅在非战斗模式下调用）

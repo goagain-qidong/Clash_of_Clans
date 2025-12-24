@@ -1,11 +1,11 @@
 ﻿/****************************************************************
- * Project Name:  Clash_of_Clans
- * File Name:     BuildingManager.cpp
- * File Function: 建筑管理器实现
- * Author:        赵崇治
- * Update Date:   2025/12/14
- * License:       MIT License
- ****************************************************************/
+* Project Name:  Clash_of_Clans
+* File Name:     BuildingManager.cpp
+* File Function: 建筑管理器实现
+* Author:        赵崇治、薛毓哲
+* Update Date:   2025/12/24
+* License:       MIT License
+****************************************************************/
 #include "BuildingManager.h"
 #include "Managers/UpgradeManager.h" // 引入头文件
 #include "Managers/TroopInventory.h"  // 🆕 引入士兵库存管理
@@ -910,9 +910,18 @@ void BuildingManager::loadBuildingsFromData(const std::vector<BuildingSerialData
         {
             // 🆕 非只读模式：为资源建筑创建收集UI
             auto* resourceBuilding = dynamic_cast<ResourceBuilding*>(building);
-            if (resourceBuilding && resourceBuilding->isProducer())
+            if (resourceBuilding)
             {
-                resourceBuilding->initCollectionUI();
+                if (resourceBuilding->isProducer())
+                {
+                    resourceBuilding->initCollectionUI();
+                }
+                // 🔴 修复：存储型建筑注册到容量管理器
+                else if (resourceBuilding->isStorage())
+                {
+                    BuildingCapacityManager::getInstance().registerOrUpdateBuilding(resourceBuilding, true);
+                    CCLOG("📦 注册存储建筑到容量管理器: %s", resourceBuilding->getDisplayName().c_str());
+                }
             }
             
             // 🔴 关键修复：先移除等级后缀，再进行名称匹配
@@ -1005,6 +1014,9 @@ void BuildingManager::clearAllBuildings(bool clearTroops)
     }
     // 🔴 关键修复：清除所有建筑后，通知资源收集管理器清除其引用。
     ResourceCollectionManager::getInstance()->clearRegisteredBuildings();
+    
+    // 🔴 关键修复：清除容量管理器中的建筑引用，防止悬空指针
+    BuildingCapacityManager::getInstance().clearAllBuildings();
     
     // 重置BuildingLimitManager的建筑计数
     BuildingLimitManager::getInstance()->reset();

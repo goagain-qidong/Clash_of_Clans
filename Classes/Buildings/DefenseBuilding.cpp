@@ -1,11 +1,11 @@
 ﻿/****************************************************************
- * Project Name:  Clash_of_Clans
- * File Name:     DefenseBuilding.cpp
- * File Function: 防御建筑实现
- * Author:        薛毓哲
- * Update Date:   2025/01/10
- * License:       MIT License
- ****************************************************************/
+* Project Name:  Clash_of_Clans
+* File Name:     DefenseBuilding.cpp
+* File Function: 防御建筑实现
+* Author:        薛毓哲
+* Update Date:   2025/12/24
+* License:       MIT License
+****************************************************************/
 #include "DefenseBuilding.h"
 
 #include "UI/BuildingHealthBarUI.h"
@@ -180,9 +180,8 @@ std::string DefenseBuilding::getBuildingDescription() const
 
 std::string DefenseBuilding::getImageForLevel(int level) const
 {
-    if (!_customImagePath.empty())
-        return _customImagePath;
-
+    // 🔴 修复：不再使用 _customImagePath，始终根据等级生成正确的路径
+    // 这样升级后图片才会正确更新
     switch (_defenseType)
     {
     case DefenseType::kCannon:

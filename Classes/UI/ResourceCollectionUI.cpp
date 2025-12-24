@@ -1,15 +1,11 @@
-﻿/**
- * @file ResourceCollectionUI.cpp
- * @brief 资源收集UI实现
- */
- /****************************************************************
-   * Project Name:  Clash_of_Clans
-   * File Name:     WallBuilding.cpp
-   * File Function: 资源收集类
-   * Author:        刘相成
-   * Update Date:   2025/12/09
-   * License:       MIT License
-   ****************************************************************/
+﻿/****************************************************************
+* Project Name:  Clash_of_Clans
+* File Name:     ResourceCollectionUI.cpp
+* File Function: 资源收集UI类
+* Author:        刘相成、薛毓哲
+* Update Date:   2025/12/24
+* License:       MIT License
+****************************************************************/
 #include "ResourceCollectionUI.h"
 #include "../Buildings/ResourceBuilding.h"
 #include "cocos2d.h"
@@ -160,18 +156,40 @@ void ResourceCollectionUI::performCollection()
 {
     if (!_isReadyToCollect || !_building) return;
 
-    // 1. 执行建筑收集逻辑 (返回实际收集量)
+    // 1. 获取收集前的资源状态
+    auto& resMgr = ResourceManager::getInstance();
+    ResourceType resType = _building->getResourceType();
+    int beforeCount = resMgr.getResourceCount(resType);
+    int capacity = resMgr.getResourceCapacity(resType);
+
+    // 2. 执行建筑收集逻辑 (返回实际收集量)
     int collectedAmount = _building->collect();
 
     if (collectedAmount > 0)
     {
-        // 2. 将资源加入全局管理器
-        auto& resMgr = ResourceManager::getInstance();
-        resMgr.addResource(_building->getResourceType(), collectedAmount);
+        // 3. 将资源加入全局管理器
+        int actualAdded = resMgr.addResource(resType, collectedAmount);
+        int afterCount = resMgr.getResourceCount(resType);
 
-        // 3. 播放收集反馈动画
+        // 4. 播放收集反馈动画
         playCollectionAnimation(collectedAmount);
 
-        CCLOG("UI层完成收集交互，增加资源: %d", collectedAmount);
+        // 5. 详细日志
+        std::string resName = (resType == ResourceType::kGold) ? "金币" : "圣水";
+        CCLOG("💰 收集完成: %s", _building->getDisplayName().c_str());
+        CCLOG("   资源类型: %s", resName.c_str());
+        CCLOG("   收集前: %d / %d", beforeCount, capacity);
+        CCLOG("   尝试增加: %d", collectedAmount);
+        CCLOG("   实际增加: %d", actualAdded);
+        CCLOG("   收集后: %d / %d", afterCount, capacity);
+        
+        if (actualAdded < collectedAmount)
+        {
+            CCLOG("⚠️ 资源仓库已满！溢出: %d", collectedAmount - actualAdded);
+        }
+    }
+    else
+    {
+        CCLOG("⚠️ 收集量为0，建筑: %s", _building->getDisplayName().c_str());
     }
 }

@@ -589,8 +589,38 @@ void BaseBuilding::onUpgradeComplete()
 
 void BaseBuilding::onLevelUp()
 {
+    // 🔴 修复：升级后重新加载配置数据
+    _config = getStaticConfig(_type, _level);
+    
     // 升级后重新加载属性和外观
     updateProperties();
+    
+    // 🔴 修复：强制更新纹理，确保外观改变
+    std::string newImageFile = getImageForLevel(_level);
+    CCLOG("🔍 %s 尝试更新外观: level=%d, path=%s", 
+          getDisplayName().c_str(), _level, newImageFile.c_str());
+    
+    if (!newImageFile.empty())
+    {
+        auto textureCache = Director::getInstance()->getTextureCache();
+        auto texture = textureCache->addImage(newImageFile);
+        if (texture)
+        {
+            this->setTexture(texture);
+            // 🔴 关键修复：必须同时设置 TextureRect，否则纹理不会正确显示
+            this->setTextureRect(Rect(0, 0, texture->getContentSize().width, 
+                                            texture->getContentSize().height));
+            CCLOG("🖼️ %s 外观更新成功: %s (size: %.0fx%.0f)", 
+                  getDisplayName().c_str(), newImageFile.c_str(),
+                  texture->getContentSize().width, texture->getContentSize().height);
+        }
+        else
+        {
+            CCLOG("❌ %s 外观更新失败：无法加载纹理 %s", 
+                  getDisplayName().c_str(), newImageFile.c_str());
+        }
+    }
+    
     CCLOG("✨ %s 升级到了 Lv.%d", getDisplayName().c_str(), _level);
 }
 

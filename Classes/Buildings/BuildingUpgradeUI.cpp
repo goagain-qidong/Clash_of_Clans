@@ -1,11 +1,11 @@
 ﻿/****************************************************************
- * Project Name:  Clash_of_Clans
- * File Name:     BuildingUpgradeUI.cpp
- * File Function: 通用建筑升级界面实现
- * Author:
- * Update Date:
- * License:       MIT License
- ****************************************************************/
+* Project Name:  Clash_of_Clans
+* File Name:     BuildingUpgradeUI.cpp
+* File Function: 通用建筑升级界面实现
+* Author:        薛毓哲
+* Update Date:   2025/12/24
+* License:       MIT License
+****************************************************************/
 
 #include "BuildingUpgradeUI.h"
 #include "ArmyBuilding.h"
@@ -243,7 +243,34 @@ void BuildingUpgradeUI::setupUI()
         }
         else
         {
-            CCLOG("Not enough resources or gems");
+            // 🔴 修复：显示资源或宝石不足的提示
+            std::string hintMsg;
+            if (!hasGem)
+            {
+                hintMsg = StringUtils::format("宝石不足！需要：%d，当前：%d",
+                                              GEM_COST, resMgr.getResourceCount(ResourceType::kGem));
+            }
+            else
+            {
+                std::string resName = (costType == ResourceType::kGold) ? "金币" : "圣水";
+                hintMsg = StringUtils::format("%s不足！需要：%d，当前：%d",
+                                              resName.c_str(), cost, resMgr.getResourceCount(costType));
+            }
+            
+            auto scene = Director::getInstance()->getRunningScene();
+            if (scene)
+            {
+                auto label = Label::createWithSystemFont(hintMsg, "Arial", 24);
+                label->setPosition(Director::getInstance()->getVisibleSize() / 2);
+                label->setTextColor(Color4B::RED);
+                scene->addChild(label, 10000);
+
+                auto move = MoveBy::create(1.0f, Vec2(0, 50));
+                auto fade = FadeOut::create(1.0f);
+                auto seq  = Sequence::create(Spawn::create(move, fade, nullptr), RemoveSelf::create(), nullptr);
+                label->runAction(seq);
+            }
+            CCLOG("Not enough resources or gems: %s", hintMsg.c_str());
         }
     });
     _panel->addChild(gemButton, 1); // ZOrder设为1，确保在上层
