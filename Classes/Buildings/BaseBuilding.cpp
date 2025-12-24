@@ -2,8 +2,8 @@
  * Project Name:  Clash_of_Clans
  * File Name:     BaseBuilding.cpp
  * File Function: 建筑基类实现
- * Author:        赵崇治
- * Update Date:   2025/01/10
+ * Author:        赵崇治、薛毓哲
+ * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
 #include "BaseBuilding.h"
@@ -12,6 +12,7 @@
 #include "Managers/UpgradeManager.h"
 #include "Services/BuildingUpgradeService.h"
 #include "Unit/BaseUnit.h"
+#include "Unit/CombatStats.h"
 
 USING_NS_CC;
 
@@ -104,9 +105,9 @@ void BaseBuilding::updateProperties()
 
 // ==================== 静态配置数据 (模拟数据库) ====================
 
-BuildingConfig BaseBuilding::getStaticConfig(BuildingType type, int level)
+BuildingConfigData BaseBuilding::getStaticConfig(BuildingType type, int level)
 {
-    BuildingConfig config;
+    BuildingConfigData config;
     config.maxLevel = 10;
 
     // 默认值
@@ -217,7 +218,7 @@ std::string BaseBuilding::getUpgradeInfo() const
     if (isMaxLevel())
         return "Max Level Reached";
 
-    BuildingConfig    nextConfig = getStaticConfig(_type, _level + 1);
+    BuildingConfigData nextConfig = getStaticConfig(_type, _level + 1);
     std::stringstream ss;
     ss << "Upgrade to Lv." << (_level + 1) << "\n";
     ss << "HP: " << _maxHitpoints << " -> " << nextConfig.maxHitpoints << "\n";
@@ -309,4 +310,26 @@ void BaseBuilding::disableBattleMode()
     {
         _currentHitpoints = _maxHitpoints;
     }
+}
+
+// ==================== 生命值管理 ====================
+
+void BaseBuilding::setMaxHitpoints(int hp)
+{
+    _maxHitpoints = hp;
+    _config.maxHitpoints = hp;
+    _combatStats.maxHitpoints = hp;
+
+    // 如果当前血量未设置或超过最大值，则设为最大值
+    if (_currentHitpoints <= 0 || _currentHitpoints > _maxHitpoints)
+    {
+        _currentHitpoints = _maxHitpoints;
+    }
+}
+
+std::string BaseBuilding::getImageForLevel(int level) const
+{
+    // 默认实现：返回配置中的图片路径
+    // 子类可以重写以提供自定义逻辑
+    return _config.imageFile;
 }

@@ -2,8 +2,8 @@
  * Project Name:  Clash_of_Clans
  * File Name:     BaseBuilding.h
  * File Function: 建筑基类 - 定义所有建筑的统一接口
- * Author:        赵崇治
- * Update Date:   2025/01/10
+ * Author:        赵崇治、薛毓哲
+ * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
 #ifndef BASE_BUILDING_H_
@@ -36,10 +36,11 @@ enum class BuildingType
 };
 
 /**
- * @struct BuildingConfig
+ * @struct BuildingConfigData
  * @brief 建筑配置数据结构，用于数据驱动
+ * @note 重命名以避免与 CombatStats.h 中的 BuildingConfig 命名空间冲突
  */
-struct BuildingConfig
+struct BuildingConfigData
 {
     std::string name;        ///< 显示名称
     std::string description; ///< 描述
@@ -101,22 +102,28 @@ public:
     int getHitpoints() const { return _currentHitpoints; }
 
     /** @brief 获取最大生命值 */
-    virtual int getMaxHitpoints() const override { return _config.maxHitpoints; }
+    virtual int getMaxHitpoints() const { return _config.maxHitpoints; }
+
+    /** @brief 设置最大生命值 */
+    void setMaxHitpoints(int hp);
 
     /** @brief 获取升级所需费用 */
-    virtual int getUpgradeCost() const override { return _config.upgradeCost; }
+    virtual int getUpgradeCost() const { return _config.upgradeCost; }
 
     /** @brief 获取升级消耗的资源类型 */
     virtual ResourceType getUpgradeCostType() const { return _config.upgradeCostType; }
 
     /** @brief 获取升级所需时间（秒） */
-    virtual float getUpgradeTime() const override { return _config.upgradeTime; }
+    virtual float getUpgradeTime() const { return _config.upgradeTime; }
 
     /** @brief 获取建筑描述信息 */
     virtual std::string getBuildingDescription() const { return _config.description; }
 
     /** @brief 获取当前等级的图片文件 */
-    virtual std::string getImageFile() const override { return _config.imageFile; }
+    virtual std::string getImageFile() const { return _config.imageFile; }
+
+    /** @brief 获取指定等级的图片文件（子类可重写）*/
+    virtual std::string getImageForLevel(int level) const;
 
     /** @brief 获取升级信息 */
     virtual std::string getUpgradeInfo() const;
@@ -210,7 +217,7 @@ public:
      * @brief 静态辅助函数：获取指定类型的配置数据
      * @note 实际项目中应从 JSON/CSV 读取
      */
-    static BuildingConfig getStaticConfig(BuildingType type, int level);
+    static BuildingConfigData getStaticConfig(BuildingType type, int level);
 
 protected:
     /**
@@ -228,13 +235,16 @@ protected:
     /** @brief 更新建筑外观和属性 */
     virtual void updateProperties();
 
-protected:
-    BuildingType   _type = BuildingType::kUnknown;
-    BuildingConfig _config; ///< 当前等级的配置数据
+    /** @brief 更新外观（子类可重写） */
+    virtual void updateAppearance() {}
 
-    int             _level       = 1;           ///< 当前等级
-    bool            _isUpgrading = false;       ///< 是否正在升级
-    cocos2d::Vec2   _gridPosition;              ///< 网格位置
+protected:
+BuildingType       _type = BuildingType::kUnknown;
+BuildingConfigData _config;  ///< 当前等级的配置数据
+
+int             _level       = 1;           ///< 当前等级
+bool            _isUpgrading = false;       ///< 是否正在升级
+cocos2d::Vec2   _gridPosition;              ///< 网格位置
     cocos2d::Size   _gridSize;                  ///< 占用网格大小
     UpgradeCallback _upgradeCallback = nullptr; ///< 升级回调
 
