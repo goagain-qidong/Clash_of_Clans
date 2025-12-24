@@ -99,8 +99,19 @@ bool BuildingHealthBarUI::init(BaseBuilding* building)
 
 void BuildingHealthBarUI::update(float dt)
 {
-    if (!_building || isBuildingDestroyed())
+    // 🔴 修复：更安全的空指针和销毁检查
+    if (_building == nullptr)
     {
+        this->unscheduleUpdate();
+        this->removeFromParent();
+        return;
+    }
+    
+    // 检查建筑是否已销毁
+    if (_building->isDestroyed())
+    {
+        _building = nullptr;
+        this->unscheduleUpdate();
         this->removeFromParent();
         return;
     }
@@ -189,8 +200,11 @@ void BuildingHealthBarUI::hide()
 
 bool BuildingHealthBarUI::isBuildingDestroyed() const
 {
-    if (!_building) return true;
-    // 增加安全性检查：如果建筑已经被 cleanup 或者引用计数异常，视为销毁
-    if (_building->getReferenceCount() <= 0) return true;
+    // 🔴 修复：只检查空指针和 isDestroyed()，不检查引用计数
+    // 因为当引用计数为0时对象可能已释放，访问它是未定义行为
+    if (_building == nullptr)
+    {
+        return true;
+    }
     return _building->isDestroyed();
 }

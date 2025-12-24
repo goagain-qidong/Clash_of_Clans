@@ -63,8 +63,22 @@ bool UnitHealthBarUI::init(BaseUnit* unit)
 
 void UnitHealthBarUI::update(float dt)
 {
-    if (!_unit || isUnitDead())
+    // 🔴 修复：更安全的空指针和死亡检查
+    // 先检查 _unit 是否为空，然后检查它是否已死亡
+    if (_unit == nullptr)
     {
+        // 单位指针已无效，停止更新并移除自己
+        this->unscheduleUpdate();
+        this->removeFromParent();
+        return;
+    }
+    
+    // 检查单位是否死亡
+    if (_unit->isDead())
+    {
+        // 单位死亡，清除引用并移除自己
+        _unit = nullptr;
+        this->unscheduleUpdate();
         this->removeFromParent();
         return;
     }
@@ -154,7 +168,8 @@ void UnitHealthBarUI::hide()
 
 bool UnitHealthBarUI::isUnitDead() const
 {
-    if (!_unit)
+    // 🔴 修复：只检查空指针，不在空指针上调用方法
+    if (_unit == nullptr)
     {
         return true;
     }

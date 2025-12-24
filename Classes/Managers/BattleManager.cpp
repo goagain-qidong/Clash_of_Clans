@@ -252,10 +252,13 @@ void BattleManager::updateBattleState(float dt)
     updateUnitAI(dt);
 
     // 在遍历前清理已死亡的单位
+    // 🔴 修复：只检查 isDead()，不检查 getReferenceCount()，
+    // 因为当引用计数为0时对象可能已被释放，访问它是未定义行为
     _deployedUnits.erase(
         std::remove_if(_deployedUnits.begin(), _deployedUnits.end(),
             [](BaseUnit* unit) {
-                return unit == nullptr || !unit->getReferenceCount() || unit->isDead();
+                // 只检查空指针，死亡单位由 RemoveSelf 处理
+                return unit == nullptr;
             }),
         _deployedUnits.end());
 
