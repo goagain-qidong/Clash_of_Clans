@@ -1,9 +1,9 @@
 ﻿/****************************************************************
  * Project Name:  Clash_of_Clans
- * File Name:     
- * File Function: 
+ * File Name:     ClanHall.h
+ * File Function: 负责管理部落的创建、加入、离开及信息查询
  * Author:        赵崇治
- * Update Date:   2025/12/17
+ * Update Date:   2025/12/19
  * License:       MIT License
  ****************************************************************/
 #pragma once

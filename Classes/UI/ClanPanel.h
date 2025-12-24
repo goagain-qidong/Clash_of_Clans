@@ -76,7 +76,7 @@ private:
 
     // ========== 场景切换 ==========
     void enterBattleScene(const std::string& targetId, const std::string& mapData);
-    void enterSpectateScene(const std::string& attackerId, const std::string& defenderId, const std::string& mapData);
+    void enterSpectateScene(const std::string& attackerId, const std::string& defenderId, const std::string& mapData, const std::vector<std::string>& history = {});
 
     // ========== 辅助方法 ==========
     void showToast(const std::string& msg, const cocos2d::Color4B& color = cocos2d::Color4B::WHITE);
@@ -102,6 +102,7 @@ private:
     TabType     _currentTab   = TabType::ONLINE_PLAYERS;
     bool        _isRefreshing = false;
     std::string _currentWarId;
+    bool        _isTransitioningToBattle = false; // 🆕 Flag to prevent clearing callbacks on transition
 };
 
 #endif // __CLAN_PANEL_H__

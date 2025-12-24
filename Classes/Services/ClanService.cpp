@@ -23,12 +23,15 @@ ClanService& ClanService::getInstance()
 
 void ClanService::initialize()
 {
+    // 总是注册网络回调，确保ClanPanel打开时接管回调
+    // 即使服务已初始化，也需要重新接管回调，因为可能被DraggableMapScene覆盖
+    registerNetworkCallbacks();
+
     if (_initialized)
         return;
     _initialized = true;
 
     syncLocalClanInfo();
-    registerNetworkCallbacks();
 }
 
 void ClanService::cleanup()

@@ -166,9 +166,9 @@ Node* BattleUI::createTroopCard(UnitType type, const std::string& iconPath, cons
     auto card = Node::create();
     card->setContentSize(Size(90, 120));
 
-    // 卡片背景 - 深色渐变效果
-    auto cardBg = LayerColor::create(Color4B(40, 50, 70, 230), 90, 120);
-    cardBg->setPosition(Vec2::ZERO);
+    // 卡片背景 - 深色渐变效果 (使用DrawNode模拟圆角矩形背景)
+    auto cardBg = DrawNode::create();
+    cardBg->drawSolidRect(Vec2(0, 0), Vec2(90, 120), Color4F(0.15f, 0.18f, 0.25f, 0.9f));
     card->addChild(cardBg, 0);
 
     // 顶部装饰条
@@ -195,7 +195,7 @@ Node* BattleUI::createTroopCard(UnitType type, const std::string& iconPath, cons
     card->addChild(nameLabel, 2);
 
     // 数量背景框
-    auto countBg = LayerColor::create(Color4B(30, 35, 50, 255), 50, 22);
+    auto countBg = LayerColor::create(Color4B(20, 20, 30, 200), 50, 22);
     countBg->setPosition(Vec2(20, 6));
     card->addChild(countBg, 1);
 
@@ -208,7 +208,7 @@ Node* BattleUI::createTroopCard(UnitType type, const std::string& iconPath, cons
 
     // 边框效果
     auto border = DrawNode::create();
-    border->drawRect(Vec2(0, 0), Vec2(90, 120), Color4F(0.4f, 0.5f, 0.7f, 0.8f));
+    border->drawRect(Vec2(0, 0), Vec2(90, 120), Color4F(0.4f, 0.5f, 0.7f, 0.5f));
     border->setName("border");
     card->addChild(border, 3);
 
@@ -284,15 +284,15 @@ void BattleUI::setupTroopButtons()
     this->addChild(_troopPanel, 100);
 
     // 面板背景
-    float panelWidth  = 520;
-    float panelHeight = 140;
-    auto  panelBg     = LayerColor::create(Color4B(20, 25, 40, 200), panelWidth, panelHeight);
-    panelBg->setPosition(Vec2(-panelWidth / 2, -20));
+    float panelWidth  = 550; // 增加宽度以容纳所有卡片
+    float panelHeight = 150;
+    auto  panelBg     = LayerColor::create(Color4B(15, 20, 30, 240), panelWidth, panelHeight); // 更深色的背景
+    panelBg->setPosition(Vec2(-panelWidth / 2, -25));
     _troopPanel->addChild(panelBg, -1);
 
     // 面板顶部装饰
-    auto panelTop = LayerColor::create(Color4B(80, 100, 150, 255), panelWidth, 3);
-    panelTop->setPosition(Vec2(-panelWidth / 2, panelHeight - 23));
+    auto panelTop = LayerColor::create(Color4B(100, 120, 180, 255), panelWidth, 4);
+    panelTop->setPosition(Vec2(-panelWidth / 2, panelHeight - 29));
     _troopPanel->addChild(panelTop, 0);
 
     // 创建选中框（初始隐藏）
@@ -301,8 +301,11 @@ void BattleUI::setupTroopButtons()
     {
         // 使用DrawNode绘制选中框
         auto frameNode = DrawNode::create();
-        frameNode->drawRect(Vec2(-2, -2), Vec2(94, 124), Color4F(1.0f, 0.85f, 0.2f, 1.0f));
-        frameNode->drawRect(Vec2(-1, -1), Vec2(93, 123), Color4F(1.0f, 0.85f, 0.2f, 0.6f));
+        // 外发光效果
+        frameNode->drawRect(Vec2(-4, -4), Vec2(94, 124), Color4F(1.0f, 0.9f, 0.3f, 0.4f));
+        // 主边框
+        frameNode->drawRect(Vec2(-2, -2), Vec2(92, 122), Color4F(1.0f, 0.85f, 0.2f, 1.0f));
+        
         _selectionFrame->addChild(frameNode);
         _selectionFrame->setVisible(false);
         _selectionFrame->setAnchorPoint(Vec2(0, 0));
@@ -310,9 +313,15 @@ void BattleUI::setupTroopButtons()
     }
 
     // 卡片布局参数
-    float cardSpacing = 100;
-    float startX      = -2 * cardSpacing;
-    float cardY       = 0;
+    float cardWidth   = 90;
+    float cardSpacing = 105; // 稍微增加间距
+    int   numCards    = 5;
+    
+    // 计算起始X坐标，使卡片组整体居中
+    // 总宽度 = (卡片数量-1) * 间距 + 卡片宽度
+    float totalWidth = (numCards - 1) * cardSpacing + cardWidth;
+    float startX     = -totalWidth / 2;
+    float cardY      = 0;
 
     // 创建五个兵种卡片
     _barbarianCard = createTroopCard(UnitType::kBarbarian, "units/barbarian_select_button_active.png", "野蛮人");

@@ -25,9 +25,6 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\ResourceBuilding.cpp">
       <Filter>Source Files\Classes\Buildings</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\StorageBuilding.cpp">
-      <Filter>Source Files\Classes\Buildings</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\TownHallBuilding.cpp">
       <Filter>Source Files\Classes\Buildings</Filter>
     </ClCompile>
@@ -124,9 +121,6 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\DraggableMapScene.cpp">
       <Filter>Source Files\Classes\Scenes</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\DraggableMapScene_New.cpp">
-      <Filter>Source Files\Classes\Scenes</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\HelloWorldScene.cpp">
       <Filter>Source Files\Classes\Scenes</Filter>
     </ClCompile>
@@ -190,9 +184,6 @@
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\WallBreakerUnit.cpp">
       <Filter>Source Files\Classes\Unit</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\unit.cpp">
-      <Filter>Source Files\Classes\Unit</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.cpp">
       <Filter>Source Files\proj.win32</Filter>
     </ClCompile>
@@ -226,9 +217,6 @@
       <Filter>Source Files\Classes\Buildings</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\ResourceBuilding.h">
-      <Filter>Source Files\Classes\Buildings</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\StorageBuilding.h">
       <Filter>Source Files\Classes\Buildings</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\TownHallBuilding.h">
@@ -390,10 +378,10 @@
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\UnitFactory.h">
       <Filter>Source Files\Classes\Unit</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\WallBreakerUnit.h">
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\UnitTypes.h">
       <Filter>Source Files\Classes\Unit</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\unit.h">
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\WallBreakerUnit.h">
       <Filter>Source Files\Classes\Unit</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.h">

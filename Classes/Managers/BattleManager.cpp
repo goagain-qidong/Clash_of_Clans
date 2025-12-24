@@ -99,8 +99,12 @@ void BattleManager::setBuildings(const std::vector<BaseBuilding*>& buildings)
 
 void BattleManager::startBattle(const TroopDeploymentMap& deployment)
 {
-    _state       = BattleState::READY;
-    _elapsedTime = 0.0f;
+    // 🆕 Prevent resetting state if already fighting (e.g. spectator catching up)
+    if (_state != BattleState::FIGHTING)
+    {
+        _state       = BattleState::READY;
+        _elapsedTime = 0.0f;
+    }
 
     MusicManager::getInstance().playMusic(MusicType::BATTLE_GOING);
 
@@ -214,6 +218,14 @@ void BattleManager::updateBattleState(float dt)
 
     // Update AI and Physics
     updateUnitAI(dt);
+
+    // 在遍历前清理已死亡的单位
+    _deployedUnits.erase(
+        std::remove_if(_deployedUnits.begin(), _deployedUnits.end(),
+            [](BaseUnit* unit) {
+                return unit == nullptr || !unit->getReferenceCount() || unit->isDead();
+            }),
+        _deployedUnits.end());
 
     for (auto* unit : _deployedUnits)
     {

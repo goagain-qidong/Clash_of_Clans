@@ -39,12 +39,12 @@
     <ClCompile Include="ArenaSession.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="NetworkUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Server.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\proj.win32\Constant.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PlayerRegistry.h">
@@ -72,6 +72,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ClanInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

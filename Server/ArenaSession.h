@@ -1,33 +1,36 @@
 ﻿/****************************************************************
  * Project Name:  Clash_of_Clans
- * File Name:     
- * File Function: 
+ * File Name:     ArenaSession.h
+ * File Function: PVP竞技场会话管理
  * Author:        赵崇治
- * Update Date:   2025/12/17
+ * Update Date:   2025/12/19
  * License:       MIT License
  ****************************************************************/
 #pragma once
+#include "PlayerRegistry.h"
+#include "WarModels.h"
 #include <map>
 #include <mutex>
 #include <string>
-#include <WinSock2.h>
-#include "WarModels.h"
-#include "PlayerRegistry.h"
 
-class Arena {
+class ArenaSession
+{
 public:
-    explicit Arena(PlayerRegistry* registry);
+    explicit ArenaSession(PlayerRegistry* registry);
 
     void HandlePvpRequest(SOCKET clientSocket, const std::string& targetId);
     void HandlePvpAction(SOCKET clientSocket, const std::string& actionData);
     void HandleSpectateRequest(SOCKET clientSocket, const std::string& targetId);
-    void EndPvpSession(const std::string& attackerId);
-    
+    void EndSession(const std::string& attackerId);
+
+    // 🆕 清理玩家相关的所有会话（防止残留）
+    void CleanupPlayerSessions(const std::string& playerId);
+
     std::string GetBattleStatusListJson();
+    void        BroadcastBattleStatusToAll();
 
 private:
-    // key: attackerId
     std::map<std::string, PvpSession> sessions;
-    std::mutex arenaMutex;
-    PlayerRegistry* playerRegistry;
+    std::mutex                        sessionMutex;
+    PlayerRegistry*                   playerRegistry;
 };

@@ -490,6 +490,15 @@ void DraggableMapScene::onAttackClicked()
     auto& client = SocketClient::getInstance();
     if (client.isConnected())
     {
+        // 🔴 修复：重新注册回调，防止被ClanPanel覆盖
+        client.setOnUserListReceived([this](const std::string& data){
+            CCLOG("[Socket] User list received, len=%zu", data.size());
+            // Ensure UI update runs on main thread
+            Director::getInstance()->getScheduler()->performFunctionInCocosThread([this, data](){
+                showPlayerListFromServerData(data);
+            });
+        });
+
         client.requestUserList();
     }
     else
@@ -892,39 +901,48 @@ DraggableMapScene::~DraggableMapScene()
 void DraggableMapScene::onSceneResume()
 {
     CCLOG("🔄 Scene resumed, refreshing ArmyCamp displays...");
-    
+
     // 重置触摸状态
     _activeTouches.clear();
-    _isPinching = false;
+    _isPinching        = false;
     _prevPinchDistance = 0.0f;
-    
+
     // 🎵 恢复背景音乐
     MusicManager::getInstance().playMusic(MusicType::BATTLE_PREPARING);
-    
+
+    // 🔧 修复：清除所有PVP相关回调，确保状态重置
+    auto& client = SocketClient::getInstance();
+    client.setOnPvpStart(nullptr);
+    client.setOnPvpAction(nullptr);
+    client.setOnPvpEnd(nullptr);
+    client.setOnSpectateJoin(nullptr);
+
+    // 🔧 修复：重新设置DraggableMapScene的网络回调，防止被ClanPanel的回调覆盖
+    setupNetworkCallbacks();
+
+    CCLOG("🔴 [DraggableMapScene] PVP callbacks cleared and network callbacks restored on scene resume");
+
     // 重新加载士兵库存
     TroopInventory::getInstance().load();
-    
+
     if (_buildingManager)
     {
         const auto& buildings = _buildingManager->getBuildings();
         for (auto* building : buildings)
         {
-            // 刷新军营的小兵显示
             auto armyCamp = dynamic_cast<ArmyCampBuilding*>(building);
             if (armyCamp)
             {
                 armyCamp->refreshDisplayFromInventory();
                 CCLOG("✅ Refreshed ArmyCamp display from inventory");
             }
-            
-            // 重新注册资源建筑
+
             auto resourceBuilding = dynamic_cast<ResourceBuilding*>(building);
             if (resourceBuilding && resourceBuilding->isProducer())
                 ResourceCollectionManager::getInstance()->registerBuilding(resourceBuilding);
         }
     }
-    
-    // 刷新HUD显示
+
     if (_hudLayer)
     {
         _hudLayer->updateDisplay();

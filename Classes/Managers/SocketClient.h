@@ -192,7 +192,8 @@ public:
     void setOnPvpStart(std::function<void(const std::string& role, const std::string& opponentId, const std::string& mapData)> callback);
     void setOnPvpAction(std::function<void(int unitType, float x, float y)> callback);
     void setOnPvpEnd(std::function<void(const std::string& result)> callback);
-    void setOnSpectateJoin(std::function<void(bool success, const std::string& attackerId, const std::string& defenderId, const std::string& mapData)> callback);
+    // 🆕 Updated signature to include history
+    void setOnSpectateJoin(std::function<void(bool success, const std::string& attackerId, const std::string& defenderId, const std::string& mapData, const std::vector<std::string>& history)> callback);
 
     // 🆕 战斗状态回调
     void setOnBattleStatusList(std::function<void(const std::string&)> callback);
@@ -241,7 +242,8 @@ private:
     std::function<void(const std::string&, const std::string&, const std::string&)> _onPvpStart;
     std::function<void(int, float, float)> _onPvpAction;
     std::function<void(const std::string&)> _onPvpEnd;
-    std::function<void(bool, const std::string&, const std::string&, const std::string&)> _onSpectateJoin;
+    // 🆕 Updated signature to include history
+    std::function<void(bool, const std::string&, const std::string&, const std::string&, const std::vector<std::string>&)> _onSpectateJoin;
     
     // 🆕 部落战争增强回调存储
     std::function<void(const std::string&)> _onClanWarMemberList;

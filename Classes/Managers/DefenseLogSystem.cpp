@@ -12,7 +12,9 @@
 #include "Scenes/BattleScene.h" // 🆕 添加 BattleScene 头文件
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
+#include "base/base64.h"
 #include <sstream>
+#include <algorithm>
 
 USING_NS_CC;
 using namespace ui;
@@ -21,10 +23,33 @@ using namespace ui;
 
 std::string DefenseLog::serialize() const
 {
+    // Sanitize attackerName
+    std::string safeName = attackerName;
+    std::replace(safeName.begin(), safeName.end(), '|', ' ');
+    std::replace(safeName.begin(), safeName.end(), '\n', ' ');
+    std::replace(safeName.begin(), safeName.end(), '\r', ' ');
+
+    // Encode replayData
+    std::string encodedReplay = "";
+    if (!replayData.empty())
+    {
+        char* encoded = nullptr;
+        base64Encode((const unsigned char*)replayData.c_str(), (unsigned int)replayData.length(), &encoded);
+        if (encoded)
+        {
+            encodedReplay = "B64:" + std::string(encoded);
+            free(encoded);
+        }
+        else
+        {
+            encodedReplay = replayData;
+        }
+    }
+
     std::ostringstream oss;
-    oss << attackerId << "|" << attackerName << "|" << starsLost << "|" 
+    oss << attackerId << "|" << safeName << "|" << starsLost << "|" 
         << goldLost << "|" << elixirLost << "|" << trophyChange << "|" 
-        << timestamp << "|" << (isViewed ? "1" : "0") << "|" << replayData;
+        << timestamp << "|" << (isViewed ? "1" : "0") << "|" << encodedReplay;
     return oss.str();
 }
 
@@ -48,16 +73,28 @@ DefenseLog DefenseLog::deserialize(const std::string& data)
     std::getline(iss, token, '|');
     log.isViewed = (token == "1");
     
-    // 读取剩余部分作为 replayData
-    // 注意：replayData 可能包含 '|'，所以不能用 getline(..., '|')
-    // 我们读取完 isViewed 后，iss 指针在 '|' 之后（如果存在）
-    // 但 getline 会吞掉分隔符。
-    // 让我们检查一下：getline(iss, token, '|') 读取直到 '|'，并将流位置移到 '|' 之后。
-    // 所以现在可以直接读取剩余的所有内容。
-    
     std::string remaining;
     std::getline(iss, remaining); // 读取直到行尾
-    log.replayData = remaining;
+    
+    if (remaining.find("B64:") == 0)
+    {
+        std::string b64 = remaining.substr(4);
+        unsigned char* decoded = nullptr;
+        int len = base64Decode((const unsigned char*)b64.c_str(), (unsigned int)b64.length(), &decoded);
+        if (decoded && len > 0)
+        {
+            log.replayData = std::string((char*)decoded, len);
+            free(decoded);
+        }
+        else
+        {
+            log.replayData = ""; // Decode failed
+        }
+    }
+    else
+    {
+        log.replayData = remaining;
+    }
     
     return log;
 }
@@ -72,7 +109,29 @@ DefenseLogSystem& DefenseLogSystem::getInstance()
 
 void DefenseLogSystem::addDefenseLog(const DefenseLog& log)
 {
-    _logs.insert(_logs.begin(), log);  // 插入到最前面（最新）
+    DefenseLog newLog = log;
+    
+    // 🆕 Offload replay data to file to avoid UserDefault size limits
+    if (!newLog.replayData.empty() && newLog.replayData.find("FILE:") != 0)
+    {
+        // Generate unique filename: replay_ATTACKER_TIMESTAMP_RAND.dat
+        std::string timestamp = StringUtils::toString((long)time(nullptr));
+        std::string random = StringUtils::toString(rand() % 1000);
+        std::string filename = "replay_" + newLog.attackerId + "_" + timestamp + "_" + random + ".dat";
+        std::string fullPath = FileUtils::getInstance()->getWritablePath() + filename;
+        
+        if (FileUtils::getInstance()->writeStringToFile(newLog.replayData, fullPath))
+        {
+            CCLOG("💾 Saved replay data to file: %s (Size: %zu)", filename.c_str(), newLog.replayData.length());
+            newLog.replayData = "FILE:" + filename;
+        }
+        else
+        {
+            CCLOG("❌ Failed to save replay data to file! Falling back to inline storage.");
+        }
+    }
+
+    _logs.insert(_logs.begin(), newLog);  // 插入到最前面（最新）
     
     // 限制日志数量
     if (_logs.size() > MAX_LOGS)
@@ -341,10 +400,41 @@ void DefenseLogSystem::showDefenseLogUI()
             replayBtn->setScale9Enabled(true);
             replayBtn->setContentSize(Size(80, 35));
             replayBtn->setPosition(Vec2(580, 30));
-            replayBtn->addClickEventListener([idx, &log](Ref*) {
+            replayBtn->addClickEventListener([idx, log](Ref*) {
                 CCLOG("🎬 Battle replay clicked for attack from: %s", log.attackerName.c_str());
                 
-                if (log.replayData.empty())
+                std::string replayData = log.replayData;
+                
+                // 🆕 Handle file-based replay data
+                if (replayData.find("FILE:") == 0)
+                {
+                    std::string filename = replayData.substr(5);
+                    std::string fullPath = FileUtils::getInstance()->getWritablePath() + filename;
+                    if (FileUtils::getInstance()->isFileExist(fullPath))
+                    {
+                        replayData = FileUtils::getInstance()->getStringFromFile(fullPath);
+                        CCLOG("📂 Loaded replay data from file: %s (Size: %zu)", filename.c_str(), replayData.length());
+                    }
+                    else
+                    {
+                        CCLOG("❌ Replay file not found: %s", filename.c_str());
+                        return;
+                    }
+                }
+                // Handle Base64 (legacy or fallback)
+                else if (replayData.find("B64:") == 0)
+                {
+                    std::string b64 = replayData.substr(4);
+                    unsigned char* decoded = nullptr;
+                    int len = base64Decode((const unsigned char*)b64.c_str(), (unsigned int)b64.length(), &decoded);
+                    if (decoded && len > 0)
+                    {
+                        replayData = std::string((char*)decoded, len);
+                        free(decoded);
+                    }
+                }
+                
+                if (replayData.empty())
                 {
                     CCLOG("⚠️ No replay data available!");
                     return;
@@ -355,7 +445,7 @@ void DefenseLogSystem::showDefenseLogUI()
                 // 这里我们使用 pushScene/popScene 机制，但 BattleScene 比较重
                 // 最好是 BattleScene::createWithReplayData
                 
-                auto scene = BattleScene::createWithReplayData(log.replayData);
+                auto scene = BattleScene::createWithReplayData(replayData);
                 if (scene)
                 {
                     Director::getInstance()->pushScene(TransitionFade::create(0.5f, scene, Color3B::BLACK));
@@ -370,7 +460,7 @@ void DefenseLogSystem::showDefenseLogUI()
             detailBtn->setScale9Enabled(true);
             detailBtn->setContentSize(Size(80, 35));
             detailBtn->setPosition(Vec2(480, 30));
-            detailBtn->addClickEventListener([idx, visibleSize, runningScene, &log](Ref*) {
+            detailBtn->addClickEventListener([idx, visibleSize, runningScene, log](Ref*) {
                 CCLOG("📋 Showing detailed attack info for: %s", log.attackerName.c_str());
                 showAttackDetailPopup(visibleSize, runningScene, log);
             });
@@ -519,16 +609,35 @@ void DefenseLogSystem::showAttackDetailPopup(const cocos2d::Size& visibleSize, c
     replayBtn->setScale9Enabled(true);
     replayBtn->setContentSize(Size(200, 45));
     replayBtn->setPosition(Vec2(275, labelY));
-    replayBtn->addClickEventListener([&log](Ref*) {
+    replayBtn->addClickEventListener([log](Ref*) {
         CCLOG("🎬 Playing battle replay for attack from: %s", log.attackerName.c_str());
         
-        if (log.replayData.empty())
+        std::string replayData = log.replayData;
+        
+        // 🆕 Handle file-based replay data
+        if (replayData.find("FILE:") == 0)
+        {
+            std::string filename = replayData.substr(5);
+            std::string fullPath = FileUtils::getInstance()->getWritablePath() + filename;
+            if (FileUtils::getInstance()->isFileExist(fullPath))
+            {
+                replayData = FileUtils::getInstance()->getStringFromFile(fullPath);
+                CCLOG("📂 Loaded replay data from file: %s (Size: %zu)", filename.c_str(), replayData.length());
+            }
+            else
+            {
+                CCLOG("❌ Replay file not found: %s", filename.c_str());
+                return;
+            }
+        }
+        
+        if (replayData.empty())
         {
             CCLOG("⚠️ No replay data available!");
             return;
         }
         
-        auto scene = BattleScene::createWithReplayData(log.replayData);
+        auto scene = BattleScene::createWithReplayData(replayData);
         if (scene)
         {
             Director::getInstance()->pushScene(TransitionFade::create(0.5f, scene, Color3B::BLACK));

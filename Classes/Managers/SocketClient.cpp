@@ -452,19 +452,38 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data)
         {
             // 服务器发送格式: "1|attackerId|defenderId|mapData" 成功
             // 或 "0|||" 失败
+            // 🆕 支持历史记录: "1|attackerId|defenderId|mapData|||HISTORY|||action1|||action2|||..."
             if (data.empty() || data[0] == '0')
             {
-                _onSpectateJoin(false, "", "", "");
+                _onSpectateJoin(false, "", "", "", {});
             }
             else
             {
                 std::istringstream iss(data);
-                std::string successFlag, attackerId, defenderId, mapData;
+                std::string successFlag, attackerId, defenderId, mapDataAndHistory;
                 std::getline(iss, successFlag, '|');
                 std::getline(iss, attackerId, '|');
                 std::getline(iss, defenderId, '|');
-                std::getline(iss, mapData);
-                _onSpectateJoin(true, attackerId, defenderId, mapData);
+                std::getline(iss, mapDataAndHistory);
+
+                std::string mapData = mapDataAndHistory;
+                std::vector<std::string> history;
+
+                size_t historyPos = mapDataAndHistory.find("|||HISTORY|||");
+                if (historyPos != std::string::npos)
+                {
+                    mapData = mapDataAndHistory.substr(0, historyPos);
+                    std::string historyStr = mapDataAndHistory.substr(historyPos + 13); // length of |||HISTORY|||
+
+                    size_t pos = 0;
+                    while ((pos = historyStr.find("|||")) != std::string::npos)
+                    {
+                        history.push_back(historyStr.substr(0, pos));
+                        historyStr.erase(0, pos + 3);
+                    }
+                }
+
+                _onSpectateJoin(true, attackerId, defenderId, mapData, history);
             }
         }
         break;
@@ -758,7 +777,7 @@ void SocketClient::setOnPvpEnd(std::function<void(const std::string&)> callback)
     _onPvpEnd = callback;
 }
 
-void SocketClient::setOnSpectateJoin(std::function<void(bool, const std::string&, const std::string&, const std::string&)> callback)
+void SocketClient::setOnSpectateJoin(std::function<void(bool, const std::string&, const std::string&, const std::string&, const std::vector<std::string>&)> callback)
 {
     _onSpectateJoin = callback;
 }

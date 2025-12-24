@@ -91,6 +91,7 @@ public:
     
     // 🆕 PVP Configuration
     void setPvpMode(bool isAttacker);
+    void setSpectateHistory(const std::vector<std::string>& history); // 🆕 Set history for spectating
 
 private:
     BattleScene();
@@ -147,6 +148,7 @@ private:
     // PVP State
     bool _isPvpMode = false;
     bool _isAttacker = false;
+    std::vector<std::string> _spectateHistory; // 🆕 History buffer
 };
 
 #endif  // BATTLE_SCENE_H_

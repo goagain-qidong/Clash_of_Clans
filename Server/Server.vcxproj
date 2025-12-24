@@ -132,18 +132,19 @@
     <ClCompile Include="ClanWarRoom.cpp" />
     <ClCompile Include="CommandDispatcher.cpp" />
     <ClCompile Include="MatchMaker.cpp" />
+    <ClCompile Include="NetworkUtils.cpp" />
     <ClCompile Include="PlayerRegistry.cpp" />
     <ClCompile Include="ServerMain.cpp" />
     <ClCompile Include="Server.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\proj.win32\Constant.h" />
     <ClInclude Include="ArenaSession.h" />
     <ClInclude Include="ClanHall.h" />
     <ClInclude Include="ClanInfo.h" />
     <ClInclude Include="ClanWarRoom.h" />
     <ClInclude Include="CommandDispatcher.h" />
     <ClInclude Include="MatchMaker.h" />
+    <ClInclude Include="NetworkUtils.h" />
     <ClInclude Include="PlayerRegistry.h" />
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="Server.h" />

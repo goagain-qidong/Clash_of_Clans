@@ -1,9 +1,9 @@
-/****************************************************************
+﻿/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     
  * File Function: 
  * Author:        赵崇治
- * Update Date:   2025/12/17
+ * Update Date:   2025/12/19
  * License:       MIT License
  ****************************************************************/
 #pragma once
@@ -36,6 +36,7 @@ struct PvpSession {
     std::string defenderId;
     std::vector<std::string> spectatorIds;
     std::string mapData;
+    std::vector<std::string> actionHistory; // 🆕 Store action history
     bool isActive = true;
 };
 

@@ -833,7 +833,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\BuildingUpgradeUI.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\DefenseBuilding.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\ResourceBuilding.h" />
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\StorageBuilding.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\TownHallBuilding.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\WallBuilding.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\GridMap\GridMap.h" />
@@ -887,8 +886,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\PathFinder.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\TrainingUI.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\UnitFactory.h" />
+    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\UnitTypes.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\WallBreakerUnit.h" />
-    <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\unit.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.h" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\resource.h" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\App\AppDelegate.cpp" />
@@ -899,7 +898,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\BuildingUpgradeUI.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\DefenseBuilding.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\ResourceBuilding.cpp" />
-    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\StorageBuilding.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\TownHallBuilding.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Buildings\WallBuilding.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\GridMap\GridMap.cpp" />
@@ -932,7 +930,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\AccountSelectScene.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\BattleScene.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\DraggableMapScene.cpp" />
-    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\DraggableMapScene_New.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Scenes\HelloWorldScene.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Services\BuildingUpgradeService.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Services\ClanService.cpp" />
@@ -954,7 +951,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\TrainingUI.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\UnitFactory.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\WallBreakerUnit.cpp" />
-    <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\Classes\Unit\unit.cpp" />
     <ClCompile Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\main.cpp" />
     <ResourceCompile Include="C:\Users\Shalom\Documents\GitHub\coc\proj.win32\game.rc" />
     <ClInclude Include="C:\Users\Shalom\Documents\GitHub\coc\Resources\CloseNormal.png" />
