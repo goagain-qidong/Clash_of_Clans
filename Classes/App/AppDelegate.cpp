@@ -21,6 +21,15 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
+
+// Visual Leak Detector - 内存泄漏检测（仅 Debug 模式生效）
+// 安装方法：https://github.com/KindDragon/vld/releases
+// 安装后需要在项目属性中添加 Include 和 Lib 路径
+#if defined(_DEBUG) && defined(_WIN32)
+    // 如果已安装 VLD，取消下面这行的注释
+    // #include <vld.h>
+#endif
+
 #include "AppDelegate.h"
 #include "AccountSelectScene.h"
 #include "DraggableMapScene.h"
