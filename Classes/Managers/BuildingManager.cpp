@@ -776,9 +776,11 @@ void BuildingManager::loadBuildingsFromData(const std::vector<BuildingSerialData
     if (!_mapSprite || !_gridMap)
         return;
     
-    // 先清空现有建筑，只读模式不清空士兵库存
-    clearAllBuildings(!isReadOnly);
+    // 先设置只读模式标志，以便 clearAllBuildings 能正确判断
     _isReadOnlyMode = isReadOnly;
+    
+    // 清空现有建筑，只读模式不清空士兵库存
+    clearAllBuildings(!isReadOnly);
     
     for (const auto& data : buildingsData)
     {
@@ -898,9 +900,6 @@ void BuildingManager::clearAllBuildings(bool clearTroops)
     if (!_gridMap)
         return;
     
-    // 清除升级任务，防止野指针
-    UpgradeManager::getInstance()->clearAllUpgradeTasks();
-    
     // 清除网格占用
     for (auto* building : _buildings)
     {
@@ -910,10 +909,17 @@ void BuildingManager::clearAllBuildings(bool clearTroops)
         }
     }
     
-    // 清除管理器引用
-    ResourceCollectionManager::getInstance()->clearRegisteredBuildings();
-    BuildingCapacityManager::getInstance().clearAllBuildings();
-    BuildingLimitManager::getInstance()->reset();
+    // 只在非只读模式下清除全局管理器引用
+    // 因为这些是单例，只读模式（战斗场景）不应该影响主场景
+    if (!_isReadOnlyMode)
+    {
+        // 清除升级任务，防止野指针
+        UpgradeManager::getInstance()->clearAllUpgradeTasks();
+        
+        ResourceCollectionManager::getInstance()->clearRegisteredBuildings();
+        BuildingCapacityManager::getInstance().clearAllBuildings();
+        BuildingLimitManager::getInstance()->reset();
+    }
     
     if (clearTroops)
     {
@@ -924,7 +930,7 @@ void BuildingManager::clearAllBuildings(bool clearTroops)
     }
     
     _buildings.clear();
-    _isReadOnlyMode = false;
+    // 注意：不在这里重置 _isReadOnlyMode，由调用者控制
 }
 
 void BuildingManager::saveCurrentState()
