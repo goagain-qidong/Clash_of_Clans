@@ -11,7 +11,6 @@
 
 #include "cocos2d.h"
 
-// Forward declaration
 class BaseUnit;
 
 /**
@@ -19,10 +18,10 @@ class BaseUnit;
  * @brief 单位血条显示组件
  *
  * 功能：
- * 1. 显示单位的当前生命值和最大生命值
- * 2. 实时更新血条显示（随着单位受伤而下降）
- * 3. 血量满时隐藏，为零时单位消失
- * 4. 支持战斗状态显示
+ * - 显示单位的当前生命值和最大生命值
+ * - 实时更新血条显示
+ * - 血量满时隐藏，为零时单位消失
+ * - 支持战斗状态显示
  */
 class UnitHealthBarUI : public cocos2d::Node
 {
@@ -30,57 +29,55 @@ public:
     /**
      * @brief 创建血条UI
      * @param unit 关联的单位对象
+     * @return UnitHealthBarUI* UI指针
      */
     static UnitHealthBarUI* create(BaseUnit* unit);
 
+    /**
+     * @brief 初始化
+     * @param unit 关联的单位
+     * @return bool 是否成功
+     */
     virtual bool init(BaseUnit* unit);
 
     /**
      * @brief 更新血条显示
+     * @param dt 时间增量
      */
     void update(float dt);
 
-    /**
-     * @brief 显示血条
-     */
+    /** @brief 显示血条 */
     void show();
 
-    /**
-     * @brief 隐藏血条
-     */
+    /** @brief 隐藏血条 */
     void hide();
 
     /**
-     * @brief 设置血条是否始终可见（用于战斗时显示）
+     * @brief 设置血条是否始终可见
+     * @param always 是否始终可见
      */
     void setAlwaysVisible(bool always) { _alwaysVisible = always; }
 
-    /**
-     * @brief 检查关联的单位是否已死亡
-     */
+    /** @brief 检查关联的单位是否已死亡 */
     bool isUnitDead() const;
 
 private:
     UnitHealthBarUI() = default;
 
-    // ==================== 关联的单位 ====================
-    BaseUnit* _unit = nullptr;
+    BaseUnit* _unit = nullptr;  ///< 关联的单位
 
-    // ==================== 血条UI组件 ====================
-    cocos2d::LayerColor* _healthBarBg   = nullptr; // 血条背景（红色）
-    cocos2d::LayerColor* _healthBarFill = nullptr; // 血条填充（绿色）
+    cocos2d::LayerColor* _healthBarBg = nullptr;    ///< 血条背景
+    cocos2d::LayerColor* _healthBarFill = nullptr;  ///< 血条填充
 
-    // ==================== 血条状态 ====================
-    int   _lastHealthValue = -1;    // 上一帧的生命值（用于检测变化）
-    float _hideTimer       = 0.0f;  // 隐藏计时器
-    bool  _isVisible       = false; // 血条是否可见
-    bool  _alwaysVisible   = true;  // 战斗中始终显示
+    int _lastHealthValue = -1;    ///< 上一帧的生命值
+    float _hideTimer = 0.0f;      ///< 隐藏计时器
+    bool _isVisible = false;      ///< 血条是否可见
+    bool _alwaysVisible = true;   ///< 是否始终可见
 
-    // ==================== 血条外观设置 ====================
-    static constexpr float BAR_WIDTH  = 40.0f; // 血条宽度
-    static constexpr float BAR_HEIGHT = 4.0f;  // 血条高度
-    static constexpr float HIDE_DELAY = 3.0f;  // 血量满后多少秒隐藏血条
-    static constexpr float OFFSET_Y   = 30.0f; // 血条相对于单位的高度偏移
+    static constexpr float BAR_WIDTH = 40.0f;   ///< 血条宽度
+    static constexpr float BAR_HEIGHT = 4.0f;   ///< 血条高度
+    static constexpr float HIDE_DELAY = 3.0f;   ///< 隐藏延迟
+    static constexpr float OFFSET_Y = 30.0f;    ///< 高度偏移
 };
 
 #endif // UNIT_HEALTH_BAR_UI_H_
