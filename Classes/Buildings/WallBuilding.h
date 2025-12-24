@@ -3,7 +3,7 @@
  * File Name:     WallBuilding.h
  * File Function: 城墙建筑类
  * Author:        薛毓哲
- * Update Date:   2025/01/09
+ * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
 #pragma once
@@ -13,6 +13,7 @@
 /**
  * @class WallBuilding
  * @brief 城墙建筑类 - 1x1网格的防御建筑
+ * @note 使用数据驱动架构，配置数据统一由 BaseBuilding::getStaticConfig() 管理
  */
 class WallBuilding : public BaseBuilding
 {
@@ -24,37 +25,24 @@ public:
      */
     static WallBuilding* create(int level = 1);
 
-    /** @brief 获取建筑类型 */
-    virtual BuildingType getBuildingType() const override { return BuildingType::kWall; }
-
-    /** @brief 获取显示名称 */
-    virtual std::string getDisplayName() const override;
-
-    /** @brief 获取最大等级 */
-    virtual int getMaxLevel() const override { return 16; }
-
-    /** @brief 获取升级费用 */
-    virtual int getUpgradeCost() const override;
-
-    /** @brief 获取升级资源类型 */
-    virtual ResourceType getUpgradeCostType() const override { return ResourceType::kGold; }
-
-    /** @brief 获取升级时间 */
-    virtual float getUpgradeTime() const override;
-
-    /** @brief 获取建筑描述 */
-    virtual std::string getBuildingDescription() const override;
-
-    /** @brief 获取当前图片文件 */
-    virtual std::string getImageFile() const override;
-
-    /** @brief 获取当前等级的生命值 */
-    int getHitPoints() const;
+    // 以下方法直接使用基类的配置驱动实现，无需重写：
+    // - getMaxLevel()
+    // - getUpgradeCost()
+    // - getUpgradeTime()
+    // - getMaxHitpoints()
+    // - getBuildingDescription()
+    // - getImageFile()
 
 protected:
+    /**
+     * @brief 初始化城墙
+     * @param level 初始等级
+     * @return bool 是否成功
+     */
     virtual bool init(int level) override;
+
+    /** @brief 升级时调用 */
     virtual void onLevelUp() override;
-    virtual std::string getImageForLevel(int level) const override;
 
 private:
     WallBuilding() = default;

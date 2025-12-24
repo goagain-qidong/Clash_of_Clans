@@ -1,11 +1,11 @@
 ﻿/****************************************************************
- * Project Name:  Clash_of_Clans
- * File Name:     BaseBuilding.h
- * File Function: 建筑基类 - 定义所有建筑的统一接口
- * Author:        赵崇治、薛毓哲
- * Update Date:   2025/12/24
- * License:       MIT License
- ****************************************************************/
+* Project Name:  Clash_of_Clans
+* File Name:     BaseBuilding.h
+* File Function: 建筑基类 - 定义所有建筑的统一接口
+* Author:        赵崇治、薛毓哲
+* Update Date:   2025/12/24
+* License:       MIT License
+****************************************************************/
 #ifndef BASE_BUILDING_H_
 #define BASE_BUILDING_H_
 
@@ -239,24 +239,24 @@ protected:
     virtual void updateAppearance() {}
 
 protected:
-BuildingType       _type = BuildingType::kUnknown;
-BuildingConfigData _config;  ///< 当前等级的配置数据
+    BuildingType       _type = BuildingType::kUnknown;
+    BuildingConfigData _config;  ///< 当前等级的配置数据
 
-int             _level       = 1;           ///< 当前等级
-bool            _isUpgrading = false;       ///< 是否正在升级
-cocos2d::Vec2   _gridPosition;              ///< 网格位置
-    cocos2d::Size   _gridSize;                  ///< 占用网格大小
-    UpgradeCallback _upgradeCallback = nullptr; ///< 升级回调
+    int             _level       = 1;      ///< 当前等级
+    bool            _isUpgrading = false;  ///< 是否正在升级
+    cocos2d::Vec2   _gridPosition;         ///< 网格位置
+    cocos2d::Size   _gridSize;             ///< 占用网格大小
+    UpgradeCallback _upgradeCallback = nullptr;  ///< 升级回调
 
-    int _maxHitpoints     = 100; ///< 最大生命值 (缓存自 config)
-    int _currentHitpoints = 100; ///< 当前生命值
+    int _maxHitpoints     = 100;  ///< 最大生命值 (缓存自 config)
+    int _currentHitpoints = 100;  ///< 当前生命值
 
-    CombatStats _combatStats;              ///< 战斗属性
-    BaseUnit*   _currentTarget  = nullptr; ///< 当前攻击目标
-    float       _attackCooldown = 0.0f;    ///< 攻击冷却计时器
+    CombatStats _combatStats;               ///< 战斗属性
+    BaseUnit*   _currentTarget  = nullptr;  ///< 当前攻击目标
+    float       _attackCooldown = 0.0f;     ///< 攻击冷却计时器
 
-    BuildingHealthBarUI* _healthBarUI       = nullptr; ///< 血条UI
-    bool                 _battleModeEnabled = false;   ///< 战斗模式是否启用
+    BuildingHealthBarUI* _healthBarUI       = nullptr;  ///< 血条UI
+    bool                 _battleModeEnabled = false;    ///< 战斗模式是否启用
 };
 
 #endif // BASE_BUILDING_H_

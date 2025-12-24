@@ -16,6 +16,138 @@
 
 USING_NS_CC;
 
+// ==================== 城墙配置数据表 (16级) ====================
+namespace WallConfigTable
+{
+// 生命值表
+static const int kHitpoints[] = {
+    0,      // Level 0 (无效)
+    300,    // Level 1
+    500,    // Level 2
+    700,    // Level 3
+    900,    // Level 4
+    1400,   // Level 5
+    2000,   // Level 6
+    2500,   // Level 7
+    3000,   // Level 8
+    4000,   // Level 9
+    5500,   // Level 10
+    7000,   // Level 11
+    8500,   // Level 12
+    10000,  // Level 13
+    12000,  // Level 14
+    14000,  // Level 15
+    17000   // Level 16
+};
+
+// 升级费用表
+static const int kUpgradeCosts[] = {
+    0,        // Level 0 (无效)
+    50,       // Level 1
+    1000,     // Level 2
+    5000,     // Level 3
+    10000,    // Level 4
+    30000,    // Level 5
+    75000,    // Level 6
+    200000,   // Level 7
+    500000,   // Level 8
+    1000000,  // Level 9
+    1500000,  // Level 10
+    2000000,  // Level 11
+    2500000,  // Level 12
+    3000000,  // Level 13
+    4000000,  // Level 14
+    5000000,  // Level 15
+    6000000   // Level 16
+};
+
+// 升级时间表（秒）
+static const float kUpgradeTimes[] = {
+    0.0f,     // Level 0 (无效)
+    30.0f,    // Level 1
+    60.0f,    // Level 2
+    300.0f,   // Level 3
+    900.0f,   // Level 4
+    1800.0f,  // Level 5
+    3600.0f,  // Level 6
+    7200.0f,  // Level 7
+    14400.0f, // Level 8
+    28800.0f, // Level 9
+    43200.0f, // Level 10
+    86400.0f, // Level 11
+    172800.0f,// Level 12
+    259200.0f,// Level 13
+    345600.0f,// Level 14
+    432000.0f,// Level 15
+    518400.0f // Level 16
+};
+
+static const int kMaxLevel = 16;
+}  // namespace WallConfigTable
+
+// ==================== 兵营配置数据表 (14级) ====================
+namespace ArmyConfigTable
+{
+// 生命值表
+static const int kHitpoints[] = {
+    0,    // Level 0 (无效)
+    250,  // Level 1
+    270,  // Level 2
+    300,  // Level 3
+    330,  // Level 4
+    360,  // Level 5
+    400,  // Level 6
+    450,  // Level 7
+    500,  // Level 8
+    560,  // Level 9
+    620,  // Level 10
+    700,  // Level 11
+    780,  // Level 12
+    860,  // Level 13
+    950   // Level 14
+};
+
+// 升级费用表
+static const int kUpgradeCosts[] = {
+    0,       // Level 0 (无效)
+    1000,    // Level 1
+    2000,    // Level 2
+    4000,    // Level 3
+    8000,    // Level 4
+    15000,   // Level 5
+    30000,   // Level 6
+    60000,   // Level 7
+    120000,  // Level 8
+    200000,  // Level 9
+    280000,  // Level 10
+    360000,  // Level 11
+    440000,  // Level 12
+    520000,  // Level 13
+    600000   // Level 14
+};
+
+// 升级时间表（秒）
+static const float kUpgradeTimes[] = {
+    0.0f,     // Level 0 (无效)
+    30.0f,    // Level 1
+    60.0f,    // Level 2
+    300.0f,   // Level 3
+    900.0f,   // Level 4
+    1800.0f,  // Level 5
+    3600.0f,  // Level 6
+    7200.0f,  // Level 7
+    14400.0f, // Level 8
+    28800.0f, // Level 9
+    43200.0f, // Level 10
+    86400.0f, // Level 11
+    172800.0f,// Level 12
+    259200.0f,// Level 13
+    345600.0f // Level 14
+};
+
+static const int kMaxLevel = 14;
+}  // namespace ArmyConfigTable
+
 // ==================== 初始化与配置 ====================
 
 bool BaseBuilding::initWithType(BuildingType type, int level)
@@ -103,58 +235,116 @@ void BaseBuilding::updateProperties()
     }
 }
 
-// ==================== 静态配置数据 (模拟数据库) ====================
+// ==================== 静态配置数据 ====================
 
 BuildingConfigData BaseBuilding::getStaticConfig(BuildingType type, int level)
 {
     BuildingConfigData config;
-    config.maxLevel = 10;
 
     // 默认值
-    config.name      = "Unknown Building";
-    config.imageFile = "buildings/default.png";
-    config.gridSize  = Size(3, 3);
+    config.name        = "Unknown Building";
+    config.description = "";
+    config.imageFile   = "buildings/default.png";
+    config.gridSize    = Size(3, 3);
+    config.maxLevel    = 10;
 
-    // 简单的硬编码配置，实际项目中应读取 JSON/CSV
     switch (type)
     {
+    case BuildingType::kWall:
+    {
+        config.name            = "城墙";
+        config.maxLevel        = WallConfigTable::kMaxLevel;
+        config.gridSize        = Size(1, 1);
+        config.upgradeCostType = ResourceType::kGold;
+
+        // 限制等级范围
+        int idx = std::max(1, std::min(level, WallConfigTable::kMaxLevel));
+        config.maxHitpoints = WallConfigTable::kHitpoints[idx];
+        config.upgradeCost  = WallConfigTable::kUpgradeCosts[idx];
+        config.upgradeTime  = WallConfigTable::kUpgradeTimes[idx];
+        config.imageFile    = StringUtils::format("buildings/Wall/Wall%d.png", idx);
+        config.description  = StringUtils::format("生命值: %d", config.maxHitpoints);
+        break;
+    }
+
+    case BuildingType::kArmy:
+    {
+        config.name            = "兵营";
+        config.maxLevel        = ArmyConfigTable::kMaxLevel;
+        config.gridSize        = Size(3, 3);
+        config.upgradeCostType = ResourceType::kElixir;
+
+        // 限制等级范围
+        int idx = std::max(1, std::min(level, ArmyConfigTable::kMaxLevel));
+        config.maxHitpoints = ArmyConfigTable::kHitpoints[idx];
+        config.upgradeCost  = ArmyConfigTable::kUpgradeCosts[idx];
+        config.upgradeTime  = ArmyConfigTable::kUpgradeTimes[idx];
+        config.imageFile    = StringUtils::format("buildings/Barracks/Barracks%d.png", idx);
+        
+        // 计算训练容量和速度加成用于描述
+        int   trainingCapacity  = 20 + (idx - 1) * 5;
+        float trainingSpeedPct  = (idx - 1) * 5.0f;
+        config.description = StringUtils::format("训练容量: %d\n训练速度: +%.0f%%", 
+                                                  trainingCapacity, trainingSpeedPct);
+        break;
+    }
+
     case BuildingType::kTownHall:
-        config.name         = "Town Hall";
-        config.description  = "The heart of your village.";
+    {
+        config.name            = "大本营";
+        config.description     = "村庄的核心建筑";
+        config.maxLevel        = 17;
+        config.gridSize        = Size(4, 4);
+        config.upgradeCostType = ResourceType::kGold;
+
+        // 大本营使用 TownHallConfig 单例，这里提供基础估算值
         config.maxHitpoints = 1500 + (level * 500);
         config.upgradeCost  = 1000 * level;
         config.upgradeTime  = 10.0f * level;
-        config.imageFile    = StringUtils::format("buildings/TownHall/TownHall%d.png", level);
-        config.gridSize     = Size(4, 4);
+        config.imageFile    = StringUtils::format("buildings/BaseCamp/town-hall-%d.png", level);
         break;
+    }
 
-    case BuildingType::kResource: // 假设是金矿
-        config.name           = "Gold Mine";
-        config.maxHitpoints   = 400 + (level * 100);
-        config.upgradeCost    = 150 * level;
-        config.productionRate = 100 * level;
-        config.imageFile      = StringUtils::format("buildings/GoldMine/GoldMine%d.png", level);
-        config.gridSize       = Size(3, 3);
+    case BuildingType::kResource:
+    {
+        config.name            = "资源建筑";
+        config.maxLevel        = 15;
+        config.gridSize        = Size(3, 3);
+        config.upgradeCostType = ResourceType::kGold;
+        config.maxHitpoints    = 400 + (level * 100);
+        config.upgradeCost     = 150 * level;
+        config.productionRate  = 100 * level;
+        config.imageFile       = StringUtils::format("buildings/GoldMine/GoldMine%d.png", level);
         break;
+    }
 
-    case BuildingType::kDefense: // 假设是加农炮
-        config.name         = "Cannon";
-        config.maxHitpoints = 600 + (level * 120);
-        config.damage       = 50 + (level * 10);
-        config.attackRange  = 300.0f;
-        config.attackSpeed  = 1.0f;
-        config.upgradeCost  = 200 * level;
-        config.imageFile    = StringUtils::format("buildings/Cannon_Static/Cannon%d.png", level);
-        config.gridSize     = Size(3, 3);
+    case BuildingType::kDefense:
+    {
+        config.name            = "防御建筑";
+        config.maxLevel        = 14;
+        config.gridSize        = Size(3, 3);
+        config.upgradeCostType = ResourceType::kGold;
+        config.maxHitpoints    = 600 + (level * 120);
+        config.damage          = 50 + (level * 10);
+        config.attackRange     = 300.0f;
+        config.attackSpeed     = 1.0f;
+        config.upgradeCost     = 200 * level;
+        config.imageFile       = StringUtils::format("buildings/Cannon_Static/Cannon%d.png", level);
         break;
+    }
 
-    case BuildingType::kWall:
-        config.name         = "Wall";
-        config.maxHitpoints = 300 + (level * 300);
-        config.upgradeCost  = 50 * level;
-        config.imageFile    = StringUtils::format("buildings/Wall/Wall%d.png", level);
-        config.gridSize     = Size(1, 1);
+    case BuildingType::kArmyCamp:
+    {
+        config.name            = "军营";
+        config.maxLevel        = 11;
+        config.gridSize        = Size(4, 4);
+        config.upgradeCostType = ResourceType::kElixir;
+        config.maxHitpoints    = 250 + (level * 50);
+        config.upgradeCost     = 100 * level;
+        config.resourceCapacity = 20 + (level * 5);  // 用于存储人口容量
+        config.imageFile       = StringUtils::format("buildings/ArmyCamp/ArmyCamp%d.png", level);
         break;
+    }
 
     default:
         break;

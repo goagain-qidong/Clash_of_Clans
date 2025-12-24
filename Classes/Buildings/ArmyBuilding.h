@@ -2,8 +2,8 @@
  * Project Name:  Clash_of_Clans
  * File Name:     ArmyBuilding.h
  * File Function: 军事建筑类（兵营、训练营等）
- * Author:
- * Update Date:   2025/01/10
+ * Author:        薛毓哲
+ * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
 #ifndef ARMY_BUILDING_H_
@@ -36,6 +36,8 @@ struct TrainingTask
 /**
  * @class ArmyBuilding
  * @brief 军事建筑类 - 用于训练士兵
+ * @note 使用数据驱动架构，基础配置数据由 BaseBuilding::getStaticConfig() 管理
+ *       训练系统相关的特有逻辑保留在子类中
  */
 class ArmyBuilding : public BaseBuilding
 {
@@ -47,37 +49,15 @@ public:
      */
     static ArmyBuilding* create(int level = 1);
 
-    /**
-     * @brief 创建军事建筑（自定义图片）
-     * @param level 建筑等级
-     * @param imageFile 图片文件路径
-     * @return ArmyBuilding* 军事建筑指针
-     */
-    static ArmyBuilding* create(int level, const std::string& imageFile);
+    // 以下方法直接使用基类的配置驱动实现，无需重写：
+    // - getMaxLevel()
+    // - getUpgradeCost()
+    // - getUpgradeTime()
+    // - getMaxHitpoints()
+    // - getBuildingDescription()
+    // - getImageFile()
 
-    virtual bool init(int level);
-    virtual bool init(int level, const std::string& imageFile);
-
-    /** @brief 获取建筑类型 */
-    virtual BuildingType getBuildingType() const override { return BuildingType::kArmy; }
-
-    /** @brief 获取显示名称 */
-    virtual std::string getDisplayName() const override;
-
-    /** @brief 获取升级费用 */
-    virtual int getUpgradeCost() const override;
-
-    /** @brief 获取升级资源类型 */
-    virtual ResourceType getUpgradeCostType() const override { return ResourceType::kElixir; }
-
-    /** @brief 获取升级时间 */
-    virtual float getUpgradeTime() const override;
-
-    /** @brief 获取最大等级 */
-    virtual int getMaxLevel() const override { return 14; }
-
-    /** @brief 获取建筑描述 */
-    virtual std::string getBuildingDescription() const override;
+    // ==================== 训练系统 ====================
 
     /**
      * @brief 添加训练任务
@@ -105,7 +85,10 @@ public:
      * @brief 设置训练完成回调
      * @param callback 回调函数
      */
-    void setOnTrainingComplete(const std::function<void(BaseUnit*)>& callback) { _onTrainingComplete = callback; }
+    void setOnTrainingComplete(const std::function<void(BaseUnit*)>& callback) 
+    { 
+        _onTrainingComplete = callback; 
+    }
 
     /**
      * @brief 每帧更新
@@ -118,6 +101,8 @@ public:
 
     /** @brief 获取训练速度加成 */
     float getTrainingSpeedBonus() const;
+
+    // ==================== 静态方法：兵种数据 ====================
 
     /**
      * @brief 获取兵种训练时间
@@ -141,8 +126,15 @@ public:
     static int getUnitPopulation(UnitType type);
 
 protected:
+    /**
+     * @brief 初始化兵营
+     * @param level 初始等级
+     * @return bool 是否成功
+     */
+    virtual bool init(int level) override;
+
+    /** @brief 升级时调用 */
     virtual void onLevelUp() override;
-    virtual std::string getImageForLevel(int level) const override;
 
     /**
      * @brief 通知军营显示训练好的小兵
@@ -151,9 +143,6 @@ protected:
     void notifyArmyCampsToDisplayTroop(UnitType type);
 
 private:
-    std::string _customImagePath;  ///< 自定义图片路径
-    std::string _customName;       ///< 自定义建筑名称
-
     std::queue<TrainingTask> _trainingQueue;             ///< 训练队列
     std::function<void(BaseUnit*)> _onTrainingComplete;  ///< 训练完成回调
 

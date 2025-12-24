@@ -1,10 +1,9 @@
 ﻿/****************************************************************
-/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     ArmyBuilding.cpp
  * File Function: 军事建筑类实现
- * Author:
- * Update Date:   2025/01/10
+ * Author:        薛毓哲
+ * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
 #include "ArmyBuilding.h"
@@ -15,6 +14,9 @@
 #include "Unit/UnitFactory.h"
 
 USING_NS_CC;
+
+// ==================== 创建与初始化 ====================
+
 ArmyBuilding* ArmyBuilding::create(int level)
 {
     ArmyBuilding* building = new (std::nothrow) ArmyBuilding();
@@ -26,177 +28,43 @@ ArmyBuilding* ArmyBuilding::create(int level)
     CC_SAFE_DELETE(building);
     return nullptr;
 }
-// 兵营生命值 (1-18级)
-static const int BARRACKS_HP[] = {0,   250, 270, 300, 330, 360,  400,  450,  500, 560,
-                                  620, 700, 780, 860, 950, 1050, 1150, 1250, 1350};
-float            ArmyBuilding::getUpgradeTime() const
-{
-    // 升级时间（秒）
-    static const float times[] = {
-        0,      // Level 0 (无效)
-        30,     // Level 1 (即时)
-        60,     // Level 2 (1分钟)
-        300,    // Level 3 (5分钟)
-        900,    // Level 4 (15分钟)
-        1800,   // Level 5 (30分钟)
-        3600,   // Level 6 (1小时)
-        7200,   // Level 7 (2小时)
-        14400,  // Level 8 (4小时)
-        28800,  // Level 9 (8小时)
-        43200,  // Level 10 (12小时)
-        86400,  // Level 11 (1天)
-        172800, // Level 12 (2天)
-        259200, // Level 13 (3天)
-        345600, // Level 14 (4天)
-        432000, // Level 15 (5天)
-        518400, // Level 16 (6天)
-        604800  // Level 17 (7天)
-    };
-
-    if (_level < 1 || _level > 17)
-        return 0;
-
-    return times[_level];
-}
-ArmyBuilding* ArmyBuilding::create(int level, const std::string& imageFile)
-{
-    ArmyBuilding* building = new (std::nothrow) ArmyBuilding();
-    if (building && building->init(level, imageFile))
-    {
-        building->autorelease();
-        return building;
-    }
-    CC_SAFE_DELETE(building);
-    return nullptr;
-}
 
 bool ArmyBuilding::init(int level)
 {
-    if (!BaseBuilding::init(level, getImageForLevel(level)))
+    // 使用 initWithType 统一初始化，配置数据由基类管理
+    if (!initWithType(BuildingType::kArmy, level))
     {
         return false;
     }
 
-    // 置兵营生命值
-    int idx = std::min(level, (int)(sizeof(BARRACKS_HP) / sizeof(int) - 1));
-    int hp  = BARRACKS_HP[idx];
-    setMaxHitpoints(hp);
-
-    CCLOG("⚔️ %s 初始化 HP: %d", getDisplayName().c_str(), hp);
+    // 兵营特有的外观设置
+    this->setAnchorPoint(Vec2(0.5f, 0.35f));
 
     // 初始化血条UI
     initHealthBarUI();
 
+    CCLOG("⚔️ %s 初始化 HP: %d", getDisplayName().c_str(), getMaxHitpoints());
     return true;
 }
 
-bool ArmyBuilding::init(int level, const std::string& imageFile)
-{
-    if (!BaseBuilding::init(level, imageFile))
-    {
-        return false;
-    }
+// ==================== 训练系统属性 ====================
 
-    // 保存自定义图片路径模板
-    // 例如: "buildings/ArcherTower/Archer_Tower1.png" -> "buildings/ArcherTower/Archer_Tower"
-    _customImagePath = imageFile;
-
-    // 移除文件名中的等级数字和扩展名
-    size_t lastSlash = _customImagePath.find_last_of('/');
-    size_t lastDot   = _customImagePath.find_last_of('.');
-
-    if (lastSlash != std::string::npos && lastDot != std::string::npos)
-    {
-        std::string fileName = _customImagePath.substr(lastSlash + 1, lastDot - lastSlash - 1);
-
-        // 移除末尾的数字（如 "Archer_Tower1" -> "Archer_Tower"）
-        size_t i = fileName.length();
-        while (i > 0 && std::isdigit(fileName[i - 1]))
-        {
-            i--;
-        }
-
-        if (i < fileName.length())
-        {
-            fileName = fileName.substr(0, i);
-        }
-
-        // 重新组合路径模板
-        _customImagePath = _customImagePath.substr(0, lastSlash + 1) + fileName;
-
-        // 提取建筑名称（用于显示）
-        // "Archer_Tower" -> "箭塔", "Cannon" -> "炮塔"
-        if (fileName.find("Archer") != std::string::npos)
-        {
-            _customName = "箭塔";
-        }
-        else if (fileName.find("Cannon") != std::string::npos)
-        {
-            _customName = "炮塔";
-        }
-        else
-        {
-            _customName = "防御建筑";
-        }
-    }
-    int idx = std::min(level, (int)(sizeof(BARRACKS_HP) / sizeof(int) - 1));
-    setMaxHitpoints(BARRACKS_HP[idx]);
-    initHealthBarUI();
-    return true;
-}
-
-std::string ArmyBuilding::getDisplayName() const
-{
-    // 如果有自定义名称，使用自定义名称
-    if (!_customName.empty())
-    {
-        return _customName + " Lv." + std::to_string(_level);
-    }
-    // 默认返回兵营
-    return "兵营 Lv." + std::to_string(_level);
-}
-
-int ArmyBuilding::getUpgradeCost() const
-{
-    // 升级费用随等级递增
-    static const int costs[] = {0,      1000,   2000,   4000,   8000,   15000,  30000,  60000,  120000,
-                                200000, 280000, 360000, 440000, 520000, 600000, 700000, 800000, 900000};
-    int              idx     = std::min(_level, getMaxLevel());
-    return costs[idx];
-}
-
-std::string ArmyBuilding::getBuildingDescription() const
-{
-    return StringUtils::format("训练容量: %d\n训练速度: +%.0f%%", getTrainingCapacity(), getTrainingSpeedBonus() * 100);
-}
 int ArmyBuilding::getTrainingCapacity() const
 {
     // 每级增加训练容量
     return 20 + (_level - 1) * 5;
 }
+
 float ArmyBuilding::getTrainingSpeedBonus() const
 {
     // 每级增加5%训练速度
     return (_level - 1) * 0.05f;
 }
+
 void ArmyBuilding::onLevelUp()
 {
     BaseBuilding::onLevelUp();
     CCLOG("ArmyBuilding upgraded to level %d, capacity: %d", _level, getTrainingCapacity());
-}
-std::string ArmyBuilding::getImageForLevel(int level) const
-{
-    // 如果有自定义图片路径模板，使用它
-    if (!_customImagePath.empty())
-    {
-        return _customImagePath + std::to_string(level) + ".png";
-    }
-
-    // 否则使用默认的兵营图片（支持1-18级）
-    if (level < 1 || level > 18)
-        level = 1;
-
-    return "buildings/Barracks/Barracks" + std::to_string(level) + ".png";
 }
 
 // ==================== 训练系统实现 ====================
