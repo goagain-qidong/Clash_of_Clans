@@ -3,7 +3,7 @@
  * File Name:     ArmyCampBuilding.h
  * File Function: 军营建筑类（存放士兵的营地）
  * Author:        薛毓哲
- * Update Date:   2025/01/10
+ * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
 #ifndef ARMY_CAMP_BUILDING_H_
@@ -17,6 +17,7 @@
 /**
  * @class ArmyCampBuilding
  * @brief 军营建筑类 - 4x4网格，用于存放训练好的士兵
+ * @note 使用数据驱动架构，配置数据统一由 BaseBuilding::getStaticConfig() 管理
  */
 class ArmyCampBuilding : public BaseBuilding
 {
@@ -28,29 +29,12 @@ public:
      */
     static ArmyCampBuilding* create(int level = 1);
 
-    /** @brief 获取建筑类型 */
-    virtual BuildingType getBuildingType() const override { return BuildingType::kArmyCamp; }
-
-    /** @brief 获取显示名称 */
-    virtual std::string getDisplayName() const override;
-
-    /** @brief 获取最大等级 */
-    virtual int getMaxLevel() const override { return 13; }
-
-    /** @brief 获取升级费用 */
-    virtual int getUpgradeCost() const override;
-
-    /** @brief 获取升级资源类型 */
-    virtual ResourceType getUpgradeCostType() const override { return ResourceType::kElixir; }
-
-    /** @brief 获取升级时间 */
-    virtual float getUpgradeTime() const override;
-
-    /** @brief 获取建筑描述 */
-    virtual std::string getBuildingDescription() const override;
-
-    /** @brief 获取当前图片文件 */
-    virtual std::string getImageFile() const override;
+    // 以下方法直接使用基类的配置驱动实现，无需重写：
+    // - getMaxLevel()
+    // - getUpgradeCost()
+    // - getUpgradeTime()
+    // - getMaxHitpoints()
+    // - getImageFile()
 
     /** @brief 获取当前等级的容纳人口数 */
     int getHousingSpace() const;
@@ -77,9 +61,15 @@ public:
     void refreshDisplayFromInventory();
 
 protected:
+    /**
+     * @brief 初始化军营
+     * @param level 初始等级
+     * @return bool 是否成功
+     */
     virtual bool init(int level) override;
+
+    /** @brief 升级时调用 */
     virtual void onLevelUp() override;
-    virtual std::string getImageForLevel(int level) const override;
 
 private:
     ArmyCampBuilding() = default;

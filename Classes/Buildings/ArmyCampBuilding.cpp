@@ -3,7 +3,7 @@
  * File Name:     ArmyCampBuilding.cpp
  * File Function: 军营建筑类实现
  * Author:        薛毓哲
- * Update Date:   2025/01/10
+ * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
 #include "ArmyCampBuilding.h"
@@ -12,8 +12,9 @@
 #include "Unit/UnitFactory.h"
 
 USING_NS_CC;
-// 军营生命值 (1-13级)
-static const int  CAMP_HP[] = {0, 250, 280, 320, 360, 400, 450, 500, 550, 620, 700, 800, 1000, 1200};
+
+// ==================== 创建与初始化 ====================
+
 ArmyCampBuilding* ArmyCampBuilding::create(int level)
 {
     ArmyCampBuilding* building = new (std::nothrow) ArmyCampBuilding();
@@ -28,154 +29,52 @@ ArmyCampBuilding* ArmyCampBuilding::create(int level)
 
 bool ArmyCampBuilding::init(int level)
 {
-    _level = std::max(1, std::min(level, getMaxLevel()));
-    _gridSize = cocos2d::Size(4, 4); // 军营占用4x4网格
-    
-    std::string imageFile = getImageFile();
-    if (!Sprite::initWithFile(imageFile))
+    // 使用 initWithType 统一初始化，配置数据由基类管理
+    if (!initWithType(BuildingType::kArmyCamp, level))
+    {
         return false;
-    
-    // 设置锚点和缩放
+    }
+
+    // 军营特有的外观设置
     this->setAnchorPoint(Vec2(0.5f, 0.35f));
     this->setScale(0.8f);
-    this->setName(getDisplayName());
-    
+
     // 初始化时增加人口容量
     int housingSpace = getHousingSpace();
     ResourceManager::getInstance().addCapacity(kTroopPopulation, housingSpace);
-    CCLOG("ArmyCampBuilding created at level %d, added %d housing space", _level, housingSpace);
-    // ✅ 【新增】设置军营生命值
-    int idx = std::min(_level, (int)(sizeof(CAMP_HP) / sizeof(int) - 1));
-    int hp  = CAMP_HP[idx];
-    setMaxHitpoints(hp);
-    CCLOG("⛺ %s 初始化 HP: %d", getDisplayName().c_str(), hp);
+
+    // 初始化血条UI
     initHealthBarUI();
+
+    CCLOG("⛺ %s 初始化 HP: %d, 容纳人口: %d", 
+          getDisplayName().c_str(), getMaxHitpoints(), housingSpace);
     return true;
-}
-
-std::string ArmyCampBuilding::getDisplayName() const
-{
-    return "军营 Lv." + std::to_string(_level);
-}
-
-int ArmyCampBuilding::getUpgradeCost() const
-{
-    // 军营升级费用表（13级）
-    static const int costs[] = {
-        0,       // Level 0 (无效)
-        250,     // Level 1
-        2500,    // Level 2
-        10000,   // Level 3
-        100000,  // Level 4
-        250000,  // Level 5
-        750000,  // Level 6
-        2250000, // Level 7
-        6000000, // Level 8
-        7500000, // Level 9
-        9000000, // Level 10
-        10500000,// Level 11
-        12000000,// Level 12
-        14000000 // Level 13
-    };
-    
-    if (_level < 1 || _level > 13)
-        return 0;
-    
-    return costs[_level];
-}
-
-float ArmyCampBuilding::getUpgradeTime() const
-{
-    // 军营升级时间（秒）
-    static const float times[] = {
-        0,      // Level 0 (无效)
-        0,      // Level 1 (即时)
-        900,    // Level 2 (15分钟)
-        3600,   // Level 3 (1小时)
-        28800,  // Level 4 (8小时)
-        86400,  // Level 5 (1天)
-        172800, // Level 6 (2天)
-        259200, // Level 7 (3天)
-        345600, // Level 8 (4天)
-        432000, // Level 9 (5天)
-        518400, // Level 10 (6天)
-        604800, // Level 11 (7天)
-        691200, // Level 12 (8天)
-        777600  // Level 13 (9天)
-    };
-    
-    if (_level < 1 || _level > 13)
-        return 0;
-    
-    return times[_level];
-}
-
-std::string ArmyCampBuilding::getBuildingDescription() const
-{
-    return StringUtils::format("容纳人口: %d", getHousingSpace());
-}
-
-std::string ArmyCampBuilding::getImageFile() const
-{
-    return getImageForLevel(_level);
-}
-
-std::string ArmyCampBuilding::getImageForLevel(int level) const
-{
-    if (level < 1 || level > 13)
-        level = 1;
-    
-    return "buildings/ArmyCamp/Army_Camp" + std::to_string(level) + ".png";
 }
 
 int ArmyCampBuilding::getHousingSpace() const
 {
-    // 军营容纳人口表（13级）
-    static const int housingSpace[] = {
-        0,   // Level 0 (无效)
-        20,  // Level 1
-        30,  // Level 2
-        35,  // Level 3
-        40,  // Level 4
-        45,  // Level 5
-        50,  // Level 6
-        55,  // Level 7
-        60,  // Level 8
-        65,  // Level 9
-        70,  // Level 10
-        75,  // Level 11
-        80,  // Level 12
-        85   // Level 13
-    };
-    
-    if (_level < 1 || _level > 13)
-        return 0;
-    
-    return housingSpace[_level];
+    // 从配置中获取人口容量（存储在 resourceCapacity 字段）
+    return _config.resourceCapacity;
 }
 
 void ArmyCampBuilding::onLevelUp()
 {
+    // 获取升级前的人口容量
+    BuildingConfigData prevConfig = getStaticConfig(BuildingType::kArmyCamp, _level - 1);
+    int prevHousingSpace = prevConfig.resourceCapacity;
+
+    // 调用基类升级逻辑（会更新 _config）
     BaseBuilding::onLevelUp();
-    
-    // 增加人口容量
-    int housingSpace = getHousingSpace();
-    int prevHousingSpace = 0;
-    if (_level > 1)
-    {
-        // 获取上一级的容纳人口
-        static const int housingSpaceTable[] = {
-            0, 20, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85
-        };
-        prevHousingSpace = housingSpaceTable[_level - 1];
-    }
-    
-    int addedCapacity = housingSpace - prevHousingSpace;
+
+    // 计算新增的人口容量
+    int currentHousingSpace = getHousingSpace();
+    int addedCapacity = currentHousingSpace - prevHousingSpace;
+
     if (addedCapacity > 0)
     {
         ResourceManager::getInstance().addCapacity(kTroopPopulation, addedCapacity);
-        CCLOG("ArmyCampBuilding upgraded to level %d, Housing Space: %d (+%d)", 
-              _level, housingSpace, addedCapacity);
+        CCLOG("ArmyCampBuilding upgraded to level %d, Housing Space: %d (+%d)",
+              _level, currentHousingSpace, addedCapacity);
     }
 }
 
