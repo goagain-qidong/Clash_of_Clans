@@ -9,247 +9,196 @@
 #pragma once
 
 #include <string>
-
 #include <vector>
-
 #include <functional>
 
 #include "json/document.h"
-
 #include "json/writer.h"
-
 #include "json/stringbuffer.h"
 
-
-
-// Building data for serialization
-
+/**
+ * @struct BuildingSerialData
+ * @brief 建筑序列化数据
+ */
 struct BuildingSerialData {
+    std::string name;   ///< 建筑名称
+    int level;          ///< 建筑等级
+    float gridX;        ///< 网格X坐标
+    float gridY;        ///< 网格Y坐标
+    float gridWidth;    ///< 网格宽度
+    float gridHeight;   ///< 网格高度
 
-    std::string name;
-
-    int level;
-
-    float gridX;
-
-    float gridY;
-
-    float gridWidth;
-
-    float gridHeight;
-
-
-
-    // Serialize to JSON
-
+    /**
+     * @brief 序列化为JSON
+     * @param allocator JSON分配器
+     * @return rapidjson::Value JSON值
+     */
     rapidjson::Value toJson(rapidjson::Document::AllocatorType& allocator) const;
 
-
-
-    // Deserialize from JSON
-
+    /**
+     * @brief 从JSON反序列化
+     * @param obj JSON对象
+     * @return BuildingSerialData 建筑数据
+     */
     static BuildingSerialData fromJson(const rapidjson::Value& obj);
-
 };
 
-
-
-// Account game state data
-
+/**
+ * @struct AccountGameData
+ * @brief 账户游戏数据
+ */
 struct AccountGameData {
+    int gold = 1000;           ///< 金币
+    int elixir = 1000;         ///< 圣水
+    int darkElixir = 0;        ///< 暗黑重油
+    int gems = 0;              ///< 宝石
+    int trophies = 0;          ///< 奖杯
+    int townHallLevel = 1;     ///< 大本营等级
+    int goldCapacity = 3000;   ///< 金币容量
+    int elixirCapacity = 3000; ///< 圣水容量
+    std::string troopInventory = "";  ///< 士兵库存(JSON)
+    std::string clanId = "";   ///< 部落ID
+    std::string playerId = ""; ///< 玩家ID
+    std::vector<BuildingSerialData> buildings;  ///< 建筑列表
 
-    int gold = 1000;
-
-    int elixir = 1000;
-
-    int darkElixir = 0;
-
-    int gems = 0;
-
-    int trophies = 0;
-
-    int townHallLevel = 1;
-
-    // 🆕 添加资源容量字段
-    int goldCapacity = 3000;
-    int elixirCapacity = 3000;
-    
-    // 🆕 添加士兵库存字段
-    std::string troopInventory = "";  // JSON格式存储士兵库存
-    
-    // 🆕 添加部落信息字段
-    std::string clanId = "";
-    std::string playerId = "";
-    
-    std::vector<BuildingSerialData> buildings;
-
-
-
-    // Serialize to JSON
-
+    /**
+     * @brief 序列化为JSON字符串
+     * @return std::string JSON字符串
+     */
     std::string toJson() const;
 
-
-
-    // Deserialize from JSON
-
+    /**
+     * @brief 从JSON字符串反序列化
+     * @param jsonStr JSON字符串
+     * @return AccountGameData 游戏数据
+     */
     static AccountGameData fromJson(const std::string& jsonStr);
-
 };
 
-
-
-// Simple account model
-
+/**
+ * @struct AccountInfo
+ * @brief 账户信息
+ */
 struct AccountInfo {
-
-    std::string userId;   // unique id
-
-    std::string username; // display name
-
-    std::string password; // account password (plaintext,建议加密存储)
-
-    std::string token;    // auth token (optional)
-    
-    std::string assignedMapName = "map/Map1.png"; // 每个账号分配的地图（默认Map1）
-
-    AccountGameData gameData; // Game state data
-
+    std::string userId;    ///< 用户ID
+    std::string username;  ///< 用户名
+    std::string password;  ///< 密码
+    std::string token;     ///< 认证令牌
+    std::string assignedMapName = "map/Map1.png";  ///< 分配的地图
+    AccountGameData gameData;  ///< 游戏数据
 };
 
-
-
+/**
+ * @class AccountManager
+ * @brief 账户管理器（单例）
+ */
 class AccountManager {
-
 public:
-
+    /**
+     * @brief 获取单例实例
+     * @return AccountManager& 单例引用
+     */
     static AccountManager& getInstance();
 
-
-
-    // Initialize from storage. Returns true if an account was restored.
-
+    /**
+     * @brief 初始化
+     * @return bool 是否恢复了账户
+     */
     bool initialize();
 
-
-
-    // Get current account.
-
+    /** @brief 获取当前账户 */
     const AccountInfo* getCurrentAccount() const;
 
-
-
-    // Switch active account by userId. Returns true if success.
-    // @param silent If true, suppresses UI notifications (e.g. defense logs)
+    /**
+     * @brief 切换账户
+     * @param userId 用户ID
+     * @param silent 是否静默模式
+     * @return bool 是否成功
+     */
     bool switchAccount(const std::string& userId, bool silent = false);
 
-    // Create or update an account and set it active.
-
+    /**
+     * @brief 创建或更新账户
+     * @param acc 账户信息
+     */
     void upsertAccount(const AccountInfo& acc);
 
-
-
-    // List all accounts stored locally.
-
+    /** @brief 列出所有账户 */
     const std::vector<AccountInfo>& listAccounts() const;
 
-
-
-    // Sign out current account.
-
+    /** @brief 登出 */
     void signOut();
 
-
-
-    // Verify account password.
-
+    /**
+     * @brief 验证密码
+     * @param userId 用户ID
+     * @param password 密码
+     * @return bool 是否正确
+     */
     bool verifyPassword(const std::string& userId, const std::string& password) const;
 
-
-
-    // Delete an account by userId. Returns true if successful.
-
+    /**
+     * @brief 删除账户
+     * @param userId 用户ID
+     * @return bool 是否成功
+     */
     bool deleteAccount(const std::string& userId);
 
-
-
-    // ==================== Game State Management ====================
-
-    
-
-    /** @brief Update current account's game data */
-
+    /**
+     * @brief 更新游戏数据
+     * @param gameData 游戏数据
+     */
     void updateGameData(const AccountGameData& gameData);
 
-    
-
-    /** @brief Get current account's game data */
-
+    /** @brief 获取当前游戏数据 */
     AccountGameData getCurrentGameData() const;
 
-    
-
-    /** @brief Save current account's game state to JSON file */
-
+    /** @brief 保存游戏状态到文件 */
     bool saveGameStateToFile();
 
-    
-
-    /** @brief Load account's game state from JSON file */
-
+    /**
+     * @brief 从文件加载游戏状态
+     * @param userId 用户ID
+     * @return bool 是否成功
+     */
     bool loadGameStateFromFile(const std::string& userId);
 
-    
-
-    /** @brief Get another player's game data by userId (for attacking) */
-
+    /**
+     * @brief 获取其他玩家的游戏数据
+     * @param userId 用户ID
+     * @return AccountGameData 游戏数据
+     */
     AccountGameData getPlayerGameData(const std::string& userId) const;
 
-    
-
-    /** @brief Export current game state as JSON string (for server upload) */
-
+    /** @brief 导出游戏状态为JSON */
     std::string exportGameStateJson() const;
 
-    
-
-    /** @brief Import game state from JSON string (from server) */
-
+    /**
+     * @brief 导入游戏状态
+     * @param userId 用户ID
+     * @param jsonData JSON数据
+     * @return bool 是否成功
+     */
     bool importGameStateJson(const std::string& userId, const std::string& jsonData);
 
-
-
-    // Persist current state to storage.
-
+    /** @brief 保存到存储 */
     void save();
 
-
-
 private:
-
     AccountManager() = default;
-
     AccountManager(const AccountManager&) = delete;
-
     AccountManager& operator=(const AccountManager&) = delete;
 
+    std::vector<AccountInfo> _accounts;  ///< 账户列表
+    int _activeIndex = -1;               ///< 当前活动账户索引
 
+    void loadFromStorage();  ///< 从存储加载
 
-    std::vector<AccountInfo> _accounts;
-
-    int _activeIndex = -1;
-
-
-
-    // Internal helpers
-
-    void loadFromStorage();
-
-    
-
-    /** @brief Get the file path for a user's game data */
-
+    /**
+     * @brief 获取游戏数据文件路径
+     * @param userId 用户ID
+     * @return std::string 文件路径
+     */
     std::string getGameDataFilePath(const std::string& userId) const;
-
 };
 

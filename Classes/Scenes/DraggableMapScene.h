@@ -1,22 +1,19 @@
-﻿/**
- * @file DraggableMapScene.h
- * @brief 主场景类 - 重构后的精简版本
- *
- * 职责：
- * - 场景初始化和生命周期管理
- * - 协调各个管理器之间的交互
- * - 处理游戏逻辑回调
- * - 管理升级UI
- */
-
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     DraggableMapScene.h
+ * File Function: 主场景类
+ * Author:        赵崇治
+ * Update Date:   2025/01/10
+ * License:       MIT License
+ ****************************************************************/
 #ifndef __DRAGGABLE_MAP_SCENE_H__
 #define __DRAGGABLE_MAP_SCENE_H__
 
 #include "cocos2d.h"
-#include <string>
-#include <map> // ✅ 新增
 
-// 前向声明
+#include <string>
+#include <map>
+
 class MapController;
 class SceneUIController;
 class InputController;
@@ -29,111 +26,119 @@ struct BuildingData;
 /**
  * @class DraggableMapScene
  * @brief 主游戏场景 - 精简后的主控制器
+ *
+ * 职责：
+ * - 场景初始化和生命周期管理
+ * - 协调各个管理器之间的交互
+ * - 处理游戏逻辑回调
+ * - 管理升级UI
  */
 class DraggableMapScene : public cocos2d::Scene
 {
 public:
+    /**
+     * @brief 创建场景
+     * @return cocos2d::Scene* 场景指针
+     */
     static cocos2d::Scene* createScene();
+
     virtual bool init() override;
     virtual ~DraggableMapScene();
     virtual void update(float dt) override;
-    virtual void onEnter() override; // ✅ 新增
+    virtual void onEnter() override;
 
     CREATE_FUNC(DraggableMapScene);
-    
-    // 供 ShopLayer 调用
+
+    /** @brief 获取大本营等级 */
     int getTownHallLevel() const;
+
+    /**
+     * @brief 获取建筑数量
+     * @param name 建筑名称
+     * @return int 数量
+     */
     int getBuildingCount(const std::string& name) const;
+
+    /**
+     * @brief 开始放置建筑
+     * @param data 建筑数据
+     */
     void startPlacingBuilding(const BuildingData& data);
-    
-    // 供外部调用的升级UI接口
+
+    /** @brief 关闭升级UI */
     void closeUpgradeUI();
-    
-    // 供 BuildingUpgradeUI 调用
+
+    /** @brief 获取建筑管理器 */
     BuildingManager* getBuildingManager() const { return _buildingManager; }
 
 private:
-    // ==================== 管理器 ====================
-    MapController* _mapController = nullptr;
-    SceneUIController* _uiController = nullptr;
-    InputController* _inputController = nullptr;
-    BuildingManager* _buildingManager = nullptr;
-    HUDLayer* _hudLayer = nullptr;
-    ResourceCollectionManager* _collectionMgr = nullptr;
-    
-    // ==================== 游戏状态 ====================
-    bool _isAttackMode = false;
-    std::string _attackTargetUserId = "";
-    cocos2d::Node* _currentUpgradeUI = nullptr;
-    
-    cocos2d::Size _visibleSize;
-    
-    // ==================== 建筑点击和拖动状态 ====================
-    BaseBuilding* _clickedBuilding = nullptr;
-    cocos2d::Vec2 _touchBeganPos = cocos2d::Vec2::ZERO;
-    float _touchBeganTime = 0.0f;
-    bool _hasMoved = false;
-    
-    // ==================== 多点触控缩放 ====================
-    std::map<int, cocos2d::Vec2> _activeTouches;
-    bool _isPinching = false;
-    float _prevPinchDistance = 0.0f;
+    MapController* _mapController = nullptr;        ///< 地图控制器
+    SceneUIController* _uiController = nullptr;     ///< UI控制器
+    InputController* _inputController = nullptr;    ///< 输入控制器
+    BuildingManager* _buildingManager = nullptr;    ///< 建筑管理器
+    HUDLayer* _hudLayer = nullptr;                  ///< HUD层
+    ResourceCollectionManager* _collectionMgr = nullptr;  ///< 资源收集管理器
 
-    // ==================== 初始化 ====================
-    void initializeManagers();
-    void setupCallbacks();
-    void setupUpgradeManagerCallbacks();  // ✅ 新增
-    void loadGameState();
-    void initBuildingData();
-    
-    // ==================== 输入处理回调 ====================
+    bool _isAttackMode = false;          ///< 是否为攻击模式
+    std::string _attackTargetUserId = "";  ///< 攻击目标用户ID
+    cocos2d::Node* _currentUpgradeUI = nullptr;  ///< 当前升级UI
+
+    cocos2d::Size _visibleSize;  ///< 可视区域大小
+
+    BaseBuilding* _clickedBuilding = nullptr;        ///< 点击的建筑
+    cocos2d::Vec2 _touchBeganPos = cocos2d::Vec2::ZERO;  ///< 触摸开始位置
+    float _touchBeganTime = 0.0f;  ///< 触摸开始时间
+    bool _hasMoved = false;        ///< 是否移动过
+
+    std::map<int, cocos2d::Vec2> _activeTouches;  ///< 活动触摸点
+    bool _isPinching = false;         ///< 是否在缩放
+    float _prevPinchDistance = 0.0f;  ///< 上次缩放距离
+
+    void initializeManagers();           ///< 初始化管理器
+    void setupCallbacks();               ///< 设置回调
+    void setupUpgradeManagerCallbacks(); ///< 设置升级管理器回调
+    void loadGameState();                ///< 加载游戏状态
+    void initBuildingData();             ///< 初始化建筑数据
+
     bool onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event);
     void onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event);
     void onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event);
-    void onTouchCancelled(cocos2d::Touch* touch, cocos2d::Event* event); // ✅ 新增
+    void onTouchCancelled(cocos2d::Touch* touch, cocos2d::Event* event);
     void onMouseScroll(float scrollY, cocos2d::Vec2 mousePos);
     void onKeyPressed(cocos2d::EventKeyboard::KeyCode keyCode);
-    
-    // ==================== UI 回调 ====================
-    void onShopClicked();
-    void onAttackClicked();
-    void onClanClicked();
-    void onBuildingSelected(const BuildingData& data);
-    void onConfirmBuilding();
-    void onCancelBuilding();
-    void onAccountSwitched();
-    void onLogout();
-    void onMapChanged(const std::string& newMap);
 
-    // ==================== 建筑回调 ====================
-    void onBuildingPlaced(BaseBuilding* building);
-    void onBuildingClicked(BaseBuilding* building);
-    void onBuildingHint(const std::string& hint);
-    
-    // ==================== 升级UI ====================
-    void showUpgradeUI(BaseBuilding* building);
-    void hideUpgradeUI();
-    void cleanupUpgradeUI();
+    void onShopClicked();       ///< 商店点击
+    void onAttackClicked();     ///< 攻击点击
+    void onClanClicked();       ///< 部落点击
+    void onBuildingSelected(const BuildingData& data);  ///< 建筑选中
+    void onConfirmBuilding();   ///< 确认建造
+    void onCancelBuilding();    ///< 取消建造
+    void onAccountSwitched();   ///< 账户切换
+    void onLogout();            ///< 登出
+    void onMapChanged(const std::string& newMap);  ///< 地图切换
 
-    // ==================== 资源建筑注册 ====================
-    void registerResourceBuilding(class ResourceBuilding* building);
+    void onBuildingPlaced(BaseBuilding* building);   ///< 建筑放置
+    void onBuildingClicked(BaseBuilding* building);  ///< 建筑点击
+    void onBuildingHint(const std::string& hint);    ///< 建筑提示
 
-    // ==================== 场景生命周期 ====================
-    void onSceneResume();  // ✅ 新增：场景恢复时的清理
-    
-    // ==================== 多人游戏 ====================
-    bool switchToAttackMode(const std::string& targetUserId);
-    void returnToOwnBase();
-    
-    // ==================== 网络 ====================
-    void connectToServer();
-    void setupNetworkCallbacks();
-    
-    // ==================== 🆕 PVP异步掠夺 ====================
-    void showLocalPlayerList();
-    void showPlayerListFromServerData(const std::string& serverData);
-    void startAttack(const std::string& targetUserId);
-    std::string getCurrentTimestamp();
+    void showUpgradeUI(BaseBuilding* building);  ///< 显示升级UI
+    void hideUpgradeUI();      ///< 隐藏升级UI
+    void cleanupUpgradeUI();   ///< 清理升级UI
+
+    void registerResourceBuilding(class ResourceBuilding* building);  ///< 注册资源建筑
+
+    void onSceneResume();  ///< 场景恢复
+
+    bool switchToAttackMode(const std::string& targetUserId);  ///< 切换到攻击模式
+    void returnToOwnBase();    ///< 返回自己基地
+
+    void connectToServer();       ///< 连接服务器
+    void setupNetworkCallbacks(); ///< 设置网络回调
+
+    void showLocalPlayerList();   ///< 显示本地玩家列表
+    void showPlayerListFromServerData(const std::string& serverData);  ///< 显示服务器玩家列表
+    void startAttack(const std::string& targetUserId);  ///< 开始攻击
+    std::string getCurrentTimestamp();  ///< 获取当前时间戳
 };
 
 #endif // __DRAGGABLE_MAP_SCENE_H__

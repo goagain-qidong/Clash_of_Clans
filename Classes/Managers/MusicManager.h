@@ -9,52 +9,75 @@
 #pragma once
 
 #include <string>
+
 #include "audio/include/AudioEngine.h"
 
+/**
+ * @enum MusicType
+ * @brief 音乐类型枚举
+ */
 enum class MusicType
 {
-    BATTLE_GOING,      // 战斗进行中
-    BATTLE_LOSE,       // 战斗失败
-    BATTLE_PREPARING,  // 战斗准备
-    BATTLE_WIN         // 战斗胜利
+    BATTLE_GOING,      ///< 战斗进行中
+    BATTLE_LOSE,       ///< 战斗失败
+    BATTLE_PREPARING,  ///< 战斗准备
+    BATTLE_WIN         ///< 战斗胜利
 };
 
+/**
+ * @class MusicManager
+ * @brief 音乐管理器（单例）
+ */
 class MusicManager
 {
 public:
+    /**
+     * @brief 获取单例实例
+     * @return MusicManager& 单例引用
+     */
     static MusicManager& getInstance();
 
-    // 初始化音乐管理器
+    /** @brief 初始化音乐管理器 */
     void initialize();
 
-    // 播放指定类型的背景音乐
+    /**
+     * @brief 播放指定类型的背景音乐
+     * @param type 音乐类型
+     * @param loop 是否循环
+     */
     void playMusic(MusicType type, bool loop = true);
 
-    // 停止当前播放的音乐
+    /** @brief 停止当前播放的音乐 */
     void stopMusic();
 
-    // 暂停音乐
+    /** @brief 暂停音乐 */
     void pauseMusic();
 
-    // 恢复音乐
+    /** @brief 恢复音乐 */
     void resumeMusic();
 
-    // 设置音量 (0.0f - 1.0f)
+    /**
+     * @brief 设置音量
+     * @param volume 音量值 (0.0f - 1.0f)
+     */
     void setVolume(float volume);
 
-    // 获取当前音量
+    /** @brief 获取当前音量 */
     float getVolume() const;
 
-    // 设置是否静音
+    /**
+     * @brief 设置是否静音
+     * @param muted 是否静音
+     */
     void setMuted(bool muted);
 
-    // 获取是否静音
+    /** @brief 获取是否静音 */
     bool isMuted() const;
 
-    // 获取当前播放的音乐类型
+    /** @brief 获取当前播放的音乐类型 */
     MusicType getCurrentMusicType() const;
 
-    // 是否正在播放
+    /** @brief 是否正在播放 */
     bool isPlaying() const;
 
 private:
@@ -64,8 +87,8 @@ private:
 
     std::string getMusicPath(MusicType type) const;
 
-    int _currentAudioID = cocos2d::AudioEngine::INVALID_AUDIO_ID;
-    MusicType _currentMusicType = MusicType::BATTLE_PREPARING;
-    float _volume = 1.0f;
-    bool _muted = false;
+    int _currentAudioID = cocos2d::AudioEngine::INVALID_AUDIO_ID;  ///< 当前音频ID
+    MusicType _currentMusicType = MusicType::BATTLE_PREPARING;     ///< 当前音乐类型
+    float _volume = 1.0f;  ///< 音量
+    bool _muted = false;   ///< 是否静音
 };

@@ -7,44 +7,83 @@
  * License:       MIT License
  ****************************************************************/
 #pragma once
+
 #ifndef __CLAN_SERVICE_H__
 #define __CLAN_SERVICE_H__
 
 #include "ClanDataCache.h"
+
 #include <functional>
 #include <string>
 
-// 操作结果回调
 using OperationCallback = std::function<void(bool success, const std::string& message)>;
 
+/**
+ * @class ClanService
+ * @brief 部落服务层（单例）- 处理网络通信和业务逻辑
+ */
 class ClanService
 {
 public:
+    /**
+     * @brief 获取单例实例
+     * @return ClanService& 单例引用
+     */
     static ClanService& getInstance();
 
-    ClanService(const ClanService&)            = delete;
+    ClanService(const ClanService&) = delete;
     ClanService& operator=(const ClanService&) = delete;
 
-    // 连接服务器
+    /**
+     * @brief 连接服务器
+     * @param ip 服务器IP
+     * @param port 端口
+     * @param callback 回调
+     */
     void connect(const std::string& ip, int port, OperationCallback callback);
+
+    /** @brief 是否已连接 */
     bool isConnected() const;
 
-    // 数据请求
+    /** @brief 请求在线玩家列表 */
     void requestOnlinePlayers();
+
+    /** @brief 请求部落成员列表 */
     void requestClanMembers();
+
+    /** @brief 请求部落列表 */
     void requestClanList();
+
+    /** @brief 请求战斗状态 */
     void requestBattleStatus();
 
-    // 部落操作
+    /**
+     * @brief 创建部落
+     * @param clanName 部落名称
+     * @param callback 回调
+     */
     void createClan(const std::string& clanName, OperationCallback callback);
-    void joinClan(const std::string& clanId, OperationCallback callback);
-    void leaveClan(OperationCallback callback); // 🆕 退出部落
 
-    // 初始化（注册网络回调）
+    /**
+     * @brief 加入部落
+     * @param clanId 部落ID
+     * @param callback 回调
+     */
+    void joinClan(const std::string& clanId, OperationCallback callback);
+
+    /**
+     * @brief 退出部落
+     * @param callback 回调
+     */
+    void leaveClan(OperationCallback callback);
+
+    /** @brief 初始化（注册网络回调） */
     void initialize();
+
+    /** @brief 清理 */
     void cleanup();
 
-    // 同步本地账户的部落信息
+    /** @brief 同步本地账户的部落信息 */
     void syncLocalClanInfo();
 
 private:
@@ -55,15 +94,14 @@ private:
     void parseClanMembersData(const std::string& json);
     void parseBattleStatusData(const std::string& json);
 
-    // 临时回调存储
-    OperationCallback _connectCallback;
-    OperationCallback _createClanCallback;
-    OperationCallback _joinClanCallback;
-    OperationCallback _leaveClanCallback; // 🆕 退出部落回调
-    std::string       _pendingClanId;
-    std::string       _pendingClanName;
+    OperationCallback _connectCallback;     ///< 连接回调
+    OperationCallback _createClanCallback;  ///< 创建部落回调
+    OperationCallback _joinClanCallback;    ///< 加入部落回调
+    OperationCallback _leaveClanCallback;   ///< 退出部落回调
+    std::string _pendingClanId;             ///< 待处理部落ID
+    std::string _pendingClanName;           ///< 待处理部落名称
 
-    bool _initialized = false;
+    bool _initialized = false;  ///< 是否已初始化
 };
 
 #endif // __CLAN_SERVICE_H__

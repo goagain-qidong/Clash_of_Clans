@@ -7,10 +7,12 @@
  * License:       MIT License
  ****************************************************************/
 #pragma once
+
 #ifndef __MAP_CONTROLLER_H__
 #define __MAP_CONTROLLER_H__
 
 #include "cocos2d.h"
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -20,7 +22,7 @@ class GridMap;
 /**
  * @class MapController
  * @brief 地图控制器 - 负责地图的加载、切换、缩放和边界管理
- * 
+ *
  * 职责：
  * - 地图的加载和切换
  * - 地图的缩放和平移
@@ -31,95 +33,100 @@ class MapController : public cocos2d::Node
 {
 public:
     CREATE_FUNC(MapController);
-    
+
     virtual bool init() override;
-    
-    // ==================== 地图配置 ====================
+
+    /**
+     * @struct MapConfig
+     * @brief 地图配置
+     */
     struct MapConfig
     {
-        float scale;
-        cocos2d::Vec2 startPixel;
-        float tileSize;
+        float scale;                ///< 缩放比例
+        cocos2d::Vec2 startPixel;   ///< 起始像素位置
+        float tileSize;             ///< 瓦片大小
     };
-    
-    // ==================== 地图操作 ====================
-    
+
     /**
      * @brief 设置地图列表
+     * @param mapNames 地图文件名列表
      */
     void setMapNames(const std::vector<std::string>& mapNames);
-    
+
     /**
      * @brief 加载地图
      * @param mapName 地图文件名
-     * @return 是否成功加载
+     * @return bool 是否成功加载
      */
     bool loadMap(const std::string& mapName);
-    
+
     /**
      * @brief 切换地图
      * @param mapName 地图文件名
-     * @return 是否成功切换
+     * @return bool 是否成功切换
      */
     bool switchMap(const std::string& mapName);
-    
+
     /**
      * @brief 平移地图
+     * @param delta 位移量
      */
     void moveMap(const cocos2d::Vec2& delta);
-    
+
     /**
      * @brief 缩放地图
      * @param scaleFactor 缩放因子
-     * @param pivotPoint 缩放中心点（世界坐标）
+     * @param pivotPoint 缩放中心点
      */
     void zoomMap(float scaleFactor, const cocos2d::Vec2& pivotPoint = cocos2d::Vec2::ZERO);
-    
-    /**
-     * @brief 确保地图在边界内
-     */
+
+    /** @brief 确保地图在边界内 */
     void ensureMapInBoundary();
-    
-    // ==================== 访问器 ====================
-    
+
+    /** @brief 获取地图精灵 */
     cocos2d::Sprite* getMapSprite() const { return _mapSprite; }
+
+    /** @brief 获取网格地图 */
     GridMap* getGridMap() const { return _gridMap; }
+
+    /** @brief 获取当前地图名称 */
     const std::string& getCurrentMapName() const { return _currentMapName; }
+
+    /** @brief 获取当前缩放比例 */
     float getCurrentScale() const { return _currentScale; }
-    
-    // ==================== 地图配置 ====================
-    
+
     /**
      * @brief 设置地图配置
+     * @param mapName 地图名称
+     * @param config 配置
      */
     void setMapConfig(const std::string& mapName, const MapConfig& config);
-    
+
     /**
      * @brief 设置缩放限制
+     * @param minScale 最小缩放
+     * @param maxScale 最大缩放
      */
     void setScaleLimits(float minScale, float maxScale);
-    
+
 private:
-    // ==================== 地图数据 ====================
-    cocos2d::Sprite* _mapSprite = nullptr;
-    GridMap* _gridMap = nullptr;
-    
-    std::string _currentMapName;
-    std::vector<std::string> _mapNames;
-    std::unordered_map<std::string, MapConfig> _mapConfigs;
-    
-    // ==================== 缩放和边界 ====================
-    float _currentScale = 1.3f;
-    float _minScale = 0.7f;
-    float _maxScale = 2.5f;
-    cocos2d::Rect _mapBoundary;
-    cocos2d::Vec2 _gridStartDefault;
-    
-    cocos2d::Size _visibleSize;
-    
-    // ==================== 内部方法 ====================
-    void updateBoundary();
-    void initializeGrid(const MapConfig& config);
+    cocos2d::Sprite* _mapSprite = nullptr;  ///< 地图精灵
+    GridMap* _gridMap = nullptr;            ///< 网格地图
+
+    std::string _currentMapName;            ///< 当前地图名称
+    std::vector<std::string> _mapNames;     ///< 地图名称列表
+    std::unordered_map<std::string, MapConfig> _mapConfigs;  ///< 地图配置
+
+    float _currentScale = 1.3f;   ///< 当前缩放比例
+    float _minScale = 0.7f;       ///< 最小缩放
+    float _maxScale = 2.5f;       ///< 最大缩放
+    cocos2d::Rect _mapBoundary;   ///< 地图边界
+    cocos2d::Vec2 _gridStartDefault;  ///< 网格起始位置
+
+    cocos2d::Size _visibleSize;   ///< 可视区域大小
+
+    void updateBoundary();                          ///< 更新边界
+    void initializeGrid(const MapConfig& config);   ///< 初始化网格
 };
 
 #endif // __MAP_CONTROLLER_H__
