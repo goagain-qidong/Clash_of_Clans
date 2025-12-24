@@ -30,40 +30,48 @@ bool BuildingHealthBarUI::init(BaseBuilding* building)
         return false;
     }
 
-    _building        = building;
+    _building = building;
     _lastHealthValue = building->getHitpoints();
 
+    // 🆕 核心修复 1：根据建筑实际高度计算血条位置，而不是固定 20
+    // 确保血条显示在建筑“头顶”上方 15 像素处
+    float buildingHeight = building->getContentSize().height;
+    float posY = buildingHeight + 15.0f;
+
     // ==================== 创建血条背景（红色 - 已损伤部分） ====================
-    _healthBarBg = LayerColor::create(Color4B(200, 50, 50, 255), BAR_WIDTH, BAR_HEIGHT);
-    _healthBarBg->setPosition(Vec2(-BAR_WIDTH / 2.0f, OFFSET_Y));
+    _healthBarBg = LayerColor::create(Color4B(80, 0, 0, 255), BAR_WIDTH, BAR_HEIGHT); // 加深背景色，对比更明显
+    _healthBarBg->setPosition(Vec2(-BAR_WIDTH / 2.0f, posY));
     _healthBarBg->setAnchorPoint(Vec2(0.0f, 0.5f));
     this->addChild(_healthBarBg, 1);
 
     // ==================== 创建血条填充（绿色 - 剩余生命值） ====================
     _healthBarFill = LayerColor::create(Color4B(50, 200, 50, 255), BAR_WIDTH, BAR_HEIGHT);
-    _healthBarFill->setPosition(Vec2(-BAR_WIDTH / 2.0f, OFFSET_Y));
+    _healthBarFill->setPosition(Vec2(-BAR_WIDTH / 2.0f, posY));
     _healthBarFill->setAnchorPoint(Vec2(0.0f, 0.5f));
     this->addChild(_healthBarFill, 2);
 
     // ==================== 创建血量文字标签 ====================
     int currentHP = building->getHitpoints();
-    int maxHP     = building->getMaxHitpoints();
-    _healthLabel  = Label::createWithSystemFont(StringUtils::format("%d/%d", currentHP, maxHP), "Arial", 14);
-    _healthLabel->setPosition(Vec2(0.0f, OFFSET_Y + 15.0f));
+    int maxHP = building->getMaxHitpoints();
+    // 稍微调整文字位置，在血条上方一点点
+    _healthLabel = Label::createWithSystemFont(StringUtils::format("%d/%d", currentHP, maxHP), "Arial", 12); // 字体调小一点，免得遮挡
+    _healthLabel->setPosition(Vec2(0.0f, posY + 10.0f));
     _healthLabel->setTextColor(Color4B::WHITE);
+    // 给文字加个描边，防止在浅色背景下看不清
+    _healthLabel->enableOutline(Color4B::BLACK, 1);
     this->addChild(_healthLabel, 3);
 
     // ==================== 初始状态设置 ====================
-    // 血量满时不显示血条，受伤时才显示
-    if (currentHP >= maxHP)
-    {
-        this->setVisible(false);
-        _isVisible = false;
-    }
-    else
+    // 默认先隐藏，除非开启了 alwaysVisible (虽然 init 时通常还没开启，但逻辑上要严谨)
+    if (_alwaysVisible || currentHP < maxHP)
     {
         this->setVisible(true);
         _isVisible = true;
+    }
+    else
+    {
+        this->setVisible(false);
+        _isVisible = false;
     }
 
     // 启用每帧更新
@@ -80,71 +88,68 @@ void BuildingHealthBarUI::update(float dt)
         return;
     }
 
+    // 🆕 核心修复 2：战斗模式强制显示检查
+    // 如果处于战斗模式（_alwaysVisible为true），但当前不可见，强制显示
+    // 这解决了初始化时是满血（隐藏状态），进入战斗后未能及时显示的问题
+    if (_alwaysVisible && !_isVisible)
+    {
+        this->setVisible(true);
+        _isVisible = true;
+        this->setOpacity(255);
+    }
+
     int currentHP = _building->getHitpoints();
-    int maxHP     = _building->getMaxHitpoints();
+    int maxHP = _building->getMaxHitpoints();
 
     // ==================== 检测生命值变化 ====================
     if (currentHP != _lastHealthValue)
     {
         _lastHealthValue = currentHP;
-        _hideTimer       = 0.0f; // 重置隐藏计时器
+        _hideTimer = 0.0f; // 重置隐藏计时器
 
-        // 显示血条
-        if (!_isVisible && !_alwaysVisible)
+        // 显示血条（如果是第一次受伤）
+        if (!_isVisible)
         {
             this->setVisible(true);
             _isVisible = true;
-
-            // 播放血条出现动画
             this->setOpacity(0);
-            auto fadeIn = FadeIn::create(0.2f);
-            this->runAction(fadeIn);
+            this->runAction(FadeIn::create(0.2f));
         }
 
         // ==================== 更新血条填充宽度 ====================
         if (maxHP > 0)
         {
             float healthPercent = static_cast<float>(currentHP) / maxHP;
+            // 限制百分比在 0~1 之间
+            healthPercent = std::max(0.0f, std::min(1.0f, healthPercent));
+
             _healthBarFill->setContentSize(Size(BAR_WIDTH * healthPercent, BAR_HEIGHT));
 
             // 根据生命值百分比改变血条颜色
             if (healthPercent > 0.5f)
-            {
-                // 绿色：血量充足
-                _healthBarFill->setColor(Color3B(50, 200, 50));
-            }
+                _healthBarFill->setColor(Color3B(50, 200, 50)); // 绿
             else if (healthPercent > 0.25f)
-            {
-                // 黄色：血量不足
-                _healthBarFill->setColor(Color3B(255, 200, 50));
-            }
+                _healthBarFill->setColor(Color3B(255, 200, 50)); // 黄
             else
-            {
-                // 红色：血量严重不足
-                _healthBarFill->setColor(Color3B(255, 50, 50));
-            }
-
-            CCLOG("🩹 %s 受伤！HP: %d/%d (%.1f%%)", _building->getDisplayName().c_str(), currentHP, maxHP,
-                  healthPercent * 100);
+                _healthBarFill->setColor(Color3B(255, 50, 50)); // 红
         }
 
         // ==================== 更新血量文字 ====================
         _healthLabel->setString(StringUtils::format("%d/%d", currentHP, maxHP));
     }
 
-    // ==================== 血量恢复满后自动隐藏（不是战斗状态时） ====================
+    // ==================== 只有在非战斗模式下，才会在满血时自动隐藏 ====================
     if (!_alwaysVisible && currentHP >= maxHP)
     {
         _hideTimer += dt;
 
         if (_hideTimer >= HIDE_DELAY && _isVisible)
         {
-            // 播放血条消失动画
-            auto fadeOut  = FadeOut::create(0.3f);
+            _isVisible = false; // 先标记为不可见，防止 update 每一帧都创建 Action
+            auto fadeOut = FadeOut::create(0.3f);
             auto callback = CallFunc::create([this]() {
                 this->setVisible(false);
-                _isVisible = false;
-            });
+                });
             this->runAction(Sequence::create(fadeOut, callback, nullptr));
         }
     }
@@ -152,29 +157,23 @@ void BuildingHealthBarUI::update(float dt)
 
 void BuildingHealthBarUI::show()
 {
-    if (!_isVisible)
-    {
-        this->setVisible(true);
-        _isVisible = true;
-        this->setOpacity(255);
-    }
+    _isVisible = true;
+    this->setVisible(true);
+    this->setOpacity(255);
+    // 重置 timer 防止刚显示就被 update 里的逻辑隐藏
+    _hideTimer = 0.0f;
 }
 
 void BuildingHealthBarUI::hide()
 {
-    if (_isVisible)
-    {
-        this->setVisible(false);
-        _isVisible = false;
-    }
+    _isVisible = false;
+    this->setVisible(false);
 }
 
 bool BuildingHealthBarUI::isBuildingDestroyed() const
 {
-    if (!_building)
-    {
-        return true;
-    }
-
+    if (!_building) return true;
+    // 增加安全性检查：如果建筑已经被 cleanup 或者引用计数异常，视为销毁
+    if (_building->getReferenceCount() <= 0) return true;
     return _building->isDestroyed();
 }

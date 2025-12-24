@@ -77,12 +77,15 @@ bool ArmyBuilding::init(int level)
         return false;
     }
 
-    // ✅ 【新增】设置兵营生命值
+    // 置兵营生命值
     int idx = std::min(level, (int)(sizeof(BARRACKS_HP) / sizeof(int) - 1));
     int hp  = BARRACKS_HP[idx];
     setMaxHitpoints(hp);
 
     CCLOG("⚔️ %s 初始化 HP: %d", getDisplayName().c_str(), hp);
+
+    // 初始化血条UI
+    initHealthBarUI();
 
     return true;
 }

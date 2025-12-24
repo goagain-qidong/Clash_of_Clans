@@ -1,15 +1,11 @@
-﻿/************************************************************************/
-/* BattleUI.cpp                                                          */
-/*                                                                      */
-/* Implementation of the BattleUI class, responsible for managing the   */
-/* battle-related UI in the game, including troop selection, battle     */
-/* status, and results display.                                           */
-/*                                                                      */
-/* Author: Zhao Chongzhi                                                */
-/* Date: 2025/12/14                                                      */
-/*                                                                      */
-/* License: MIT License                                                 */
-/************************************************************************/
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     BattleUI.cpp
+ * File Function: 战斗界面 - 负责管理游戏中的战斗相关UI
+ * Author:        赵崇治
+ * Update Date:   2025/12/24
+ * License:       MIT License
+ ****************************************************************/
 
 #include "BattleUI.h"
 
@@ -750,13 +746,27 @@ void BattleUI::setEndBattleButtonText(const std::string& text)
         // 如果是退出回放，更换按钮背景以避免与 end_battle.png 的文字重叠
         if (text == "退出回放")
         {
+            // 隐藏文字，只显示图标/背景
+            _endBattleButton->setTitleText("");
+
             // 使用 return_button.png 作为背景（假设它是一个通用的按钮背景）
             _endBattleButton->loadTextures("icon/return_button.png", "icon/return_button.png", "");
 
-            // 调整按钮大小和缩放
-            _endBattleButton->ignoreContentAdaptWithSize(false);
-            _endBattleButton->setContentSize(Size(120, 50));
-            _endBattleButton->setScale(1.0f);
+            // 使用缩放而不是强制设置大小，避免图片变形
+            _endBattleButton->ignoreContentAdaptWithSize(true);
+
+            if (_endBattleButton->getContentSize().width > 0)
+            {
+                // 保持宽度为 120 左右，自适应高度
+                _endBattleButton->setScale(120.0f / _endBattleButton->getContentSize().width);
+            }
+            else
+            {
+                // 如果图片加载失败，回退到固定大小
+                _endBattleButton->ignoreContentAdaptWithSize(false);
+                _endBattleButton->setContentSize(Size(120, 50));
+                _endBattleButton->setScale(1.0f);
+            }
         }
     }
 }
