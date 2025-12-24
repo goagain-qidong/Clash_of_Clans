@@ -11,63 +11,65 @@
 
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
+
 #include <functional>
 
 /**
  * @class SettingsPanel
  * @brief 游戏设置面板
- * 
+ *
  * 职责：
- * - 音量控制（音乐和音效）
+ * - 音量控制
  * - 账号切换
  * - 退出登录
- * - 测试功能（资源全满）
+ * - 测试功能
  */
 class SettingsPanel : public cocos2d::Node
 {
 public:
     CREATE_FUNC(SettingsPanel);
-    
+
     virtual bool init() override;
-    
-    // 显示/隐藏面板
+
+    /** @brief 显示面板 */
     void show();
+
+    /** @brief 隐藏面板 */
     void hide();
-    
-    // 回调设置
+
+    /** @brief 设置账号切换回调 */
     void setOnAccountSwitched(const std::function<void()>& callback) { _onAccountSwitched = callback; }
+
+    /** @brief 设置登出回调 */
     void setOnLogout(const std::function<void()>& callback) { _onLogout = callback; }
+
+    /** @brief 设置地图切换回调 */
     void setOnMapChanged(const std::function<void(const std::string&)>& callback) { _onMapChanged = callback; }
-    
+
 private:
-    cocos2d::Size _visibleSize;
-    
-    // UI元素
-    cocos2d::ui::Layout* _panel = nullptr;
-    cocos2d::ui::Button* _closeButton = nullptr;
-    
-    // 音量控制
-    cocos2d::ui::Slider* _musicSlider = nullptr;
-    cocos2d::ui::Slider* _sfxSlider = nullptr;
-    cocos2d::Label* _musicValueLabel = nullptr;
-    cocos2d::Label* _sfxValueLabel = nullptr;
-    
-    // 功能按钮
-    cocos2d::ui::Button* _mapSwitchButton = nullptr;
-    cocos2d::ui::Button* _accountSwitchButton = nullptr;
-    cocos2d::ui::Button* _logoutButton = nullptr;
-    cocos2d::ui::Button* _fullResourceButton = nullptr;
-    
-    // 回调
-    std::function<void()> _onAccountSwitched;
-    std::function<void()> _onLogout;
-    std::function<void(const std::string&)> _onMapChanged;
-    
-    // 内部方法
+    cocos2d::Size _visibleSize;  ///< 可视区域大小
+
+    cocos2d::ui::Layout* _panel = nullptr;       ///< 面板
+    cocos2d::ui::Button* _closeButton = nullptr; ///< 关闭按钮
+
+    cocos2d::ui::Slider* _musicSlider = nullptr;   ///< 音乐滑块
+    cocos2d::ui::Slider* _sfxSlider = nullptr;     ///< 音效滑块
+    cocos2d::Label* _musicValueLabel = nullptr;    ///< 音乐值标签
+    cocos2d::Label* _sfxValueLabel = nullptr;      ///< 音效值标签
+
+    cocos2d::ui::Button* _mapSwitchButton = nullptr;     ///< 地图切换按钮
+    cocos2d::ui::Button* _accountSwitchButton = nullptr; ///< 账号切换按钮
+    cocos2d::ui::Button* _logoutButton = nullptr;        ///< 登出按钮
+    cocos2d::ui::Button* _fullResourceButton = nullptr;  ///< 资源全满按钮
+
+    std::function<void()> _onAccountSwitched;  ///< 账号切换回调
+    std::function<void()> _onLogout;           ///< 登出回调
+    std::function<void(const std::string&)> _onMapChanged;  ///< 地图切换回调
+
     void setupUI();
     void setupVolumeControls(float startY);
     void setupFunctionButtons(float startY);
-    
+
     void onCloseClicked();
     void onMusicVolumeChanged(cocos2d::Ref* sender, cocos2d::ui::Slider::EventType type);
     void onSFXVolumeChanged(cocos2d::Ref* sender, cocos2d::ui::Slider::EventType type);
@@ -75,7 +77,7 @@ private:
     void onAccountSwitchClicked();
     void onLogoutClicked();
     void onFullResourceClicked();
-    
+
     void showMapSelectionPanel();
     void showAccountList();
     void showPasswordDialog(const std::string& userId, const std::string& username);

@@ -88,13 +88,8 @@ public:
 
 private:
     BuildingLimitManager();
-    
-    // 上限表：建筑名 -> 最大数量（-1 表示无限制）
-    std::map<std::string, int> _limits;
-    
-    // 计数表：建筑名 -> 当前数量
-    std::map<std::string, int> _buildingCounts;
-    
-    // 大本营等级缓存
-    int _cachedTownHallLevel = 1;
+
+    std::map<std::string, int> _limits;          ///< 上限表：建筑名 -> 最大数量
+    std::map<std::string, int> _buildingCounts;  ///< 计数表：建筑名 -> 当前数量
+    int _cachedTownHallLevel = 1;                ///< 大本营等级缓存
 };

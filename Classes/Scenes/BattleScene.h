@@ -1,5 +1,4 @@
 ﻿/****************************************************************
-/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     BattleScene.h
  * File Function: 战斗场景
@@ -24,7 +23,6 @@
 #include <string>
 #include <vector>
 
-// Forward declarations
 class BuildingManager;
 class GridMap;
 class BaseBuilding;
@@ -32,121 +30,119 @@ class BaseBuilding;
 /**
  * @class BattleScene
  * @brief 战斗场景 - 异步多人游戏攻击场景
- * 
+ *
  * 功能：
- * 1. 加载敌方基地布局（从 AccountGameData）
- * 2. 部署己方士兵进行攻击
- * 3. 计算战斗结果（星数、掠夺资源）
- * 4. 上传战斗结果到服务器（可选）
+ * - 加载敌方基地布局
+ * - 部署己方士兵进行攻击
+ * - 计算战斗结果
+ * - 上传战斗结果到服务器
  */
 class BattleScene : public cocos2d::Scene {
 public:
     /**
      * @brief 创建战斗场景
+     * @return cocos2d::Scene* 场景指针
      */
     static cocos2d::Scene* createScene();
-    
+
     /**
      * @brief 创建战斗场景（带敌方数据）
      * @param enemyData 敌方玩家的基地数据
+     * @return BattleScene* 场景指针
      */
     static BattleScene* createWithEnemyData(const AccountGameData& enemyData);
 
     /**
-     * @brief 创建战斗场景（带敌方数据）
+     * @brief 创建战斗场景（带敌方数据和ID）
      * @param enemyData 敌方玩家的基地数据
      * @param enemyUserId 敌方玩家ID
+     * @return BattleScene* 场景指针
      */
     static BattleScene* createWithEnemyData(const AccountGameData& enemyData, const std::string& enemyUserId);
-    
+
     /**
      * @brief 创建战斗回放场景
      * @param replayDataStr 序列化的回放数据
+     * @return BattleScene* 场景指针
      */
     static BattleScene* createWithReplayData(const std::string& replayDataStr);
 
     virtual bool init() override;
-    
-    /**
-     * @brief 初始化战斗场景（带敌方数据）
-     * @param enemyData 敌方玩家的基地数据
-     */
-    virtual bool initWithEnemyData(const AccountGameData& enemyData);
 
     /**
      * @brief 初始化战斗场景（带敌方数据）
      * @param enemyData 敌方玩家的基地数据
+     * @return bool 是否成功
+     */
+    virtual bool initWithEnemyData(const AccountGameData& enemyData);
+
+    /**
+     * @brief 初始化战斗场景（带敌方数据和ID）
+     * @param enemyData 敌方玩家的基地数据
      * @param enemyUserId 敌方玩家ID
+     * @return bool 是否成功
      */
     virtual bool initWithEnemyData(const AccountGameData& enemyData, const std::string& enemyUserId);
-    
+
     /**
      * @brief 初始化战斗回放场景
+     * @param replayDataStr 回放数据
+     * @return bool 是否成功
      */
     virtual bool initWithReplayData(const std::string& replayDataStr);
 
     virtual void update(float dt) override;
     virtual void onEnter() override;
     virtual void onExit() override;
-    
-    // 🆕 PVP Configuration
+
+    /**
+     * @brief 设置PVP模式
+     * @param isAttacker 是否为攻击者
+     */
     void setPvpMode(bool isAttacker);
 
 private:
     BattleScene();
     ~BattleScene();
-    
-    // ==================== 场景元素 ====================
-    cocos2d::Size _visibleSize;
-    cocos2d::Sprite* _mapSprite = nullptr;
-    GridMap* _gridMap = nullptr;
-    BuildingManager* _buildingManager = nullptr;
-    BattleUI* _battleUI = nullptr;
-    BattleManager* _battleManager = nullptr; // 🆕 BattleManager instance
-    
-    // ==================== 触摸控制相关 ====================
-    cocos2d::Vec2 _lastTouchPos;
-    bool _isDragging = false;
-    float _timeScale = 1.0f;
-    
-    // 🆕 多点触控缩放
-    std::map<int, cocos2d::Vec2> _activeTouches;
-    bool _isPinching = false;
-    float _prevPinchDistance = 0.0f;
 
-    // ==================== 士兵部署数据 ====================
-    UnitType _selectedUnitType = UnitType::kBarbarian;
-    
-    // ==================== 初始化方法 ====================
-    void setupMap();
-    void setupUI();
-    void setupTouchListeners();
-    
-    // ==================== 交互逻辑 ====================
-    void onTroopSelected(UnitType type);
-    void onTroopDeselected();  // 🆕 取消选中处理
-    void returnToMainScene();
-    void toggleSpeed();
+    cocos2d::Size _visibleSize;               ///< 可视区域大小
+    cocos2d::Sprite* _mapSprite = nullptr;    ///< 地图精灵
+    GridMap* _gridMap = nullptr;              ///< 网格地图
+    BuildingManager* _buildingManager = nullptr;  ///< 建筑管理器
+    BattleUI* _battleUI = nullptr;            ///< 战斗UI
+    BattleManager* _battleManager = nullptr;  ///< 战斗管理器
 
-    // ==================== 地图控制 ====================
-    cocos2d::Rect _mapBoundary;
-    void updateBoundary();
-    void ensureMapInBoundary();
+    cocos2d::Vec2 _lastTouchPos;  ///< 上次触摸位置
+    bool _isDragging = false;     ///< 是否在拖拽
+    float _timeScale = 1.0f;      ///< 时间缩放
 
-    // ==================== 🆕 战斗模式血条管理 ====================
-    /**
-     * @brief 启用所有防御建筑的战斗模式和血条显示
-     */
+    std::map<int, cocos2d::Vec2> _activeTouches;  ///< 活动触摸点
+    bool _isPinching = false;         ///< 是否在缩放
+    float _prevPinchDistance = 0.0f;  ///< 上次缩放距离
+
+    UnitType _selectedUnitType = UnitType::kBarbarian;  ///< 选中的单位类型
+
+    void setupMap();             ///< 设置地图
+    void setupUI();              ///< 设置UI
+    void setupTouchListeners();  ///< 设置触摸监听器
+
+    void onTroopSelected(UnitType type);  ///< 选中部队
+    void onTroopDeselected();             ///< 取消选中
+    void returnToMainScene();             ///< 返回主场景
+    void toggleSpeed();                   ///< 切换速度
+
+    cocos2d::Rect _mapBoundary;   ///< 地图边界
+    void updateBoundary();        ///< 更新边界
+    void ensureMapInBoundary();   ///< 确保地图在边界内
+
+    /** @brief 启用所有建筑的战斗模式 */
     void enableAllBuildingsBattleMode();
 
-    /**
-     * @brief 禁用所有防御建筑的战斗模式并重置血量
-     */
+    /** @brief 禁用所有建筑的战斗模式 */
     void disableAllBuildingsBattleMode();
-    
-    // PVP State
-    bool _isPvpMode = false;
-    bool _isAttacker = false;
+
+    bool _isPvpMode = false;   ///< 是否为PVP模式
+    bool _isAttacker = false;  ///< 是否为攻击者
 };
 
 #endif  // BATTLE_SCENE_H_

@@ -10,7 +10,6 @@
 
 #include <string>
 
-// 前向声明
 class BaseBuilding;
 class ResourceManager;
 class UpgradeManager;
@@ -21,15 +20,15 @@ class UpgradeManager;
  */
 enum class UpgradeError
 {
-    kSuccess,            // 成功
-    kMaxLevel,           // 已达最高等级
-    kAlreadyUpgrading,   // 已在升级中
-    kNotEnoughGold,      // 金币不足
-    kNotEnoughElixir,    // 圣水不足
-    kNotEnoughGem,       // 宝石不足（新增）
-    kNoAvailableBuilder, // 无空闲工人
-    kStartUpgradeFailed, // 启动升级失败
-    kUnknownError        // 未知错误
+    kSuccess,            ///< 成功
+    kMaxLevel,           ///< 已达最高等级
+    kAlreadyUpgrading,   ///< 已在升级中
+    kNotEnoughGold,      ///< 金币不足
+    kNotEnoughElixir,    ///< 圣水不足
+    kNotEnoughGem,       ///< 宝石不足
+    kNoAvailableBuilder, ///< 无空闲工人
+    kStartUpgradeFailed, ///< 启动升级失败
+    kUnknownError        ///< 未知错误
 };
 
 /**
@@ -38,18 +37,24 @@ enum class UpgradeError
  */
 struct UpgradeResult
 {
-    bool success;             // 是否成功
-    UpgradeError error;       // 错误码
-    std::string message;      // 错误信息
-    
+    bool success;          ///< 是否成功
+    UpgradeError error;    ///< 错误码
+    std::string message;   ///< 错误信息
+
     UpgradeResult(bool s, UpgradeError e, const std::string& msg = "")
         : success(s), error(e), message(msg) {}
-    
-    // 便捷构造函数
+
+    /** @brief 创建成功结果 */
     static UpgradeResult Success() {
         return UpgradeResult(true, UpgradeError::kSuccess, "");
     }
-    
+
+    /**
+     * @brief 创建失败结果
+     * @param err 错误码
+     * @param msg 错误信息
+     * @return UpgradeResult 失败结果
+     */
     static UpgradeResult Failure(UpgradeError err, const std::string& msg) {
         return UpgradeResult(false, err, msg);
     }
@@ -58,45 +63,43 @@ struct UpgradeResult
 /**
  * @class BuildingUpgradeService
  * @brief 建筑升级服务类（单例）
- * 
+ *
  * 职责：
  * - 统一处理建筑升级的业务逻辑
- * - 检查升级前置条件（等级、资源、工人）
- * - 执行升级流程（扣除资源、分配工人、启动倒计时）
+ * - 检查升级前置条件
+ * - 执行升级流程
  * - 提供结构化的错误信息
- * 
- * 设计原则：
- * - 单一职责：只处理升级相关的业务逻辑
- * - 依赖注入：通过构造函数注入 ResourceManager 和 UpgradeManager
- * - 错误处理：返回结构化的 UpgradeResult，而不是简单的 bool
  */
 class BuildingUpgradeService
 {
 public:
-    static BuildingUpgradeService& getInstance();
-    
     /**
-     * @brief 检查建筑是否可以升级（不修改任何状态）
+     * @brief 获取单例实例
+     * @return BuildingUpgradeService& 单例引用
+     */
+    static BuildingUpgradeService& getInstance();
+
+    /**
+     * @brief 检查建筑是否可以升级
      * @param building 要检查的建筑
-     * @return 是否可以升级
+     * @return bool 是否可以升级
      */
     bool canUpgrade(const BaseBuilding* building) const;
-    
+
     /**
-     * @brief 尝试升级建筑（执行完整的升级流程）
+     * @brief 尝试升级建筑
      * @param building 要升级的建筑
-     * @return 升级结果（包含成功/失败状态、错误码、错误信息）
+     * @return UpgradeResult 升级结果
      */
     UpgradeResult tryUpgrade(BaseBuilding* building);
-    
+
 private:
     BuildingUpgradeService();
     BuildingUpgradeService(const BuildingUpgradeService&) = delete;
     BuildingUpgradeService& operator=(const BuildingUpgradeService&) = delete;
-    
-    // 检查各个前置条件
-    bool checkLevel(const BaseBuilding* building) const;
-    bool checkUpgrading(const BaseBuilding* building) const;
-    bool checkResource(const BaseBuilding* building) const;
-    bool checkBuilder(const BaseBuilding* building) const;
+
+    bool checkLevel(const BaseBuilding* building) const;     ///< 检查等级
+    bool checkUpgrading(const BaseBuilding* building) const; ///< 检查升级状态
+    bool checkResource(const BaseBuilding* building) const;  ///< 检查资源
+    bool checkBuilder(const BaseBuilding* building) const;   ///< 检查工人
 };
