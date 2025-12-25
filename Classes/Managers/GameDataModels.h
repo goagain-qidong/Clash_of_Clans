@@ -2,7 +2,7 @@
  * Project Name:  Clash_of_Clans
  * File Name:     GameDataModels.h
  * File Function: 游戏数据模型定义（纯数据结构）
- * Author:        赵崇治
+ * Author:        赵崇治、薛毓哲
  * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
@@ -26,6 +26,20 @@ struct BuildingSerialData
     float       gridY      = 0.0f;
     float       gridWidth  = 1.0f;
     float       gridHeight = 1.0f;
+};
+
+/**
+ * @struct UpgradeTaskSerialData
+ * @brief 升级任务序列化数据（用于保存/加载升级进度）
+ */
+struct UpgradeTaskSerialData
+{
+    float gridX       = 0.0f;   ///< 建筑网格X坐标
+    float gridY       = 0.0f;   ///< 建筑网格Y坐标
+    float totalTime   = 0.0f;   ///< 总升级时间（秒）
+    float elapsedTime = 0.0f;   ///< 已经过的时间（秒）
+    int   cost        = 0;      ///< 升级费用
+    bool  useBuilder  = true;   ///< 是否占用工人
 };
 
 /**
@@ -60,10 +74,11 @@ struct PlayerProgressData
  */
 struct GameStateData
 {
-    ResourceData                    resources;
-    PlayerProgressData              progress;
-    std::string                     troopInventoryJson;
-    std::vector<BuildingSerialData> buildings;
+    ResourceData                       resources;
+    PlayerProgressData                 progress;
+    std::string                        troopInventoryJson;
+    std::vector<BuildingSerialData>    buildings;
+    std::vector<UpgradeTaskSerialData> upgradeTasks;  ///< 升级任务列表
 
     // ==================== 向后兼容访问器（用于旧代码）====================
 

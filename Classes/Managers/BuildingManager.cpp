@@ -1,11 +1,12 @@
 ﻿/****************************************************************
- * Project Name:  Clash_of_Clans
- * File Name:     BuildingManager.cpp
- * File Function: 建筑管理器实现
- * Author:        赵崇治、薛毓哲
- * Update Date:   2025/12/24
- * License:       MIT License
- ****************************************************************/
+* Project Name:  Clash_of_Clans
+* File Name:     BuildingManager.cpp
+* File Function: 建筑管理器实现
+* Author:        赵崇治、薛毓哲
+* Update Date:   2025/12/24
+* Modified By:   薛毓哲 (2025/12/24) - 添加升级任务持久化支持
+* License:       MIT License
+****************************************************************/
 #include "BuildingManager.h"
 #include "Managers/UpgradeManager.h"
 #include "Managers/TroopInventory.h"
@@ -904,7 +905,8 @@ void BuildingManager::clearAllBuildings(bool clearTroops)
     // 非只读模式下清除单例管理器状态
     if (!_isReadOnlyMode)
     {
-        UpgradeManager::getInstance()->clearAllUpgradeTasks();
+        // 注意：不再在这里清除升级任务，升级任务会在 loadCurrentAccountState 中恢复
+        // UpgradeManager::getInstance()->clearAllUpgradeTasks();
         
         ResourceCollectionManager::getInstance()->clearRegisteredBuildings();
         BuildingCapacityManager::getInstance().clearAllBuildings();
@@ -939,6 +941,23 @@ void BuildingManager::saveCurrentState()
     
     auto& troopInv = TroopInventory::getInstance();
     gameData.troopInventory = troopInv.toJson();
+    
+    // 保存升级任务状态
+    auto upgradeTasks = UpgradeManager::getInstance()->serializeUpgradeTasks();
+    gameData.upgradeTasks.clear();
+    for (const auto& task : upgradeTasks)
+    {
+        UpgradeTaskSerialData serialData;
+        serialData.gridX = task.gridX;
+        serialData.gridY = task.gridY;
+        serialData.totalTime = task.totalTime;
+        serialData.elapsedTime = task.elapsedTime;
+        serialData.cost = task.cost;
+        serialData.useBuilder = task.useBuilder;
+        gameData.upgradeTasks.push_back(serialData);
+    }
+    
+    CCLOG("[BuildingManager] Saved %zu upgrade tasks", gameData.upgradeTasks.size());
     
     for (auto* building : _buildings)
     {
@@ -988,6 +1007,26 @@ void BuildingManager::loadCurrentAccountState()
     resMgr.setResourceCount(ResourceType::kGold, gameData.gold);
     resMgr.setResourceCount(ResourceType::kElixir, gameData.elixir);
     resMgr.setResourceCount(ResourceType::kGem, gameData.gems);
+    
+    // 5. 恢复升级任务
+    if (!gameData.upgradeTasks.empty())
+    {
+        std::vector<UpgradeTaskData> tasksData;
+        for (const auto& serialData : gameData.upgradeTasks)
+        {
+            UpgradeTaskData taskData;
+            taskData.gridX = serialData.gridX;
+            taskData.gridY = serialData.gridY;
+            taskData.totalTime = serialData.totalTime;
+            taskData.elapsedTime = serialData.elapsedTime;
+            taskData.cost = serialData.cost;
+            taskData.useBuilder = serialData.useBuilder;
+            tasksData.push_back(taskData);
+        }
+        
+        CCLOG("[BuildingManager] Restoring %zu upgrade tasks", tasksData.size());
+        UpgradeManager::getInstance()->restoreUpgradeTasks(tasksData, _buildings);
+    }
 }
 
 bool BuildingManager::loadPlayerBase(const std::string& userId)

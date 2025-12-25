@@ -3,16 +3,35 @@
  * File Name:     UpgradeManager.h
  * File Function: 建筑升级管理器（处理升级队列、工人分配、倒计时）
  * Author:        薛毓哲
- * Update Date:   2025/12/08
+ * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
 #pragma once
 #include "cocos2d.h"
 #include <vector>
 #include <functional>
+#include <string>
 
 // 前向声明
 class BaseBuilding;
+
+/**
+ * @struct UpgradeTaskData
+ * @brief 升级任务序列化数据（用于保存/加载）
+ */
+struct UpgradeTaskData
+{
+    std::string buildingName;    ///< 建筑名称（用于匹配）
+    float gridX;                 ///< 建筑网格X坐标
+    float gridY;                 ///< 建筑网格Y坐标
+    float totalTime;             ///< 总升级时间（秒）
+    float elapsedTime;           ///< 已经过的时间（秒）
+    int cost;                    ///< 升级费用
+    bool useBuilder;             ///< 是否占用工人
+    
+    UpgradeTaskData()
+        : gridX(0), gridY(0), totalTime(0), elapsedTime(0), cost(0), useBuilder(true) {}
+};
 
 /**
  * @struct UpgradeTask
@@ -123,6 +142,22 @@ virtual bool init() override;
      * @brief 清理所有升级任务（场景切换时调用，防止野指针）
      */
     void clearAllUpgradeTasks();
+    
+    // ==================== 序列化接口 ====================
+    
+    /**
+     * @brief 序列化所有升级任务（保存状态）
+     * @return 升级任务数据列表
+     */
+    std::vector<UpgradeTaskData> serializeUpgradeTasks() const;
+    
+    /**
+     * @brief 恢复升级任务（加载状态）
+     * @param tasksData 升级任务数据列表
+     * @param buildings 当前场景中的建筑列表
+     */
+    void restoreUpgradeTasks(const std::vector<UpgradeTaskData>& tasksData,
+                             const cocos2d::Vector<BaseBuilding*>& buildings);
     
     // ==================== 回调接口 ====================
     

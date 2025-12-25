@@ -2,7 +2,7 @@
  * Project Name:  Clash_of_Clans
  * File Name:     GameDataSerializer.h
  * File Function: 游戏数据序列化器
- * Author:        赵崇治
+ * Author:        赵崇治、薛毓哲
  * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
@@ -43,6 +43,32 @@ public:
         data.gridHeight = reader.readFloat("gridHeight", 1.0f);
         return data;
     }
+    
+    // ==================== UpgradeTaskSerialData ====================
+    static rapidjson::Value serializeUpgradeTask(const UpgradeTaskSerialData& data, JsonSerializer::Allocator& alloc)
+    {
+        return JsonSerializer::Writer(alloc)
+            .write("gridX", data.gridX)
+            .write("gridY", data.gridY)
+            .write("totalTime", data.totalTime)
+            .write("elapsedTime", data.elapsedTime)
+            .write("cost", data.cost)
+            .write("useBuilder", data.useBuilder)
+            .build();
+    }
+
+    static UpgradeTaskSerialData deserializeUpgradeTask(const rapidjson::Value& obj)
+    {
+        JsonSerializer::Reader reader(obj);
+        UpgradeTaskSerialData  data;
+        data.gridX       = reader.readFloat("gridX");
+        data.gridY       = reader.readFloat("gridY");
+        data.totalTime   = reader.readFloat("totalTime");
+        data.elapsedTime = reader.readFloat("elapsedTime");
+        data.cost        = reader.readInt("cost");
+        data.useBuilder  = reader.readBool("useBuilder", true);
+        return data;
+    }
 
     // ==================== GameStateData ====================
     static std::string serializeGameState(const GameStateData& state)
@@ -81,6 +107,14 @@ public:
             buildingsArr.PushBack(serializeBuilding(building, alloc), alloc);
         }
         doc.AddMember("buildings", buildingsArr, alloc);
+        
+        // 升级任务列表
+        rapidjson::Value upgradeTasksArr(rapidjson::kArrayType);
+        for (const auto& task : state.upgradeTasks)
+        {
+            upgradeTasksArr.PushBack(serializeUpgradeTask(task, alloc), alloc);
+        }
+        doc.AddMember("upgradeTasks", upgradeTasksArr, alloc);
 
         return JsonSerializer::stringify(doc);
     }
@@ -121,6 +155,9 @@ public:
 
         // 建筑列表
         state.buildings = reader.readArray<BuildingSerialData>("buildings", deserializeBuilding);
+        
+        // 升级任务列表
+        state.upgradeTasks = reader.readArray<UpgradeTaskSerialData>("upgradeTasks", deserializeUpgradeTask);
 
         return state;
     }

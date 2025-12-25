@@ -3,13 +3,14 @@
  * File Name:     UpgradeManager.cpp
  * File Function: 建筑升级管理器实现
  * Author:        薛毓哲
- * Update Date:   2025/12/08
+ * Update Date:   2025/12/24
  * License:       MIT License
  ****************************************************************/
 #include "UpgradeManager.h"
 #include "ResourceManager.h"
 #include "Buildings/BaseBuilding.h"
 #include <algorithm>
+#include <cmath>
 
 USING_NS_CC;
 
@@ -324,8 +325,90 @@ void UpgradeManager::update(float dt)
 
 void UpgradeManager::clearAllUpgradeTasks()
 {
-    CCLOG("🧹 UpgradeManager: 清理所有升级任务（共 %d 个），防止野指针", (int)_upgradeTasks.size());
+    CCLOG("[UpgradeManager] Clearing all upgrade tasks (%d tasks)", (int)_upgradeTasks.size());
     _upgradeTasks.clear();
+    
+    // 通知UI更新工人数量
+    if (_onAvailableBuildersChanged)
+    {
+        _onAvailableBuildersChanged(getAvailableBuilders());
+    }
+}
+
+std::vector<UpgradeTaskData> UpgradeManager::serializeUpgradeTasks() const
+{
+    std::vector<UpgradeTaskData> result;
+    
+    for (const auto& task : _upgradeTasks)
+    {
+        if (!task.building)
+            continue;
+            
+        UpgradeTaskData data;
+        data.buildingName = task.building->getDisplayName();
+        data.gridX = task.building->getGridPosition().x;
+        data.gridY = task.building->getGridPosition().y;
+        data.totalTime = task.totalTime;
+        data.elapsedTime = task.elapsedTime;
+        data.cost = task.cost;
+        data.useBuilder = task.useBuilder;
+        
+        result.push_back(data);
+        
+        CCLOG("[UpgradeManager] Serialized upgrade task: %s at (%.0f, %.0f), progress: %.1f%%",
+              data.buildingName.c_str(), data.gridX, data.gridY,
+              (data.elapsedTime / data.totalTime) * 100.0f);
+    }
+    
+    return result;
+}
+
+void UpgradeManager::restoreUpgradeTasks(const std::vector<UpgradeTaskData>& tasksData,
+                                          const cocos2d::Vector<BaseBuilding*>& buildings)
+{
+    // 先清除旧任务
+    _upgradeTasks.clear();
+    
+    for (const auto& data : tasksData)
+    {
+        // 根据名称和位置找到对应的建筑
+        BaseBuilding* matchedBuilding = nullptr;
+        
+        for (auto* building : buildings)
+        {
+            if (!building)
+                continue;
+                
+            // 匹配位置（允许小误差）
+            auto gridPos = building->getGridPosition();
+            if (std::abs(gridPos.x - data.gridX) < 0.5f &&
+                std::abs(gridPos.y - data.gridY) < 0.5f)
+            {
+                matchedBuilding = building;
+                break;
+            }
+        }
+        
+        if (matchedBuilding)
+        {
+            // 恢复升级任务
+            UpgradeTask task(matchedBuilding, data.totalTime, data.cost, data.useBuilder);
+            task.elapsedTime = data.elapsedTime;
+            _upgradeTasks.push_back(task);
+            
+            // 标记建筑为升级中
+            matchedBuilding->setUpgrading(true);
+            
+            CCLOG("[UpgradeManager] Restored upgrade task: %s, remaining: %.1fs",
+                  matchedBuilding->getDisplayName().c_str(),
+                  task.getRemainingTime());
+        }
+        else
+        {
+            CCLOG("[UpgradeManager] Warning: Could not find building for upgrade task at (%.0f, %.0f)",
+                  data.gridX, data.gridY);
+        }
+    }
     
     // 通知UI更新工人数量
     if (_onAvailableBuildersChanged)
