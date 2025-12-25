@@ -276,20 +276,33 @@ void UpgradeManager::releaseBuilder()
 
 void UpgradeManager::completeUpgrade(UpgradeTask& task)
 {
-    if (!task.building) return;
+    if (!task.building)
+    {
+        CCLOG("[UpgradeManager] Warning: task.building is null in completeUpgrade");
+        return;
+    }
+    
+    // 检查：验证建筑指针是否有效
+    // 通过检查 retain count 或其他方式验证对象是否仍然有效
+    // cocos2d::Ref 对象被释放后，引用计数会变成无效值
+    if (task.building->getReferenceCount() <= 0 || 
+        task.building->getReferenceCount() > 10000)  // 异常值检测
+    {
+        CCLOG("[UpgradeManager] Warning: building pointer appears to be invalid (refCount: %u)", 
+              task.building->getReferenceCount());
+        task.building = nullptr;
+        return;
+    }
 
-    // 🔴 关键修复1：不要调用 upgrade() (那是开始升级)，要调用 onUpgradeComplete() (这是结算升级)
+    // 调用建筑的升级完成方法
     task.building->onUpgradeComplete();
 
     // 标记结束
     task.building->setUpgrading(false);
 
-    // 此时不要急着通知工人变化，因为任务还在队列里，getAvailableBuilders() 算出来还是少的。
-    // 我们在 update() 里移除任务后再通知。
-
     // 日志
     std::string displayName = task.building->getDisplayName();
-    CCLOG("✅ 升级完成：%s", displayName.c_str());
+    CCLOG("[UpgradeManager] Upgrade complete: %s", displayName.c_str());
 }
 
 void UpgradeManager::update(float dt)
@@ -299,6 +312,16 @@ void UpgradeManager::update(float dt)
     auto it = _upgradeTasks.begin();
     while (it != _upgradeTasks.end())
     {
+        // 安全检查：验证建筑指针是否有效
+        if (!it->building || 
+            it->building->getReferenceCount() <= 0 || 
+            it->building->getReferenceCount() > 10000)
+        {
+            CCLOG("[UpgradeManager] Removing invalid upgrade task (building pointer invalid)");
+            it = _upgradeTasks.erase(it);
+            continue;
+        }
+        
         it->elapsedTime += dt;
 
         // 检查是否完成
@@ -307,10 +330,10 @@ void UpgradeManager::update(float dt)
             // 1. 完成结算（等级+1，改变外观）
             completeUpgrade(*it);
 
-            // 2. 🔴 关键修复2：先从队列移除任务
+            // 2. 从队列移除任务
             it = _upgradeTasks.erase(it);
 
-            // 3. 🔴 关键修复3：任务移除后，空闲工人数才变对，此时再通知 UI 刷新
+            // 3. 任务移除后，空闲工人数才变对，此时再通知 UI 刷新
             if (_onAvailableBuildersChanged)
             {
                 _onAvailableBuildersChanged(getAvailableBuilders());
@@ -343,6 +366,14 @@ std::vector<UpgradeTaskData> UpgradeManager::serializeUpgradeTasks() const
     {
         if (!task.building)
             continue;
+        
+        // 安全检查：验证建筑指针是否有效
+        if (task.building->getReferenceCount() <= 0 || 
+            task.building->getReferenceCount() > 10000)
+        {
+            CCLOG("[UpgradeManager] Warning: skipping invalid building pointer in serialization");
+            continue;
+        }
             
         UpgradeTaskData data;
         data.buildingName = task.building->getDisplayName();
@@ -357,7 +388,7 @@ std::vector<UpgradeTaskData> UpgradeManager::serializeUpgradeTasks() const
         
         CCLOG("[UpgradeManager] Serialized upgrade task: %s at (%.0f, %.0f), progress: %.1f%%",
               data.buildingName.c_str(), data.gridX, data.gridY,
-              (data.elapsedTime / data.totalTime) * 100.0f);
+              (data.totalTime > 0 ? (data.elapsedTime / data.totalTime) * 100.0f : 100.0f));
     }
     
     return result;

@@ -905,8 +905,9 @@ void BuildingManager::clearAllBuildings(bool clearTroops)
     // 非只读模式下清除单例管理器状态
     if (!_isReadOnlyMode)
     {
-        // 注意：不再在这里清除升级任务，升级任务会在 loadCurrentAccountState 中恢复
-        // UpgradeManager::getInstance()->clearAllUpgradeTasks();
+        // 修复：必须在建筑销毁前清除升级任务，避免悬垂指针
+        // 升级任务会在 loadCurrentAccountState 中从保存的数据恢复
+        UpgradeManager::getInstance()->clearAllUpgradeTasks();
         
         ResourceCollectionManager::getInstance()->clearRegisteredBuildings();
         BuildingCapacityManager::getInstance().clearAllBuildings();

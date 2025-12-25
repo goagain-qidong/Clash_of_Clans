@@ -82,15 +82,32 @@ void ResourceCollectionManager::unregisterBuilding(ResourceBuilding* building)
 bool ResourceCollectionManager::handleTouch(const cocos2d::Vec2& touchPos)
 {
     // 遍历所有注册的建筑，查看是否有可收集的资源被点击
-    for (auto* building : _trackedBuildings)
+    for (auto it = _trackedBuildings.begin(); it != _trackedBuildings.end(); )
     {
-        // ✅ 改进：添加更安全的检查
-        if (!building || !building->getParent() || !building->isVisible())
+        auto* building = *it;
+        
+        // 安全检查：验证建筑指针是否有效
+        if (!building || 
+            building->getReferenceCount() <= 0 || 
+            building->getReferenceCount() > 10000)
+        {
+            CCLOG("[ResourceCollectionManager] Removing invalid building pointer");
+            it = _trackedBuildings.erase(it);
             continue;
+        }
+        
+        if (!building->getParent() || !building->isVisible())
+        {
+            ++it;
+            continue;
+        }
         
         auto collectionUI = getCollectionUI(building);
         if (!collectionUI)
+        {
+            ++it;
             continue;
+        }
         
         // 检查触摸是否在收集区域内
         if (collectionUI->checkTouchInside(touchPos))
@@ -99,6 +116,8 @@ bool ResourceCollectionManager::handleTouch(const cocos2d::Vec2& touchPos)
             collectionUI->performCollection();
             return true;
         }
+        
+        ++it;
     }
     
     return false;
