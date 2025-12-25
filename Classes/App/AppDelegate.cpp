@@ -23,11 +23,14 @@
  ****************************************************************************/
 
 // Visual Leak Detector - 内存泄漏检测（仅 Debug 模式生效）
-// 安装方法：https://github.com/KindDragon/vld/releases
-// 安装后需要在项目属性中添加 Include 和 Lib 路径
-#if defined(_DEBUG) && defined(_WIN32)
-    // 如果已安装 VLD，取消下面这行的注释
-    // #include <vld.h>
+// 启用方法：
+//   1. 在项目属性 -> C/C++ -> 预处理器 -> 预处理器定义 中添加 ENABLE_VLD
+//   2. 在项目属性 -> C/C++ -> 常规 -> 附加包含目录 中添加 $(SolutionDir)..\third_party\vld\src
+//   3. 在项目属性 -> 链接器 -> 常规 -> 附加库目录 中添加 $(SolutionDir)..\third_party\vld\src\bin\$(Platform)\Debug-v143
+//   4. 确保运行时 vld_x86.dll/vld_x64.dll 和 dbghelp.dll 在可执行文件目录或 PATH 中
+// 注意：不定义 ENABLE_VLD 时，VLD 相关代码会被完全跳过，协作者无需安装 VLD 即可编译
+#if defined(_DEBUG) && defined(_WIN32) && defined(ENABLE_VLD)
+    #include <vld.h>
 #endif
 
 #include "AppDelegate.h"

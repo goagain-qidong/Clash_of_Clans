@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  VLD (Visual Leak Detector) 配置文件
+  
+  使用方法：
+  1. 在 Visual Studio 中打开项目
+  2. 右键项目 -> 添加 -> 现有项 -> 选择此 .props 文件
+  或者
+  1. 视图 -> 其他窗口 -> 属性管理器
+  2. 右键 Debug|x64 (或你使用的配置) -> 添加现有属性表 -> 选择此文件
+  
+  注意：此文件仅在 Debug 配置下生效
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <VLD_ROOT>$(MSBuildThisFileDirectory)</VLD_ROOT>
+  </PropertyGroup>
+  
+  <!-- 仅在 Debug 配置下启用 -->
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <VLD_ENABLED>true</VLD_ENABLED>
+  </PropertyGroup>
+  
+  <ItemDefinitionGroup Condition="'$(VLD_ENABLED)'=='true'">
+    <ClCompile>
+      <!-- 添加 ENABLE_VLD 预处理器定义 -->
+      <PreprocessorDefinitions>ENABLE_VLD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- 添加 VLD 头文件路径 -->
+      <AdditionalIncludeDirectories>$(VLD_ROOT)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <!-- 添加 VLD 库文件路径 -->
+      <AdditionalLibraryDirectories>$(VLD_ROOT)src\bin\$(Platform)\Debug-v143;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  
+  <!-- 复制 VLD DLL 到输出目录 (可选，需要手动启用) -->
+  <!--
+  <Target Name="CopyVLDDlls" AfterTargets="Build" Condition="'$(VLD_ENABLED)'=='true'">
+    <Copy SourceFiles="$(VLD_ROOT)src\bin\$(Platform)\Debug-v143\vld_$(Platform).dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(VLD_ROOT)src\bin\$(Platform)\Debug-v143\dbghelp.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(VLD_ROOT)src\bin\$(Platform)\Debug-v143\Microsoft.DTfW.DHL.manifest" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+  -->
+</Project>
