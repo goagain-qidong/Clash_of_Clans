@@ -351,7 +351,6 @@ void BattleManager::updateBattleState(float dt)
                 // 检查是否已标记为等待移除
                 if (unit->isPendingRemoval())
                 {
-                    CCLOG("🧹 清理已移除的单位: %s", unit->getDisplayName().c_str());
                     return true;
                 }
                 return false;

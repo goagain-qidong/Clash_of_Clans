@@ -30,13 +30,11 @@
 //   4. 确保运行时 vld_x86.dll/vld_x64.dll 和 dbghelp.dll 在可执行文件目录或 PATH 中
 // 注意：不定义 ENABLE_VLD 时，VLD 相关代码会被完全跳过，协作者无需安装 VLD 即可编译
 //
-// 过滤策略 (2025-12-25, Author: 薛毓哲):
-//   使用 VLD API 在引擎初始化完成后才开始追踪，过滤掉 cocos2d-x 引擎单例的分配
-//   (Director, Scheduler, EventDispatcher 等)
-#if defined(_DEBUG) && defined(_WIN32) && defined(ENABLE_VLD)
-    #define VLD_FORCE_ENABLE  // 强制启用 VLD（即使 vld.ini 中禁用）
-    #include <vld.h>
-#endif
+
+//#if defined(_DEBUG) && defined(_WIN32) && defined(ENABLE_VLD)
+//    #define VLD_FORCE_ENABLE  // 强制启用 VLD（即使 vld.ini 中禁用）
+//    #include <vld.h>
+//#endif
 
 #include "AppDelegate.h"
 #include "AccountSelectScene.h"
@@ -90,7 +88,7 @@ bool AppDelegate::applicationDidFinishLaunching()
 {
     // VLD: 暂停追踪，跳过引擎初始化阶段的分配
 #if defined(_DEBUG) && defined(_WIN32) && defined(ENABLE_VLD)
-    VLDDisable();
+    //VLDDisable();
 #endif
 
     // 1. 获取导演
@@ -126,7 +124,7 @@ bool AppDelegate::applicationDidFinishLaunching()
 
     // VLD: 引擎初始化完成，恢复追踪，只检测应用代码的内存泄漏
 #if defined(_DEBUG) && defined(_WIN32) && defined(ENABLE_VLD)
-    VLDRestore();
+   // VLDRestore();
     CCLOG("[VLD] Memory leak detection enabled - engine init phase skipped");
 #endif
 #if 0
