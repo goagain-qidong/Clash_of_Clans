@@ -1,4 +1,4 @@
-﻿/****************************************************************
+﻿ /****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     DefenseLogSystem.cpp
  * File Function: 防守日志系统 - 记录和管理玩家的防守日志
@@ -9,12 +9,14 @@
 #include "DefenseLogSystem.h"
 #include "AccountManager.h"
 #include "ResourceManager.h"
-#include "Scenes/BattleScene.h" // 🆕 添加 BattleScene 头文件
+#include "Scenes/BattleScene.h"
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
 #include "base/base64.h"
 #include <sstream>
 #include <algorithm>
+#include <exception>
+#include <stdexcept>
 
 USING_NS_CC;
 using namespace ui;
@@ -23,79 +25,89 @@ using namespace ui;
 
 std::string DefenseLog::serialize() const
 {
-    // Sanitize attackerName
-    std::string safeName = attackerName;
-    std::replace(safeName.begin(), safeName.end(), '|', ' ');
-    std::replace(safeName.begin(), safeName.end(), '\n', ' ');
-    std::replace(safeName.begin(), safeName.end(), '\r', ' ');
+    try {
+        // Sanitize attackerName
+        std::string safeName = attackerName;
+        std::replace(safeName.begin(), safeName.end(), '|', ' ');
+        std::replace(safeName.begin(), safeName.end(), '\n', ' ');
+        std::replace(safeName.begin(), safeName.end(), '\r', ' ');
 
-    // Encode replayData
-    std::string encodedReplay = "";
-    if (!replayData.empty())
-    {
-        char* encoded = nullptr;
-        base64Encode((const unsigned char*)replayData.c_str(), (unsigned int)replayData.length(), &encoded);
-        if (encoded)
+        // Encode replayData
+        std::string encodedReplay = "";
+        if (!replayData.empty())
         {
-            encodedReplay = "B64:" + std::string(encoded);
-            free(encoded);
+            char* encoded = nullptr;
+            base64Encode((const unsigned char*)replayData.c_str(), (unsigned int)replayData.length(), &encoded);
+            if (encoded)
+            {
+                encodedReplay = "B64:" + std::string(encoded);
+                free(encoded);
+            }
+            else
+            {
+                encodedReplay = replayData;
+            }
         }
-        else
-        {
-            encodedReplay = replayData;
-        }
+
+        std::ostringstream oss;
+        oss << attackerId << "|" << safeName << "|" << starsLost << "|" 
+            << goldLost << "|" << elixirLost << "|" << trophyChange << "|" 
+            << timestamp << "|" << (isViewed ? "1" : "0") << "|" << encodedReplay;
+        return oss.str();
     }
-
-    std::ostringstream oss;
-    oss << attackerId << "|" << safeName << "|" << starsLost << "|" 
-        << goldLost << "|" << elixirLost << "|" << trophyChange << "|" 
-        << timestamp << "|" << (isViewed ? "1" : "0") << "|" << encodedReplay;
-    return oss.str();
+    catch (const std::exception& e) {
+        CCLOG("❌ DefenseLog::serialize 异常: %s", e.what());
+        return "";
+    }
 }
 
 DefenseLog DefenseLog::deserialize(const std::string& data)
 {
     DefenseLog log;
-    std::istringstream iss(data);
-    std::string token;
-    
-    std::getline(iss, log.attackerId, '|');
-    std::getline(iss, log.attackerName, '|');
-    std::getline(iss, token, '|');
-    if (!token.empty()) log.starsLost = std::stoi(token);
-    std::getline(iss, token, '|');
-    if (!token.empty()) log.goldLost = std::stoi(token);
-    std::getline(iss, token, '|');
-    if (!token.empty()) log.elixirLost = std::stoi(token);
-    std::getline(iss, token, '|');
-    if (!token.empty()) log.trophyChange = std::stoi(token);
-    std::getline(iss, log.timestamp, '|');
-    std::getline(iss, token, '|');
-    log.isViewed = (token == "1");
-    
-    std::string remaining;
-    std::getline(iss, remaining); // 读取直到行尾
-    
-    if (remaining.find("B64:") == 0)
-    {
-        std::string b64 = remaining.substr(4);
-        unsigned char* decoded = nullptr;
-        int len = base64Decode((const unsigned char*)b64.c_str(), (unsigned int)b64.length(), &decoded);
-        if (decoded && len > 0)
+    try {
+        std::istringstream iss(data);
+        std::string token;
+        
+        std::getline(iss, log.attackerId, '|');
+        std::getline(iss, log.attackerName, '|');
+        std::getline(iss, token, '|');
+        if (!token.empty()) log.starsLost = std::stoi(token);
+        std::getline(iss, token, '|');
+        if (!token.empty()) log.goldLost = std::stoi(token);
+        std::getline(iss, token, '|');
+        if (!token.empty()) log.elixirLost = std::stoi(token);
+        std::getline(iss, token, '|');
+        if (!token.empty()) log.trophyChange = std::stoi(token);
+        std::getline(iss, log.timestamp, '|');
+        std::getline(iss, token, '|');
+        log.isViewed = (token == "1");
+        
+        std::string remaining;
+        std::getline(iss, remaining); // 读取直到行尾
+        
+        if (remaining.find("B64:") == 0)
         {
-            log.replayData = std::string((char*)decoded, len);
-            free(decoded);
+            std::string b64 = remaining.substr(4);
+            unsigned char* decoded = nullptr;
+            int len = base64Decode((const unsigned char*)b64.c_str(), (unsigned int)b64.length(), &decoded);
+            if (decoded && len > 0)
+            {
+                log.replayData = std::string((char*)decoded, len);
+                free(decoded);
+            }
+            else
+            {
+                log.replayData = ""; // Decode failed
+            }
         }
         else
         {
-            log.replayData = ""; // Decode failed
+            log.replayData = remaining;
         }
     }
-    else
-    {
-        log.replayData = remaining;
+    catch (const std::exception& e) {
+        CCLOG("❌ DefenseLog::deserialize 异常: %s", e.what());
     }
-    
     return log;
 }
 
@@ -215,57 +227,67 @@ bool DefenseLogSystem::hasUnviewedLogs() const
 
 void DefenseLogSystem::save()
 {
-    auto& accMgr = AccountManager::getInstance();
-    const auto* currentAccount = accMgr.getCurrentAccount();
-    if (!currentAccount)
-    {
-        return;
+    try {
+        auto& accMgr = AccountManager::getInstance();
+        const auto* currentAccount = accMgr.getCurrentAccount();
+        if (!currentAccount)
+        {
+            return;
+        }
+        
+        std::string key = "defense_log_" + currentAccount->account.userId;
+        
+        std::ostringstream oss;
+        for (size_t i = 0; i < _logs.size(); ++i)
+        {
+            if (i > 0) oss << "\n";
+            oss << _logs[i].serialize();
+        }
+        
+        UserDefault::getInstance()->setStringForKey(key.c_str(), oss.str());
+        UserDefault::getInstance()->flush();
     }
-    
-    std::string key = "defense_log_" + currentAccount->account.userId;
-    
-    std::ostringstream oss;
-    for (size_t i = 0; i < _logs.size(); ++i)
-    {
-        if (i > 0) oss << "\n";
-        oss << _logs[i].serialize();
+    catch (const std::exception& e) {
+        CCLOG("❌ DefenseLogSystem::save 异常: %s", e.what());
     }
-    
-    UserDefault::getInstance()->setStringForKey(key.c_str(), oss.str());
-    UserDefault::getInstance()->flush();
 }
 
 void DefenseLogSystem::load()
 {
-    auto& accMgr = AccountManager::getInstance();
-    const auto* currentAccount = accMgr.getCurrentAccount();
-    if (!currentAccount)
-    {
-        return;
-    }
-    
-    std::string key = "defense_log_" + currentAccount->account.userId;
-    std::string data = UserDefault::getInstance()->getStringForKey(key.c_str(), "");
-    
-    _logs.clear();
-    
-    if (data.empty())
-    {
-        return;
-    }
-    
-    std::istringstream iss(data);
-    std::string line;
-    
-    while (std::getline(iss, line))
-    {
-        if (!line.empty())
+    try {
+        auto& accMgr = AccountManager::getInstance();
+        const auto* currentAccount = accMgr.getCurrentAccount();
+        if (!currentAccount)
         {
-            _logs.push_back(DefenseLog::deserialize(line));
+            return;
         }
+        
+        std::string key = "defense_log_" + currentAccount->account.userId;
+        std::string data = UserDefault::getInstance()->getStringForKey(key.c_str(), "");
+        
+        _logs.clear();
+        
+        if (data.empty())
+        {
+            return;
+        }
+        
+        std::istringstream iss(data);
+        std::string line;
+        
+        while (std::getline(iss, line))
+        {
+            if (!line.empty())
+            {
+                _logs.push_back(DefenseLog::deserialize(line));
+            }
+        }
+        
+        CCLOG("📂 加载了 %zu 条防守日志", _logs.size());
     }
-    
-    CCLOG("📂 加载了 %zu 条防守日志", _logs.size());
+    catch (const std::exception& e) {
+        CCLOG("❌ DefenseLogSystem::load 异常: %s", e.what());
+    }
 }
 
 void DefenseLogSystem::showDefenseLogUI()

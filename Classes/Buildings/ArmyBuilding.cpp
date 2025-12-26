@@ -11,6 +11,8 @@
 #include "GameConfig.h"
 #include "Managers/TroopInventory.h"
 #include "Unit/UnitFactory.h"
+#include <exception>
+#include <stdexcept>
 
 USING_NS_CC;
 
@@ -28,13 +30,19 @@ ArmyBuilding* ArmyBuilding::create(int level)
 
 bool ArmyBuilding::init(int level)
 {
-    if (!initWithType(BuildingType::kArmy, level))
-        return false;
+    try {
+        if (!initWithType(BuildingType::kArmy, level))
+            return false;
 
-    this->setAnchorPoint(Vec2(0.5f, 0.35f));
-    initHealthBarUI();
-    
-    return true;
+        this->setAnchorPoint(Vec2(0.5f, 0.35f));
+        initHealthBarUI();
+        
+        return true;
+    }
+    catch (const std::exception& e) {
+        CCLOG("❌ ArmyBuilding::init 异常: %s", e.what());
+        return false;
+    }
 }
 
 int ArmyBuilding::getTrainingCapacity() const
@@ -56,24 +64,30 @@ void ArmyBuilding::onLevelUp()
 
 bool ArmyBuilding::addTrainingTask(UnitType unitType)
 {
-    if (getQueueLength() >= getTrainingCapacity())
+    try {
+        if (getQueueLength() >= getTrainingCapacity())
+            return false;
+
+        auto& resMgr = ResourceManager::getInstance();
+        int population = getUnitPopulation(unitType);
+
+        if (!resMgr.hasTroopSpace(population))
+            return false;
+
+        int cost = getUnitTrainingCost(unitType);
+        float baseTime = getUnitBaseTrainingTime(unitType);
+        float actualTime = baseTime / (1.0f + getTrainingSpeedBonus());
+
+        if (!resMgr.consume(ResourceType::kElixir, cost))
+            return false;
+
+        _trainingQueue.push(TrainingTask(unitType, actualTime, cost));
+        return true;
+    }
+    catch (const std::exception& e) {
+        CCLOG("❌ ArmyBuilding::addTrainingTask 异常: %s", e.what());
         return false;
-
-    auto& resMgr = ResourceManager::getInstance();
-    int population = getUnitPopulation(unitType);
-
-    if (!resMgr.hasTroopSpace(population))
-        return false;
-
-    int cost = getUnitTrainingCost(unitType);
-    float baseTime = getUnitBaseTrainingTime(unitType);
-    float actualTime = baseTime / (1.0f + getTrainingSpeedBonus());
-
-    if (!resMgr.consume(ResourceType::kElixir, cost))
-        return false;
-
-    _trainingQueue.push(TrainingTask(unitType, actualTime, cost));
-    return true;
+    }
 }
 
 void ArmyBuilding::cancelCurrentTask()
@@ -114,47 +128,57 @@ float ArmyBuilding::getTrainingProgress() const
 
 void ArmyBuilding::tick(float dt)
 {
-    BaseBuilding::tick(dt);
+    try {
+        BaseBuilding::tick(dt);
 
-    // 如果队列为空，不处理
-    if (_trainingQueue.empty())
-        return;
+        // 如果队列为空，不处理
+        if (_trainingQueue.empty())
+            return;
 
-    // 更新当前训练任务
-    auto& task = _trainingQueue.front();
-    task.elapsedTime += dt;
+        // 更新当前训练任务
+        auto& task = _trainingQueue.front();
+        task.elapsedTime += dt;
 
-    // 检查是否完成
-    if (task.elapsedTime >= task.trainingTime)
-    {
-        completeCurrentTask();
+        // 检查是否完成
+        if (task.elapsedTime >= task.trainingTime)
+        {
+            completeCurrentTask();
+        }
+    }
+    catch (const std::exception& e) {
+        CCLOG("❌ ArmyBuilding::tick 异常: %s", e.what());
     }
 }
 
 void ArmyBuilding::completeCurrentTask()
 {
-    if (_trainingQueue.empty())
-        return;
+    try {
+        if (_trainingQueue.empty())
+            return;
 
-    auto task = _trainingQueue.front();
-    _trainingQueue.pop();
+        auto task = _trainingQueue.front();
+        _trainingQueue.pop();
 
-    std::string unitName = UnitFactory::getUnitName(task.unitType);
-    auto& troopInv = TroopInventory::getInstance();
-    int addedCount = troopInv.addTroops(task.unitType, 1);
+        std::string unitName = UnitFactory::getUnitName(task.unitType);
+        auto& troopInv = TroopInventory::getInstance();
+        int addedCount = troopInv.addTroops(task.unitType, 1);
 
-    if (addedCount > 0)
-    {
-        notifyArmyCampsToDisplayTroop(task.unitType);
-        if (_onTrainingComplete)
+        if (addedCount > 0)
         {
-            _onTrainingComplete(nullptr);
+            notifyArmyCampsToDisplayTroop(task.unitType);
+            if (_onTrainingComplete)
+            {
+                _onTrainingComplete(nullptr);
+            }
+        }
+        else
+        {
+            // 人口已满，退还资源
+            ResourceManager::getInstance().addResource(ResourceType::kElixir, task.cost);
         }
     }
-    else
-    {
-        // 人口已满，退还资源
-        ResourceManager::getInstance().addResource(ResourceType::kElixir, task.cost);
+    catch (const std::exception& e) {
+        CCLOG("❌ ArmyBuilding::completeCurrentTask 异常: %s", e.what());
     }
 }
 

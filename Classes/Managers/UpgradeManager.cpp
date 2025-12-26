@@ -11,6 +11,8 @@
 #include "Buildings/BaseBuilding.h"
 #include <algorithm>
 #include <cmath>
+#include <exception>
+#include <stdexcept>
 
 USING_NS_CC;
 
@@ -55,13 +57,19 @@ UpgradeManager::~UpgradeManager()
 
 bool UpgradeManager::init()
 {
-    if (!Node::init())
+    try {
+        if (!Node::init())
+            return false;
+        
+        scheduleUpdate();
+        
+        CCLOG("✅ UpgradeManager 初始化成功");
+        return true;
+    }
+    catch (const std::exception& e) {
+        CCLOG("❌ UpgradeManager::init 异常: %s", e.what());
         return false;
-    
-    scheduleUpdate();
-    
-    CCLOG("✅ UpgradeManager 初始化成功");
-    return true;
+    }
 }
 
 bool UpgradeManager::canStartUpgrade(BaseBuilding* building, bool needBuilder)
@@ -316,42 +324,47 @@ void UpgradeManager::completeUpgrade(UpgradeTask& task)
 
 void UpgradeManager::update(float dt)
 {
-    if (_upgradeTasks.empty()) return;
+    try {
+        if (_upgradeTasks.empty()) return;
 
-    auto it = _upgradeTasks.begin();
-    while (it != _upgradeTasks.end())
-    {
-        // 安全检查：验证建筑指针是否有效
-        if (!it->building || 
-            it->building->getReferenceCount() <= 0 || 
-            it->building->getReferenceCount() > 10000)
+        auto it = _upgradeTasks.begin();
+        while (it != _upgradeTasks.end())
         {
-            CCLOG("[UpgradeManager] Removing invalid upgrade task (building pointer invalid)");
-            it = _upgradeTasks.erase(it);
-            continue;
-        }
-        
-        it->elapsedTime += dt;
-
-        // 检查是否完成
-        if (it->elapsedTime >= it->totalTime)
-        {
-            // 1. 完成结算（等级+1，改变外观）
-            completeUpgrade(*it);
-
-            // 2. 从队列移除任务
-            it = _upgradeTasks.erase(it);
-
-            // 3. 任务移除后，空闲工人数才变对，此时再通知 UI 刷新
-            if (_onAvailableBuildersChanged)
+            // 安全检查：验证建筑指针是否有效
+            if (!it->building || 
+                it->building->getReferenceCount() <= 0 || 
+                it->building->getReferenceCount() > 10000)
             {
-                _onAvailableBuildersChanged(getAvailableBuilders());
+                CCLOG("[UpgradeManager] Removing invalid upgrade task (building pointer invalid)");
+                it = _upgradeTasks.erase(it);
+                continue;
+            }
+            
+            it->elapsedTime += dt;
+
+            // 检查是否完成
+            if (it->elapsedTime >= it->totalTime)
+            {
+                // 1. 完成结算（等级+1，改变外观）
+                completeUpgrade(*it);
+
+                // 2. 从队列移除任务
+                it = _upgradeTasks.erase(it);
+
+                // 3. 任务移除后，空闲工人数才变对，此时再通知 UI 刷新
+                if (_onAvailableBuildersChanged)
+                {
+                    _onAvailableBuildersChanged(getAvailableBuilders());
+                }
+            }
+            else
+            {
+                ++it;
             }
         }
-        else
-        {
-            ++it;
-        }
+    }
+    catch (const std::exception& e) {
+        CCLOG("❌ UpgradeManager::update 异常: %s", e.what());
     }
 }
 

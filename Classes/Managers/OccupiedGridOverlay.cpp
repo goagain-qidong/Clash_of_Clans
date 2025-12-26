@@ -10,6 +10,8 @@
 #include "GridMap.h"
 #include "Buildings/BaseBuilding.h"
 #include <set>
+#include <exception>
+#include <stdexcept>
 
 USING_NS_CC;
 
@@ -27,77 +29,88 @@ OccupiedGridOverlay* OccupiedGridOverlay::create(GridMap* gridMap)
 
 bool OccupiedGridOverlay::init(GridMap* gridMap)
 {
-    if (!Node::init())
-    {
+    try {
+        if (!Node::init())
+        {
+            return false;
+        }
+        
+        _gridMap = gridMap;
+        
+        // 创建草坪图层（底层，淡绿色）
+        _grassDrawNode = DrawNode::create();
+        this->addChild(_grassDrawNode, 0);
+        
+        // 创建高亮图层（上层，淡白色）
+        _highlightDrawNode = DrawNode::create();
+        this->addChild(_highlightDrawNode, 1);
+        
+        return true;
+    }
+    catch (const std::exception& e) {
+        CCLOG("❌ OccupiedGridOverlay::init 异常: %s", e.what());
         return false;
     }
-    
-    _gridMap = gridMap;
-    
-    // 创建草坪图层（底层，淡绿色）
-    _grassDrawNode = DrawNode::create();
-    this->addChild(_grassDrawNode, 0);
-    
-    // 创建高亮图层（上层，淡白色）
-    _highlightDrawNode = DrawNode::create();
-    this->addChild(_highlightDrawNode, 1);
-    
-    return true;
 }
 
 void OccupiedGridOverlay::showOccupiedGrids(const cocos2d::Vector<BaseBuilding*>& buildings)
 {
-    if (!_gridMap || !_highlightDrawNode)
-        return;
-    
-    // 停止之前的动作
-    this->stopAllActions();
-    
-    // 清除高亮图层
-    _highlightDrawNode->clear();
-    
-    // 使用集合去重，避免重复绘制
-    std::set<std::pair<int, int>> occupiedGrids;
-    
-    // 遍历所有建筑，收集占用的网格及其周围一格
-    for (auto* building : buildings)
-    {
-        if (!building)
-            continue;
+    try {
+        if (!_gridMap || !_highlightDrawNode)
+            return;
         
-        Vec2 gridPos = building->getGridPosition();
-        Size gridSize = building->getGridSize();
+        // 停止之前的动作
+        this->stopAllActions();
         
-        int startX = static_cast<int>(gridPos.x);
-        int startY = static_cast<int>(gridPos.y);
-        int width = static_cast<int>(gridSize.width);
-        int height = static_cast<int>(gridSize.height);
+        // 清除高亮图层
+        _highlightDrawNode->clear();
         
-        // 建筑占用的网格及其周围一格
-        for (int x = startX - 1; x < startX + width + 1; ++x)
+        // 使用集合去重，避免重复绘制
+        std::set<std::pair<int, int>> occupiedGrids;
+        
+        // 遍历所有建筑，收集占用的网格及其周围一格
+        for (auto* building : buildings)
         {
-            for (int y = startY - 1; y < startY + height + 1; ++y)
+            if (!building)
+                continue;
+            
+            Vec2 gridPos = building->getGridPosition();
+            Size gridSize = building->getGridSize();
+            
+            int startX = static_cast<int>(gridPos.x);
+            int startY = static_cast<int>(gridPos.y);
+            int width = static_cast<int>(gridSize.width);
+            int height = static_cast<int>(gridSize.height);
+            
+            // 建筑占用的网格及其周围一格
+            for (int x = startX - 1; x < startX + width + 1; ++x)
             {
-                if (isValidGrid(x, y))
+                for (int y = startY - 1; y < startY + height + 1; ++y)
                 {
-                    occupiedGrids.insert(std::make_pair(x, y));
+                    if (isValidGrid(x, y))
+                    {
+                        occupiedGrids.insert(std::make_pair(x, y));
+                    }
                 }
             }
         }
+        
+        // 绘制所有占用的网格（淡白色）
+        Color4F highlightColor(1.0f, 1.0f, 1.0f, 0.15f);
+        for (const auto& grid : occupiedGrids)
+        {
+            drawGrid(_highlightDrawNode, grid.first, grid.second, highlightColor);
+        }
+        
+        // 淡入效果
+        _highlightDrawNode->setOpacity(0);
+        _highlightDrawNode->setVisible(true);
+        auto fadeIn = FadeIn::create(0.3f);
+        _highlightDrawNode->runAction(fadeIn);
     }
-    
-    // 绘制所有占用的网格（淡白色）
-    Color4F highlightColor(1.0f, 1.0f, 1.0f, 0.15f);
-    for (const auto& grid : occupiedGrids)
-    {
-        drawGrid(_highlightDrawNode, grid.first, grid.second, highlightColor);
+    catch (const std::exception& e) {
+        CCLOG("❌ OccupiedGridOverlay::showOccupiedGrids 异常: %s", e.what());
     }
-    
-    // 淡入效果
-    _highlightDrawNode->setOpacity(0);
-    _highlightDrawNode->setVisible(true);
-    auto fadeIn = FadeIn::create(0.3f);
-    _highlightDrawNode->runAction(fadeIn);
 }
 
 void OccupiedGridOverlay::fadeOutAndHide(float duration)

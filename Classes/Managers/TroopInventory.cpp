@@ -12,6 +12,8 @@
 #include "json/document.h"
 #include "json/writer.h"
 #include "json/stringbuffer.h"
+#include <exception>
+#include <stdexcept>
 
 USING_NS_CC;
 
@@ -202,147 +204,169 @@ void TroopInventory::setAllTroops(const std::map<UnitType, int>& troops)
 
 std::string TroopInventory::toJson() const
 {
-    rapidjson::Document doc;
-    doc.SetObject();
-    auto& allocator = doc.GetAllocator();
-    
-    // 保存各兵种数量
-    rapidjson::Value troops(rapidjson::kObjectType);
-    
-    for (const auto& pair : _troops)
-    {
-        std::string key = std::to_string(static_cast<int>(pair.first));
-        troops.AddMember(
-            rapidjson::Value(key.c_str(), allocator),
-            rapidjson::Value(pair.second),
-            allocator
-        );
+    try {
+        rapidjson::Document doc;
+        doc.SetObject();
+        auto& allocator = doc.GetAllocator();
+        
+        // 保存各兵种数量
+        rapidjson::Value troops(rapidjson::kObjectType);
+        
+        for (const auto& pair : _troops)
+        {
+            std::string key = std::to_string(static_cast<int>(pair.first));
+            troops.AddMember(
+                rapidjson::Value(key.c_str(), allocator),
+                rapidjson::Value(pair.second),
+                allocator
+            );
+        }
+        
+        doc.AddMember("troops", troops, allocator);
+        
+        // 转换为字符串
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        doc.Accept(writer);
+        
+        return buffer.GetString();
     }
-    
-    doc.AddMember("troops", troops, allocator);
-    
-    // 转换为字符串
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    doc.Accept(writer);
-    
-    return buffer.GetString();
+    catch (const std::exception& e) {
+        CCLOG("❌ TroopInventory::toJson 异常: %s", e.what());
+        return "{}";
+    }
 }
 
 bool TroopInventory::fromJson(const std::string& jsonStr)
 {
-    if (jsonStr.empty())
-    {
-        CCLOG("TroopInventory: JSON empty, using defaults");
-        return false;
-    }
-    
-    rapidjson::Document doc;
-    doc.Parse(jsonStr.c_str());
-    
-    if (doc.HasParseError() || !doc.IsObject())
-    {
-        CCLOG("TroopInventory: Failed to parse JSON");
-        return false;
-    }
-    
-    if (!doc.HasMember("troops") || !doc["troops"].IsObject())
-    {
-        CCLOG("TroopInventory: Missing troops field");
-        return false;
-    }
-    
-    // 清空当前库存
-    for (auto& pair : _troops)
-    {
-        pair.second = 0;
-    }
-    
-    // 读取各兵种数量
-    const auto& troopsObj = doc["troops"];
-    for (auto it = troopsObj.MemberBegin(); it != troopsObj.MemberEnd(); ++it)
-    {
-        int typeInt = std::atoi(it->name.GetString());
-        int count = it->value.GetInt();
+    try {
+        if (jsonStr.empty())
+        {
+            CCLOG("TroopInventory: JSON empty, using defaults");
+            return false;
+        }
         
-        UnitType type = static_cast<UnitType>(typeInt);
-        _troops[type] = count;
+        rapidjson::Document doc;
+        doc.Parse(jsonStr.c_str());
         
-        CCLOG("TroopInventory: Loaded type=%d, count=%d", typeInt, count);
+        if (doc.HasParseError() || !doc.IsObject())
+        {
+            CCLOG("TroopInventory: Failed to parse JSON");
+            return false;
+        }
+        
+        if (!doc.HasMember("troops") || !doc["troops"].IsObject())
+        {
+            CCLOG("TroopInventory: Missing troops field");
+            return false;
+        }
+        
+        // 清空当前库存
+        for (auto& pair : _troops)
+        {
+            pair.second = 0;
+        }
+        
+        // 读取各兵种数量
+        const auto& troopsObj = doc["troops"];
+        for (auto it = troopsObj.MemberBegin(); it != troopsObj.MemberEnd(); ++it)
+        {
+            int typeInt = std::atoi(it->name.GetString());
+            int count = it->value.GetInt();
+            
+            UnitType type = static_cast<UnitType>(typeInt);
+            _troops[type] = count;
+            
+            CCLOG("TroopInventory: Loaded type=%d, count=%d", typeInt, count);
+        }
+        
+        // 重新计算人口数
+        int totalPop = getTotalPopulation();
+        ResourceManager::getInstance().setResourceCount(ResourceType::kTroopPopulation, totalPop);
+        
+        CCLOG("TroopInventory: Load complete, total population: %d", totalPop);
+        
+        return true;
     }
-    
-    // 重新计算人口数
-    int totalPop = getTotalPopulation();
-    ResourceManager::getInstance().setResourceCount(ResourceType::kTroopPopulation, totalPop);
-    
-    CCLOG("TroopInventory: Load complete, total population: %d", totalPop);
-    
-    return true;
+    catch (const std::exception& e) {
+        CCLOG("❌ TroopInventory::fromJson 异常: %s", e.what());
+        return false;
+    }
 }
 
 // ==================== 文件保存/加载 ====================
 
 void TroopInventory::save(const std::string& forceUserId)
 {
-    auto& accMgr = AccountManager::getInstance();
-    const auto* account = accMgr.getCurrentAccount();
-    
-    std::string userId;
-    if (!forceUserId.empty())
-    {
-        userId = forceUserId;
+    try {
+        auto& accMgr = AccountManager::getInstance();
+        const auto* account = accMgr.getCurrentAccount();
+        
+        std::string userId;
+        if (!forceUserId.empty())
+        {
+            userId = forceUserId;
+        }
+        else if (account)
+        {
+            userId = account->account.userId;
+        }
+        else
+        {
+            CCLOG("TroopInventory: No current account, cannot save");
+            return;
+        }
+        
+        std::string filename = "troop_inv_" + userId + ".json";
+        std::string path = FileUtils::getInstance()->getWritablePath() + filename;
+        std::string json = toJson();
+        
+        FILE* file = fopen(path.c_str(), "w");
+        if (file)
+        {
+            fputs(json.c_str(), file);
+            fclose(file);
+            CCLOG("TroopInventory: Saved to %s", filename.c_str());
+        }
+        else
+        {
+            CCLOG("TroopInventory: Failed to save %s", filename.c_str());
+        }
     }
-    else if (account)
-    {
-        userId = account->account.userId;
-    }
-    else
-    {
-        CCLOG("TroopInventory: No current account, cannot save");
-        return;
-    }
-    
-    std::string filename = "troop_inv_" + userId + ".json";
-    std::string path = FileUtils::getInstance()->getWritablePath() + filename;
-    std::string json = toJson();
-    
-    FILE* file = fopen(path.c_str(), "w");
-    if (file)
-    {
-        fputs(json.c_str(), file);
-        fclose(file);
-        CCLOG("TroopInventory: Saved to %s", filename.c_str());
-    }
-    else
-    {
-        CCLOG("TroopInventory: Failed to save %s", filename.c_str());
+    catch (const std::exception& e) {
+        CCLOG("❌ TroopInventory::save 异常: %s", e.what());
     }
 }
 
 void TroopInventory::load()
 {
-    auto& accMgr = AccountManager::getInstance();
-    const auto* account = accMgr.getCurrentAccount();
-    
-    if (!account)
-    {
-        CCLOG("TroopInventory: No current account, cannot load");
-        return;
+    try {
+        auto& accMgr = AccountManager::getInstance();
+        const auto* account = accMgr.getCurrentAccount();
+        
+        if (!account)
+        {
+            CCLOG("TroopInventory: No current account, cannot load");
+            return;
+        }
+        
+        std::string filename = "troop_inv_" + account->account.userId + ".json";
+        std::string path = FileUtils::getInstance()->getWritablePath() + filename;
+        
+        if (!FileUtils::getInstance()->isFileExist(path))
+        {
+            CCLOG("TroopInventory: File not found, using defaults: %s", filename.c_str());
+            return;
+        }
+        
+        std::string json = FileUtils::getInstance()->getStringFromFile(path);
+        if (fromJson(json))
+        {
+            CCLOG("TroopInventory: Loaded from %s", filename.c_str());
+        }
     }
-    
-    std::string filename = "troop_inv_" + account->account.userId + ".json";
-    std::string path = FileUtils::getInstance()->getWritablePath() + filename;
-    
-    if (!FileUtils::getInstance()->isFileExist(path))
-    {
-        CCLOG("TroopInventory: File not found, using defaults: %s", filename.c_str());
-        return;
-    }
-    
-    std::string json = FileUtils::getInstance()->getStringFromFile(path);
-    if (fromJson(json))
-    {
-        CCLOG("TroopInventory: Loaded from %s", filename.c_str());
+    catch (const std::exception& e) {
+        CCLOG("❌ TroopInventory::load 异常: %s", e.what());
     }
 }
 
