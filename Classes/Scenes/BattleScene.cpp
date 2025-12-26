@@ -3,7 +3,7 @@
  * File Name:     BattleScene.cpp
  * File Function: 战斗场景
  * Author:        赵崇治、薛毓哲
- * Update Date:   2025/12/25
+ * Update Date:   2025/12/26
  * License:       MIT License
  ****************************************************************/
 #include "BattleScene.h"
@@ -148,6 +148,9 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
                 _battleUI->updateStatus("⚔️ 战斗开始！", Color4B::RED);
                 CCLOG("⚔️ UI收到战斗开始通知，隐藏准备阶段UI");
             }
+
+            // 淡出部署限制区域覆盖层
+            hideDeployRestrictionOverlay();
         });
 
         // 设置战斗结束回调
@@ -244,6 +247,9 @@ bool BattleScene::initWithEnemyData(const AccountGameData& enemyData, const std:
                     }
                 }
             }
+
+            // 显示部署限制区域覆盖层
+            showDeployRestrictionOverlay();
         },
         0.5f, "start_battle_delay");
 
@@ -461,13 +467,173 @@ void BattleScene::setupUI()
     _battleUI->setReturnCallback([this]() { returnToMainScene(); });
 
     _battleUI->setTroopSelectionCallback([this](UnitType type) { onTroopSelected(type); });
+
+    // 设置取消选择回调
+    _battleUI->setTroopDeselectionCallback([this]() { onTroopDeselected(); });
 }
 
 void BattleScene::onTroopSelected(UnitType type)
 {
     _selectedUnitType = type;
+    CCLOG("🔹 BattleScene: 选中兵种 %d", static_cast<int>(type));
     if (_battleUI)
         _battleUI->highlightTroopButton(type);
+}
+
+void BattleScene::onTroopDeselected()
+{
+    _selectedUnitType = UnitType::kNone;
+    CCLOG("🔹 BattleScene: 取消选中兵种");
+    if (_battleUI)
+        _battleUI->clearTroopHighlight();
+}
+
+bool BattleScene::canDeployAtPosition(const cocos2d::Vec2& mapLocalPos) const
+{
+    if (!_gridMap || !_buildingManager)
+    {
+        return true;  // 如果没有网格地图或建筑管理器，默认允许部署
+    }
+
+    // 注意：mapLocalPos 是 _mapSprite 的本地坐标
+    // _gridMap 是 _mapSprite 的子节点，所以可以直接使用
+    // 但 getGridPosition 内部会调用 convertToNodeSpace，所以需要先转换为世界坐标
+    Vec2 worldPos = _mapSprite->convertToWorldSpace(mapLocalPos);
+    Vec2 gridPos = _gridMap->getGridPosition(worldPos);
+    int gridX = static_cast<int>(gridPos.x);
+    int gridY = static_cast<int>(gridPos.y);
+
+    // 获取网格尺寸
+    int gridWidth = _gridMap->getGridWidth();
+    int gridHeight = _gridMap->getGridHeight();
+
+    CCLOG("🔍 部署检查: mapLocalPos=(%.1f,%.1f), worldPos=(%.1f,%.1f), gridPos=(%d,%d)", 
+          mapLocalPos.x, mapLocalPos.y, worldPos.x, worldPos.y, gridX, gridY);
+
+    // 检查周围3x3区域（包括自身和周围一圈）是否有被占用的网格
+    // 这确保单位不会部署在建筑物上或建筑物周围一圈内
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            int checkX = gridX + dx;
+            int checkY = gridY + dy;
+
+            // 边界检查
+            if (checkX < 0 || checkX >= gridWidth || 
+                checkY < 0 || checkY >= gridHeight)
+            {
+                continue;
+            }
+
+            // 如果该网格被建筑占用，则不能在此位置部署
+            if (_gridMap->isBlocked(checkX, checkY))
+            {
+                CCLOG("🚫 网格(%d,%d)被占用，禁止在(%d,%d)部署", checkX, checkY, gridX, gridY);
+                return false;
+            }
+        }
+    }
+
+    CCLOG("✅ 网格(%d,%d)可以部署", gridX, gridY);
+    return true;
+}
+
+void BattleScene::showDeployRestrictionOverlay()
+{
+    if (!_gridMap || _deployOverlayShown)
+    {
+        return;
+    }
+
+    _deployOverlayShown = true;
+    _gridMap->showDeployRestrictionOverlay(true);
+
+    CCLOG("📍 显示部署限制区域覆盖层");
+}
+
+void BattleScene::hideDeployRestrictionOverlay()
+{
+    if (!_gridMap || !_deployOverlayShown)
+    {
+        return;
+    }
+
+    _deployOverlayShown = false;
+    _gridMap->fadeOutDeployOverlay(0.5f);
+
+    CCLOG("📍 隐藏部署限制区域覆盖层（淡出）");
+}
+
+void BattleScene::showDeployFailedFeedback(const cocos2d::Vec2& worldPos, 
+                                           const cocos2d::Vec2& mapLocalPos,
+                                           const std::string& reason)
+{
+    // 在GridMap上显示红色网格淡入淡出动画
+    if (_gridMap && _mapSprite)
+    {
+        // 坐标转换：将 mapLocalPos 转换为世界坐标，再传给 getGridPosition
+        Vec2 worldPosForGrid = _mapSprite->convertToWorldSpace(mapLocalPos);
+        Vec2 gridPos = _gridMap->getGridPosition(worldPosForGrid);
+        _gridMap->showDeployFailedAnimation(gridPos, 1.0f);
+    }
+
+    // 创建红色禁止符号
+    auto forbiddenNode = Node::create();
+    forbiddenNode->setPosition(worldPos);
+    this->addChild(forbiddenNode, 500);
+
+    // 绘制红色叉号
+    auto drawNode = DrawNode::create();
+    const float crossSize = 30.0f;
+    
+    // 绘制红色圆圈
+    drawNode->drawCircle(Vec2::ZERO, crossSize, 0, 32, false, 
+                         Color4F(1.0f, 0.2f, 0.2f, 0.9f));
+    
+    // 绘制叉号
+    drawNode->drawLine(Vec2(-crossSize * 0.6f, -crossSize * 0.6f), 
+                       Vec2(crossSize * 0.6f, crossSize * 0.6f), 
+                       Color4F(1.0f, 0.2f, 0.2f, 0.9f));
+    drawNode->drawLine(Vec2(-crossSize * 0.6f, crossSize * 0.6f), 
+                       Vec2(crossSize * 0.6f, -crossSize * 0.6f), 
+                       Color4F(1.0f, 0.2f, 0.2f, 0.9f));
+    
+    forbiddenNode->addChild(drawNode);
+
+    // 创建提示文字
+    auto tipLabel = Label::createWithSystemFont(reason, "Arial", 16);
+    tipLabel->setPosition(Vec2(0, -crossSize - 15));
+    tipLabel->setTextColor(Color4B(255, 100, 100, 255));
+    tipLabel->enableOutline(Color4B(0, 0, 0, 180), 2);
+    forbiddenNode->addChild(tipLabel);
+
+    // 添加动画效果：缩放和淡出
+    forbiddenNode->setScale(0.5f);
+    forbiddenNode->setOpacity(255);
+
+    auto scaleUp = EaseBackOut::create(ScaleTo::create(0.15f, 1.2f));
+    auto scaleDown = ScaleTo::create(0.1f, 1.0f);
+    auto wait = DelayTime::create(0.5f);
+    auto fadeOut = FadeOut::create(0.3f);
+    auto removeSelf = RemoveSelf::create();
+
+    // 震动效果
+    auto shake1 = MoveBy::create(0.05f, Vec2(-5, 0));
+    auto shake2 = MoveBy::create(0.05f, Vec2(10, 0));
+    auto shake3 = MoveBy::create(0.05f, Vec2(-10, 0));
+    auto shake4 = MoveBy::create(0.05f, Vec2(5, 0));
+
+    auto shakeSeq = Sequence::create(shake1, shake2, shake3, shake4, nullptr);
+    auto mainSeq = Sequence::create(scaleUp, scaleDown, shakeSeq, wait, fadeOut, removeSelf, nullptr);
+
+    forbiddenNode->runAction(mainSeq);
+
+    // 同时让提示文字淡出
+    tipLabel->runAction(Sequence::create(
+        DelayTime::create(0.8f),
+        FadeOut::create(0.3f),
+        nullptr));
 }
 
 // ==================== 战斗逻辑 ====================
@@ -640,7 +806,7 @@ void BattleScene::replaySpectateHistory()
         const auto& action = _spectateHistory[i];
         
         // 🔧 将操作添加到已处理集合（用于后续去重）
-        _processedActionSet.insert(action);
+//         _processedActionSet.insert(action);
         
         // 格式解析: "unitType,x,y"
         std::vector<std::string> parts;
@@ -678,38 +844,7 @@ void BattleScene::replaySpectateHistory()
     _spectateHistoryIndex = _spectateHistory.size();
     CCLOG("📺 历史回放完成，已处理操作数: %zu", _processedActionSet.size());
     
-    // 🔧 处理在历史回放期间缓存的远程操作（只处理真正的新操作）
-    if (!_pendingRemoteActions.empty())
-    {
-        CCLOG("📺 处理缓存的远程操作: %zu 个", _pendingRemoteActions.size());
-        for (const auto& pendingAction : _pendingRemoteActions)
-        {
-            int unitType = std::get<0>(pendingAction);
-            float x = std::get<1>(pendingAction);
-            float y = std::get<2>(pendingAction);
-            
-            // 构造操作字符串用于去重检查
-            std::ostringstream oss;
-            oss << unitType << "," << x << "," << y;
-            std::string actionKey = oss.str();
-            
-            // 检查是否已在历史中处理过
-            if (_processedActionSet.find(actionKey) == _processedActionSet.end())
-            {
-                CCLOG("📺 执行缓存的新操作: type=%d, pos=(%.1f,%.1f)", unitType, x, y);
-                _processedActionSet.insert(actionKey);
-                _spectateReceivedActionCount++;
-                _battleManager->deployUnitRemote(static_cast<UnitType>(unitType), Vec2(x, y));
-            }
-            else
-            {
-                CCLOG("📺 跳过缓存中的重复操作: type=%d, pos=(%.1f,%.1f)", unitType, x, y);
-            }
-        }
-        _pendingRemoteActions.clear();
-    }
-    
-    // 🔧 检查是否可以结束（如果在历史回放期间收到了结束信号）
+    // 🔧 处理在历史回放期间收到了结束信号的情况
     checkSpectateEndCondition();
 }
 
@@ -1009,8 +1144,50 @@ void BattleScene::setupTouchListeners()
             (_battleManager->getState() == BattleManager::BattleState::READY ||
              _battleManager->getState() == BattleManager::BattleState::FIGHTING))
         {
-            Vec2 touchPos    = touch->getLocation();
+            Vec2 touchPos = touch->getLocation();
+
+            // Issue 2 Fix: 检查是否有选中的部队类型
+            if (_selectedUnitType == UnitType::kNone)
+            {
+                CCLOG("⚠️ 未选择部队类型，无法部署");
+                // 显示提示，但不显示红叉（因为这是用户操作问题，不是位置问题）
+                if (_battleUI)
+                {
+                    _battleUI->updateStatus("⚠️ 请先选择要部署的部队！", Color4B::YELLOW);
+                    
+                    // 1秒后恢复原状态提示
+                    this->scheduleOnce([this](float dt) {
+                        if (_battleUI && _battleManager && 
+                            _battleManager->getState() != BattleManager::BattleState::FINISHED)
+                        {
+                            if (_battleManager->isInReadyPhase())
+                            {
+                                _battleUI->updateStatus("🎯 侦察敌方基地，部署士兵开始进攻！", Color4B::YELLOW);
+                            }
+                            else
+                            {
+                                _battleUI->updateStatus("⚔️ 战斗进行中", Color4B::RED);
+                            }
+                        }
+                    }, 1.5f, "restore_status_hint");
+                }
+                _isDragging = false;
+                return;
+            }
+
             Vec2 mapLocalPos = _mapSprite->convertToNodeSpace(touchPos);
+
+            // Issue 3 Fix: 检查部署位置是否有效（不在建筑物周围一圈内）
+//             if (!canDeployAtPosition(mapLocalPos))
+            if (!canDeployAtPosition(mapLocalPos))
+            {
+                CCLOG("⚠️ 无法在建筑物附近部署部队");
+                // 显示部署失败的可视化反馈
+                showDeployFailedFeedback(touchPos, mapLocalPos, "建筑物附近禁止部署");
+                _isDragging = false;
+                return;
+            }
+
             _battleManager->deployUnit(_selectedUnitType, mapLocalPos);
         }
         _isDragging = false;

@@ -153,7 +153,7 @@ private:
     bool _isSpectateMode = false;     ///< 是否为观战模式
     int _starsEarned = 0;             ///< 获得的星星数
 
-    UnitType _selectedUnitType = UnitType::kBarbarian;  ///< 选中的单位类型
+    UnitType _selectedUnitType = UnitType::kNone;  ///< 选中的单位类型（默认无选中）
     bool _hasSelectedUnit = false;    ///< 是否有选中的单位
 
     cocos2d::Label* _statusLabel = nullptr;       ///< 状态标签

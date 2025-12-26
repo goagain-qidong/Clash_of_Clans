@@ -169,6 +169,35 @@ void TroopInventory::clearAll()
     }
 }
 
+void TroopInventory::setAllTroops(const std::map<UnitType, int>& troops)
+{
+    // 设置所有兵种数量
+    for (const auto& pair : troops)
+    {
+        // 跳过无效类型
+        if (pair.first == UnitType::kNone)
+        {
+            continue;
+        }
+        _troops[pair.first] = pair.second;
+        
+        CCLOG("TroopInventory: Set type=%d, count=%d", 
+              static_cast<int>(pair.first), pair.second);
+        
+        // 通知UI更新
+        notifyChange(pair.first, pair.second);
+    }
+    
+    // 重新计算并更新人口数
+    int totalPop = getTotalPopulation();
+    ResourceManager::getInstance().setResourceCount(ResourceType::kTroopPopulation, totalPop);
+    
+    CCLOG("TroopInventory: setAllTroops complete, total population: %d", totalPop);
+    
+    // 自动保存到文件
+    save();
+}
+
 // ==================== 序列化/反序列化 ====================
 
 std::string TroopInventory::toJson() const

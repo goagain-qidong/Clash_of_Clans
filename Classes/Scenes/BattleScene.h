@@ -3,7 +3,7 @@
  * File Name:     BattleScene.h
  * File Function: 战斗场景
  * Author:        赵崇治
- * Update Date:   2025/12/25
+ * Update Date:   2025/12/26
  * License:       MIT License
  ****************************************************************/
 #pragma once
@@ -132,7 +132,7 @@ class BattleScene : public cocos2d::Scene {
     float                        _prevPinchDistance = 0.0f;
 
     // ==================== 士兵部署数据 ====================
-    UnitType _selectedUnitType = UnitType::kBarbarian;
+    UnitType _selectedUnitType = UnitType::kNone;  ///< 默认无选中单位
 
     // ==================== 初始化方法 ====================
     void setupMap();
@@ -141,6 +141,7 @@ class BattleScene : public cocos2d::Scene {
 
     // ==================== 交互逻辑 ====================
     void onTroopSelected(UnitType type);
+    void onTroopDeselected();
     void returnToMainScene();
     void toggleSpeed();
 
@@ -158,6 +159,20 @@ class BattleScene : public cocos2d::Scene {
     
     // 🔧 新增：检查观战同步结束条件
     void checkSpectateEndCondition();
+
+    // ==================== 部署区域可视化 ====================
+    bool _deployOverlayShown = false;  ///< 部署覆盖层是否已显示
+    
+    /**
+     * @brief 显示部署限制区域覆盖层
+     * @note 在准备阶段显示，战斗开始后淡出
+     */
+    void showDeployRestrictionOverlay();
+    
+    /**
+     * @brief 隐藏部署限制区域覆盖层（带淡出效果）
+     */
+    void hideDeployRestrictionOverlay();
 
     // ==================== PVP/观战状态 ====================
     bool        _isPvpMode      = false;    ///< 是否为PVP模式
@@ -184,6 +199,25 @@ class BattleScene : public cocos2d::Scene {
 
     // ==================== 场景栈标记 ====================
     bool        _isPushedScene = true;      ///< 是否通过 pushScene 进入（默认为 true）
+
+    // ==================== 部署验证 ====================
+    /**
+     * @brief 检查位置是否可以部署单位
+     * @param mapLocalPos 地图本地坐标
+     * @return bool 是否可以部署
+     * @note 单位只能在建筑物周围一圈网格之外部署
+     */
+    bool canDeployAtPosition(const cocos2d::Vec2& mapLocalPos) const;
+
+    /**
+     * @brief 显示部署失败的可视化反馈
+     * @param worldPos 世界坐标位置
+     * @param mapLocalPos 地图本地坐标
+     * @param reason 失败原因
+     */
+    void showDeployFailedFeedback(const cocos2d::Vec2& worldPos, 
+                                  const cocos2d::Vec2& mapLocalPos,
+                                  const std::string& reason);
 };
 
 #endif  // __BATTLE_SCENE_H__

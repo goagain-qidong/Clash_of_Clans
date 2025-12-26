@@ -3,7 +3,7 @@
  * File Name:     GridMap.h
  * File Function: 等距菱形网格地图类，支持网格显示、建筑放置、碰撞检测等功能
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/12/26
  * License:       MIT License
  ****************************************************************/
 #pragma once
@@ -20,6 +20,7 @@
  * - 网格可视化显示
  * - 建筑放置区域预览
  * - 碰撞检测和区域占用管理
+ * - 战斗部署区域可视化
  */
 class GridMap : public cocos2d::Node
 {
@@ -28,6 +29,7 @@ private:
     float _tileSize;                                  ///< 单个网格的宽度（像素）
     cocos2d::DrawNode* _gridNode;                     ///< 用于绘制网格线的节点
     cocos2d::DrawNode* _baseNode;                     ///< 用于绘制建筑底座预览的节点
+    cocos2d::DrawNode* _deployOverlayNode;            ///< 用于绘制部署区域覆盖层的节点
 
     std::vector<std::vector<bool>> _collisionMap;     ///< 碰撞地图，true表示该网格被占用
     int _gridWidth;                                   ///< 网格宽度（网格单位）
@@ -35,6 +37,7 @@ private:
 
     cocos2d::Vec2 _startPixel;                        ///< 网格(0,0)对应的像素坐标
     bool _gridVisible;                                ///< 网格是否可见
+    bool _deployOverlayVisible;                       ///< 部署覆盖层是否可见
 
 public:
     /**
@@ -131,7 +134,35 @@ public:
      */
     void showWholeGrid(bool visible, const cocos2d::Size& currentBuildingSize = cocos2d::Size::ZERO);
     
+    /**
+     * @brief 显示部署限制区域覆盖层
+     * @param visible 是否显示
+     * @note 显示建筑物及其周围一圈的禁止部署区域
+     */
+    void showDeployRestrictionOverlay(bool visible);
     
+    /**
+     * @brief 淡出部署限制区域覆盖层
+     * @param duration 淡出持续时间（秒）
+     */
+    void fadeOutDeployOverlay(float duration);
+    
+    /**
+     * @brief 在指定位置显示部署失败的红色网格动画
+     * @param gridPos 网格坐标
+     * @param duration 动画持续时间（秒）
+     */
+    void showDeployFailedAnimation(const cocos2d::Vec2& gridPos, float duration);
+    
+    /**
+     * @brief 检查指定网格位置是否可部署（考虑周围一圈）
+     * @param gridX 网格X坐标
+     * @param gridY 网格Y坐标
+     * @return bool 是否可部署
+     */
+    bool canDeployAt(int gridX, int gridY) const;
+
+
 
     // --- Pathfinding helpers ---
     

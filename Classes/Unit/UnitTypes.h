@@ -3,7 +3,7 @@
  * File Name:     UnitTypes.h
  * File Function: 单位类型定义 - 所有单位相关的枚举和常量
  * Author:        薛毓哲
- * Update Date:   2025/01/10
+ * Update Date:   2025/12/26
  * License:       MIT License
  ****************************************************************/
 #ifndef UNIT_TYPES_H_
@@ -14,6 +14,7 @@
  * @brief 单位类型枚举
  */
 enum class UnitType {
+    kNone = -1,    ///< 无单位（未选中状态）
     kBarbarian,    ///< 野蛮人
     kArcher,       ///< 弓箭手
     kGiant,        ///< 巨人

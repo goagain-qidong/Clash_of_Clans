@@ -1,4 +1,12 @@
-﻿#include "GridMap.h"
+﻿/****************************************************************
+ * Project Name:  Clash_of_Clans
+ * File Name:     GridMap.cpp
+ * File Function: 等距菱形网格地图类实现
+ * Author:        赵崇治
+ * Update Date:   2025/12/26
+ * License:       MIT License
+ ****************************************************************/
+#include "GridMap.h"
 
 USING_NS_CC;
 
@@ -27,6 +35,10 @@ bool GridMap::init(const Size& mapSize, float tileSize)
     _baseNode = DrawNode::create();
     this->addChild(_baseNode, 2);
 
+    // 创建部署覆盖层节点
+    _deployOverlayNode = DrawNode::create();
+    this->addChild(_deployOverlayNode, 3);
+
     // 长边与短边相同
     _gridWidth = static_cast<int>(round(mapSize.width / tileSize)) - 1;
     _gridHeight = _gridWidth;
@@ -35,6 +47,7 @@ bool GridMap::init(const Size& mapSize, float tileSize)
 
     _startPixel = Vec2(_mapSize.width / 2.0f, _mapSize.height + 30.0f - _tileSize * 0.5f);
     _gridVisible = false;
+    _deployOverlayVisible = false;
 
     return true;
 }
@@ -146,6 +159,176 @@ void GridMap::showWholeGrid(bool visible, const cocos2d::Size& currentBuildingSi
             _gridNode->drawPoly(p, 4, true, bigGridLineColor);
         }
     }
+}
+
+void GridMap::showDeployRestrictionOverlay(bool visible)
+{
+    _deployOverlayVisible = visible;
+    _deployOverlayNode->clear();
+    _deployOverlayNode->stopAllActions();
+    _deployOverlayNode->setOpacity(255);
+    
+    if (!visible)
+    {
+        return;
+    }
+
+    // 计算菱形网格的半宽和半高
+    float halfW = _tileSize / 2.0f;
+    float halfH = halfW * 0.75f;
+
+    // 定义颜色：禁止部署区域（淡红色）和可部署区域（淡绿色）
+    Color4F blockedColor = Color4F(1.0f, 0.2f, 0.2f, 0.25f);
+    Color4F blockedBorderColor = Color4F(1.0f, 0.3f, 0.3f, 0.5f);
+    Color4F allowedColor = Color4F(0.2f, 1.0f, 0.2f, 0.1f);
+    Color4F allowedBorderColor = Color4F(0.3f, 1.0f, 0.3f, 0.3f);
+
+    // 遍历所有网格，标记禁止部署区域
+    for (int x = 0; x < _gridWidth; ++x)
+    {
+        for (int y = 0; y < _gridHeight; ++y)
+        {
+            Vec2 center = getPositionFromGrid(Vec2(static_cast<float>(x), static_cast<float>(y)));
+
+            // 计算菱形的四个顶点
+            Vec2 p[4];
+            p[0] = Vec2(center.x, center.y + halfH);
+            p[1] = Vec2(center.x + halfW, center.y);
+            p[2] = Vec2(center.x, center.y - halfH);
+            p[3] = Vec2(center.x - halfW, center.y);
+
+            // 检查该网格是否可部署
+            if (canDeployAt(x, y))
+            {
+                // 可部署区域：淡绿色
+                _deployOverlayNode->drawSolidPoly(p, 4, allowedColor);
+                _deployOverlayNode->drawPoly(p, 4, true, allowedBorderColor);
+            }
+            else
+            {
+                // 禁止部署区域：淡红色
+                _deployOverlayNode->drawSolidPoly(p, 4, blockedColor);
+                _deployOverlayNode->drawPoly(p, 4, true, blockedBorderColor);
+            }
+        }
+    }
+}
+
+void GridMap::fadeOutDeployOverlay(float duration)
+{
+    if (!_deployOverlayNode)
+    {
+        return;
+    }
+
+    // 淡出动画
+    auto fadeOut = FadeOut::create(duration);
+    auto callback = CallFunc::create([this]() {
+        _deployOverlayNode->clear();
+        _deployOverlayNode->setOpacity(255);
+        _deployOverlayVisible = false;
+    });
+    
+    _deployOverlayNode->runAction(Sequence::create(fadeOut, callback, nullptr));
+}
+
+void GridMap::showDeployFailedAnimation(const cocos2d::Vec2& gridPos, float duration)
+{
+    // 创建临时绘制节点用于动画
+    auto animNode = DrawNode::create();
+    this->addChild(animNode, 100);
+
+    // 计算菱形网格的半宽和半高
+    float halfW = _tileSize / 2.0f;
+    float halfH = halfW * 0.75f;
+
+    int gridX = static_cast<int>(gridPos.x);
+    int gridY = static_cast<int>(gridPos.y);
+
+    // 定义红色半透明颜色
+    Color4F blockedColor = Color4F(1.0f, 0.2f, 0.2f, 0.5f);
+    Color4F blockedBorderColor = Color4F(1.0f, 0.0f, 0.0f, 0.8f);
+
+    // 绘制周围3x3区域（包括中心点和周围一圈）
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            int checkX = gridX + dx;
+            int checkY = gridY + dy;
+
+            // 边界检查
+            if (checkX < 0 || checkX >= _gridWidth ||
+                checkY < 0 || checkY >= _gridHeight)
+            {
+                continue;
+            }
+
+            Vec2 center = getPositionFromGrid(Vec2(static_cast<float>(checkX), 
+                                                    static_cast<float>(checkY)));
+
+            // 计算菱形的四个顶点
+            Vec2 p[4];
+            p[0] = Vec2(center.x, center.y + halfH);
+            p[1] = Vec2(center.x + halfW, center.y);
+            p[2] = Vec2(center.x, center.y - halfH);
+            p[3] = Vec2(center.x - halfW, center.y);
+
+            // 绘制红色菱形
+            animNode->drawSolidPoly(p, 4, blockedColor);
+            animNode->drawPoly(p, 4, true, blockedBorderColor);
+        }
+    }
+
+    // 初始透明度为0，淡入
+    animNode->setOpacity(0);
+
+    // 创建淡入淡出动画
+    float fadeInTime = duration * 0.2f;    // 20%时间淡入
+    float holdTime = duration * 0.5f;       // 50%时间保持
+    float fadeOutTime = duration * 0.3f;    // 30%时间淡出
+
+    auto fadeIn = FadeTo::create(fadeInTime, 255);
+    auto hold = DelayTime::create(holdTime);
+    auto fadeOut = FadeOut::create(fadeOutTime);
+    auto removeSelf = RemoveSelf::create();
+
+    animNode->runAction(Sequence::create(fadeIn, hold, fadeOut, removeSelf, nullptr));
+}
+
+bool GridMap::canDeployAt(int gridX, int gridY) const
+{
+    // 边界检查
+    if (gridX < 0 || gridX >= _gridWidth ||
+        gridY < 0 || gridY >= _gridHeight)
+    {
+        return false;
+    }
+
+    // 检查周围3x3区域（包括自身和周围一圈）是否有被占用的网格
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            int checkX = gridX + dx;
+            int checkY = gridY + dy;
+
+            // 边界检查
+            if (checkX < 0 || checkX >= _gridWidth ||
+                checkY < 0 || checkY >= _gridHeight)
+            {
+                continue;
+            }
+
+            // 如果该网格被建筑占用，则不能在此位置部署
+            if (_collisionMap[checkX][checkY])
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 void GridMap::updateBuildingBase(Vec2 gridPos, Size size, bool isValid)
@@ -267,6 +450,7 @@ bool GridMap::isBlocked(int x, int y) const
         return true;
     return _collisionMap[x][y];
 }
+
 void GridMap::markArea(cocos2d::Vec2 startGridPos, cocos2d::Size size, bool occupied)
 {
     int startX = static_cast<int>(startGridPos.x);
@@ -284,9 +468,6 @@ void GridMap::markArea(cocos2d::Vec2 startGridPos, cocos2d::Size size, bool occu
             {
                 // _collisionMap 是你在 GridMap 中存储 true/false 的二维数组
                 _collisionMap[x][y] = occupied;
-
-                // 可选：如果是调试模式，把格子变红方便观察
-                // if (occupied) drawDebugRect(x, y, Color4F::RED);
             }
         }
     }
