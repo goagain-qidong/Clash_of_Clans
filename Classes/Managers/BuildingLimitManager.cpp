@@ -201,3 +201,33 @@ bool BuildingLimitManager::canBuild(const std::string& buildingName) const
     
     return canBuild;
 }
+
+int BuildingLimitManager::getMaxBuildingLevel(const std::string& buildingName) const
+{
+    // 大本营的等级不受自身限制，只受配置最大等级限制
+    if (buildingName == "TownHall" || buildingName == "大本营") {
+        return 17;  // 大本营配置的最大等级
+    }
+    
+    // 城墙等级上限 = 大本营等级
+    if (buildingName == "Wall" || buildingName == "城墙") {
+        return _cachedTownHallLevel;
+    }
+    
+    // 其他建筑等级上限 = 大本营等级
+    // 这意味着：大本营 Lv.5 时，其他建筑最高只能升到 Lv.5
+    return _cachedTownHallLevel;
+}
+
+bool BuildingLimitManager::canUpgradeToLevel(const std::string& buildingName, int targetLevel) const
+{
+    int maxLevel = getMaxBuildingLevel(buildingName);
+    bool canUpgrade = targetLevel <= maxLevel;
+    
+    if (!canUpgrade) {
+        CCLOG("❌ Cannot upgrade %s to Lv.%d: max level at TH Lv.%d is %d", 
+              buildingName.c_str(), targetLevel, _cachedTownHallLevel, maxLevel);
+    }
+    
+    return canUpgrade;
+}

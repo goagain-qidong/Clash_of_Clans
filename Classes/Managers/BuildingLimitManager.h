@@ -85,6 +85,27 @@ public:
      * @return true 如果还有建造空间
      */
     bool canBuild(const std::string& buildingName) const;
+    
+    /**
+     * @brief 获取某建筑类型在当前大本营等级下允许的最大等级
+     * @param buildingName 建筑名称
+     * @return 该建筑允许的最大等级
+     */
+    int getMaxBuildingLevel(const std::string& buildingName) const;
+    
+    /**
+     * @brief 检查建筑是否可以升级到指定等级
+     * @param buildingName 建筑名称
+     * @param targetLevel 目标等级
+     * @return true 如果可以升级到该等级
+     */
+    bool canUpgradeToLevel(const std::string& buildingName, int targetLevel) const;
+    
+    /**
+     * @brief 获取当前缓存的大本营等级
+     * @return 大本营等级
+     */
+    int getTownHallLevel() const { return _cachedTownHallLevel; }
 
 private:
     BuildingLimitManager();

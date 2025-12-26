@@ -10,6 +10,7 @@
 #include "Buildings/BaseBuilding.h"
 #include "Managers/ResourceManager.h"
 #include "Managers/UpgradeManager.h"
+#include "Managers/BuildingLimitManager.h"
 #include "cocos2d.h"
 
 USING_NS_CC;
@@ -47,7 +48,19 @@ UpgradeResult BuildingUpgradeService::tryUpgrade(BaseBuilding* building)
     // 1. 检查等级
     if (!checkLevel(building))
     {
-        return UpgradeResult::Failure(UpgradeError::kMaxLevel, "已达最高等级");
+        // 区分是配置最大等级还是大本营等级限制
+        if (building->isMaxLevel())
+        {
+            return UpgradeResult::Failure(UpgradeError::kMaxLevel, "已达最高等级");
+        }
+        else
+        {
+            auto* limitMgr = BuildingLimitManager::getInstance();
+            std::string errorMsg = StringUtils::format(
+                "需要先升级大本营！当前大本营 Lv.%d，建筑最高可升至 Lv.%d",
+                limitMgr->getTownHallLevel(), limitMgr->getTownHallLevel());
+            return UpgradeResult::Failure(UpgradeError::kTownHallLevelLimit, errorMsg);
+        }
     }
     
     // 2. 检查是否已在升级中
@@ -149,7 +162,29 @@ UpgradeResult BuildingUpgradeService::tryUpgrade(BaseBuilding* building)
 
 bool BuildingUpgradeService::checkLevel(const BaseBuilding* building) const
 {
-    return !building->isMaxLevel();
+    // 1. 检查是否已达配置的最大等级
+    if (building->isMaxLevel()) {
+        return false;
+    }
+    
+    // 2. 检查大本营等级限制
+    auto* limitMgr = BuildingLimitManager::getInstance();
+    std::string buildingName = building->getDisplayName();
+    
+    // 提取纯建筑名（去除 " Lv.X" 后缀）
+    size_t lvPos = buildingName.find(" Lv.");
+    if (lvPos != std::string::npos) {
+        buildingName = buildingName.substr(0, lvPos);
+    }
+    
+    int targetLevel = building->getLevel() + 1;
+    if (!limitMgr->canUpgradeToLevel(buildingName, targetLevel)) {
+        CCLOG("❌ %s 无法升级到 Lv.%d：需要先升级大本营（当前大本营 Lv.%d）",
+              buildingName.c_str(), targetLevel, limitMgr->getTownHallLevel());
+        return false;
+    }
+    
+    return true;
 }
 
 bool BuildingUpgradeService::checkUpgrading(const BaseBuilding* building) const
