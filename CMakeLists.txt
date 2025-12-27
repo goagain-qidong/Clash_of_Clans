@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 
-set(APP_NAME HelloCpp)
+set(APP_NAME "Clash_of_Clans")
 project(${APP_NAME})
 
 if(MSVC)
