@@ -77,6 +77,18 @@ public:
      */
     void leaveClan(OperationCallback callback);
 
+    /**
+     * @brief 发送聊天消息
+     * @param message 消息内容
+     */
+    void sendChatMessage(const std::string& message);
+
+    /**
+     * @brief 设置聊天消息回调
+     * @param callback 回调函数 (sender, message)
+     */
+    void setOnChatMessage(std::function<void(const std::string&, const std::string&)> callback);
+
     /** @brief 初始化（注册网络回调） */
     void initialize();
 
@@ -98,6 +110,7 @@ private:
     OperationCallback _createClanCallback;  ///< 创建部落回调
     OperationCallback _joinClanCallback;    ///< 加入部落回调
     OperationCallback _leaveClanCallback;   ///< 退出部落回调
+    std::function<void(const std::string&, const std::string&)> _chatCallback; ///< 聊天回调
     std::string _pendingClanId;             ///< 待处理部落ID
     std::string _pendingClanName;           ///< 待处理部落名称
 

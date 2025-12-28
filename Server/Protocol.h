@@ -51,6 +51,8 @@ enum PacketType : uint32_t {
     PACKET_CLAN_LIST = 23,      ///< 获取部落列表
     PACKET_CLAN_MEMBERS = 24,   ///< 获取部落成员
     PACKET_CLAN_INFO = 25,      ///< 获取部落信息
+    PACKET_CLAN_CHAT = 26,      ///< 发送部落聊天消息
+    PACKET_CHAT_MESSAGE = 27,   ///< 接收部落聊天消息
 
     // ======================== 部落战争基础 (30-39) ========================
     // 部落战争的搜索、匹配、攻击等

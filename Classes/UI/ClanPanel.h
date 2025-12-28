@@ -56,6 +56,7 @@ private:
     void setupTabBar();         ///< 设置标签栏
     void setupListView();       ///< 设置列表视图
     void setupClanManagement(); ///< 设置部落管理
+    void setupChatUI();         ///< 设置聊天UI
 
     void onDataChanged(ClanDataChangeType type);  ///< 数据变更回调
 
@@ -84,6 +85,9 @@ private:
     void onClanWarSpectate(const std::string& targetId); ///< 部落战观战
     void onJoinClanClicked(const std::string& clanId);  ///< 加入部落
     void onLeaveClanClicked();  ///< 退出部落
+    void onSendChatClicked();   ///< 发送聊天点击
+    void addChatMessage(const std::string& sender, const std::string& message); ///< 添加聊天消息到UI
+    void refreshChatDisplay();  ///< 刷新聊天显示
 
     /**
      * @brief 进入战斗场景
@@ -123,6 +127,13 @@ private:
     cocos2d::ui::Button* _createClanBtn = nullptr; ///< 创建部落按钮
     cocos2d::ui::Button* _joinClanBtn = nullptr;   ///< 加入部落按钮
     cocos2d::ui::Button* _leaveClanBtn = nullptr;  ///< 退出部落按钮
+
+    // 聊天相关
+    cocos2d::Node* _chatNode = nullptr;            ///< 聊天节点
+    cocos2d::ui::ListView* _chatList = nullptr;    ///< 聊天列表
+    cocos2d::ui::TextField* _chatInput = nullptr;  ///< 聊天输入框
+    cocos2d::ui::Button* _sendChatBtn = nullptr;   ///< 发送聊天按钮
+    size_t _displayedChatCount = 0;                ///< 已显示的聊天消息数量
 
     // ==================== 状态 ====================
     TabType     _currentTab   = TabType::ONLINE_PLAYERS;  ///< 当前标签页

@@ -132,6 +132,10 @@ void AccountManager::upsertAccount(const AccountData& acc)
             newInfo.account.assignedMapName     = maps[rand() % maps.size()];
         }
 
+        // 确保新账号的士兵库存为空
+        TroopInventory::getInstance().clearAll();
+        newInfo.gameState.troopInventoryJson = TroopInventory::getInstance().toJson();
+
         _accounts.push_back(newInfo);
         _activeIndex = static_cast<int>(_accounts.size()) - 1;
         

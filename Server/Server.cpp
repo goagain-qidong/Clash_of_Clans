@@ -60,15 +60,22 @@ void Server::registerRoutes() {
     router->Register(PACKET_LOGIN,
         [this](SOCKET client, const std::string& data) {
             std::istringstream iss(data);
-            std::string playerId, playerName, trophiesStr;
+            std::string playerId, playerName, trophiesStr, clanId;
             std::getline(iss, playerId, kFieldSeparator);
             std::getline(iss, playerName, kFieldSeparator);
             std::getline(iss, trophiesStr, kFieldSeparator);
+            std::getline(iss, clanId, kFieldSeparator);
+
+            std::cout << "[Login] 收到登录请求: playerId=" << playerId 
+                      << ", playerName=" << playerName
+                      << ", trophies=" << trophiesStr
+                      << ", clanId=" << (clanId.empty() ? "(空)" : clanId) << std::endl;
 
             PlayerContext ctx;
             ctx.socket = client;
             ctx.playerId = playerId;
             ctx.playerName = playerName.empty() ? playerId : playerName;
+            ctx.clanId = clanId;  // 恢复部落归属
             if (!trophiesStr.empty()) {
                 try {
                     ctx.trophies = std::stoi(trophiesStr);
@@ -79,8 +86,21 @@ void Server::registerRoutes() {
 
             playerRegistry->Register(client, ctx);
 
+            // 如果玩家有部落ID，确保部落记录中包含该玩家
+            if (!clanId.empty()) {
+                std::cout << "[Login] 调用 EnsurePlayerInClan: " << playerId << " -> " << clanId << std::endl;
+                clanHall->EnsurePlayerInClan(playerId, clanId);
+                
+                // 再次获取玩家信息确认 clanId 是否设置成功
+                PlayerContext* player = playerRegistry->GetById(playerId);
+                if (player) {
+                    std::cout << "[Login] 登录后玩家clanId=" << (player->clanId.empty() ? "(空)" : player->clanId) << std::endl;
+                }
+            }
+
             std::cout << "[Login] 用户: " << playerId
-                      << " (奖杯: " << ctx.trophies << ")" << std::endl;
+                      << " (奖杯: " << ctx.trophies 
+                      << ", 部落: " << (clanId.empty() ? "无" : clanId) << ")" << std::endl;
             sendPacket(client, PACKET_LOGIN, "Login Success");
         });
 
@@ -262,6 +282,43 @@ void Server::registerRoutes() {
         [this](SOCKET client, const std::string& data) {
             std::string members = clanHall->GetClanMembersJson(data);
             sendPacket(client, PACKET_CLAN_MEMBERS, members);
+        });
+
+    // ======================== 部落聊天 ========================
+    router->Register(PACKET_CLAN_CHAT,
+        [this](SOCKET client, const std::string& data) {
+            PlayerContext* player = playerRegistry->GetBySocket(client);
+            if (player == nullptr) {
+                std::cout << "[Chat] 聊天失败: 玩家未找到 (socket=" << client << ")" << std::endl;
+                return;
+            }
+            
+            std::cout << "[Chat] 收到消息: playerId=" << player->playerId 
+                      << ", clanId=" << player->clanId 
+                      << ", msg=" << data << std::endl;
+            
+            if (player->clanId.empty()) {
+                std::cout << "[Chat] 聊天失败: 玩家 " << player->playerId << " 未加入部落 (clanId为空)" << std::endl;
+                return;
+            }
+
+            // 获取部落所有成员
+            std::vector<std::string> memberIds = clanHall->GetClanMemberIds(player->clanId);
+            
+            // 构建聊天消息: sender|message
+            std::string chatMessage = player->playerName + kFieldSeparator + data;
+            
+            std::cout << "[Chat] " << player->playerName << " 在部落 " 
+                      << player->clanId << " 发送消息: " << data 
+                      << " (成员数: " << memberIds.size() << ")" << std::endl;
+
+            // 广播给部落所有在线成员（包括发送者自己，以便确认消息已发送）
+            for (const auto& memberId : memberIds) {
+                PlayerContext* member = playerRegistry->GetById(memberId);
+                if (member != nullptr && member->socket != INVALID_SOCKET) {
+                    sendPacket(member->socket, PACKET_CHAT_MESSAGE, chatMessage);
+                }
+            }
         });
 
     // ======================== 部落战争 ========================

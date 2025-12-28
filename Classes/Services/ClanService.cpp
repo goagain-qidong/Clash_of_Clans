@@ -43,7 +43,9 @@ void ClanService::cleanup()
     client.setOnClanList(nullptr);
     client.setOnClanCreated(nullptr);
     client.setOnClanJoined(nullptr);
-    client.setOnClanLeft(nullptr); // 🆕 清除退出部落回调
+    client.setOnClanLeft(nullptr);
+    // 注意：不清除聊天回调，保持实时接收
+    // client.setOnChatMessage(nullptr);
     client.setOnBattleStatusList(nullptr);
 
     _initialized = false;
@@ -182,6 +184,22 @@ void ClanService::registerNetworkCallbacks()
             _leaveClanCallback = nullptr;
         });
     });
+
+    // 🆕 聊天消息回调 - 始终保持注册，确保能接收实时消息
+    client.setOnChatMessage([this](const std::string& sender, const std::string& message) {
+        Director::getInstance()->getScheduler()->performFunctionInCocosThread([this, sender, message]() {
+            CCLOG("[ClanService] 收到聊天消息: %s: %s", sender.c_str(), message.c_str());
+            
+            // 存入缓存（addChatMessage会自动去重和保存）
+            bool isNew = ClanDataCache::getInstance().addChatMessage(sender, message);
+            
+            // 只有新消息才通知UI（如果有监听者的话）
+            if (isNew && _chatCallback)
+            {
+                _chatCallback(sender, message);
+            }
+        });
+    });
 }
 
 void ClanService::connect(const std::string& ip, int port, OperationCallback callback)
@@ -197,8 +215,13 @@ void ClanService::connect(const std::string& ip, int port, OperationCallback cal
                 auto& accMgr = AccountManager::getInstance();
                 if (auto cur = accMgr.getCurrentAccount())
                 {
-                    SocketClient::getInstance().login(cur->account.userId, cur->account.username,
-                                                      cur->gameState.progress.trophies);
+                    // 发送登录信息，包含部落ID
+                    SocketClient::getInstance().login(
+                        cur->account.userId, 
+                        cur->account.username,
+                        cur->gameState.progress.trophies,
+                        cur->gameState.progress.clanId  // 发送部落ID
+                    );
                     std::string mapData = accMgr.exportGameStateJson();
                     if (!mapData.empty())
                     {
@@ -274,6 +297,16 @@ void ClanService::leaveClan(OperationCallback callback)
 
     _leaveClanCallback = callback;
     SocketClient::getInstance().leaveClan();
+}
+
+void ClanService::sendChatMessage(const std::string& message)
+{
+    SocketClient::getInstance().sendChatMessage(message);
+}
+
+void ClanService::setOnChatMessage(std::function<void(const std::string&, const std::string&)> callback)
+{
+    _chatCallback = callback;
 }
 
 void ClanService::parseUserListData(const std::string& data)

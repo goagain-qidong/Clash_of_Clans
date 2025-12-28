@@ -150,6 +150,13 @@ void BuildingUpgradeUI::setupUI()
     float btnHeight = 40.0f;
     float bottomY   = 40.0f; // 按钮中心距底部高度
 
+    // 提示标签 (工人不足)
+    auto builderHint = Label::createWithSystemFont("", "Microsoft YaHei", 14);
+    builderHint->setName("builderHint");
+    builderHint->setPosition(Vec2(centerX, bottomY + 35));
+    builderHint->setTextColor(Color4B::RED);
+    _panel->addChild(builderHint);
+
     // 计算起始X (左边按钮的中心点)
     // 3个按钮总宽 = btnWidth * 3
     // StartX = (Panel宽 - 总宽)/2 + 半个按钮宽
@@ -201,6 +208,20 @@ void BuildingUpgradeUI::setupUI()
         if (!upgradeMgr->canStartUpgrade(_building, true))
         {
             CCLOG("No builder available");
+
+            auto scene = Director::getInstance()->getRunningScene();
+            if (scene)
+            {
+                auto label = Label::createWithSystemFont("没有空闲的建筑工人！", "Arial", 24);
+                label->setPosition(Director::getInstance()->getVisibleSize() / 2);
+                label->setTextColor(Color4B::RED);
+                scene->addChild(label, 10000);
+
+                auto move = MoveBy::create(1.0f, Vec2(0, 50));
+                auto fade = FadeOut::create(1.0f);
+                auto seq  = Sequence::create(Spawn::create(move, fade, nullptr), RemoveSelf::create(), nullptr);
+                label->runAction(seq);
+            }
             return;
         }
 
@@ -376,6 +397,20 @@ void BuildingUpgradeUI::updateUI()
     }
 
     _descLabel->setString(_building->getBuildingDescription());
+
+    // 更新工人不足提示
+    auto builderHint = dynamic_cast<Label*>(_panel->getChildByName("builderHint"));
+    if (builderHint)
+    {
+        if (!_building->isMaxLevel() && UpgradeManager::getInstance()->getAvailableBuilders() <= 0)
+        {
+            builderHint->setString("工人不足");
+        }
+        else
+        {
+            builderHint->setString("");
+        }
+    }
 }
 
 void BuildingUpgradeUI::setPositionNearBuilding(BaseBuilding* building)

@@ -87,21 +87,21 @@ void ClanPanel::onExit()
 
     // 移除观察者
     ClanDataCache::getInstance().removeObserver(this);
+    
+    // 取消聊天刷新定时器
+    this->unschedule("chat_refresh");
 
-    // 🔧 修复：完全清除所有网络回调，防止残留
+    // 完全清除所有网络回调，防止残留
     auto& client = SocketClient::getInstance();
     client.setOnPvpStart(nullptr);
     client.setOnSpectateJoin(nullptr);
     
-    // 🆕 Only clear PvpEnd if NOT transitioning to battle (BattleScene needs it)
+ 
     if (!_isTransitioningToBattle)
     {
         client.setOnPvpEnd(nullptr);
     }
     
-    // 🆕 Never clear PvpAction here as ClanPanel doesn't use it, but BattleScene does
-    // client.setOnPvpAction(nullptr); 
-
     client.setOnClanWarMatch(nullptr);
     client.setOnClanWarMemberList(nullptr);
     client.setOnClanWarAttackStart(nullptr);
@@ -156,6 +156,7 @@ void ClanPanel::setupUI()
     setupTabBar();
     setupListView();
     setupClanManagement();
+    setupChatUI();
 }
 
 void ClanPanel::setupConnectionUI()
@@ -258,8 +259,9 @@ void ClanPanel::setupTabBar()
 void ClanPanel::setupListView()
 {
     _memberList = ListView::create();
-    _memberList->setContentSize(Size(560, 220));
-    _memberList->setPosition(Vec2(-280, -110));
+    // 初始状态为在线玩家页（无聊天框），使用大列表尺寸和对应的低位置
+    _memberList->setContentSize(Size(560, 345));
+    _memberList->setPosition(Vec2(-280, -235)); // Y坐标下移，防止遮挡顶部标签栏
     _memberList->setBackGroundColor(Color3B(60, 60, 80));
     _memberList->setBackGroundColorType(Layout::BackGroundColorType::SOLID);
     _memberList->setItemsMargin(5);
@@ -272,7 +274,7 @@ void ClanPanel::setupListView()
     refreshBtn->setTitleFontSize(18);
     refreshBtn->setScale9Enabled(true);
     refreshBtn->setContentSize(Size(120, 36));
-    refreshBtn->setPosition(Vec2(0, -260));
+    refreshBtn->setPosition(Vec2(-220, -280));
     refreshBtn->addClickEventListener([this](Ref*) {
         AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         safeRefreshCurrentTab();
@@ -283,7 +285,7 @@ void ClanPanel::setupListView()
 void ClanPanel::setupClanManagement()
 {
     _clanManagementNode = Node::create();
-    _clanManagementNode->setPosition(Vec2(0, -165));
+    _clanManagementNode->setPosition(Vec2(0, -255));
     _panelNode->addChild(_clanManagementNode, 100);
 
     // 部落信息背景
@@ -294,11 +296,11 @@ void ClanPanel::setupClanManagement()
     // 部落信息标签
     _clanInfoLabel = Label::createWithSystemFont("未加入部落", "Arial", 16);
     _clanInfoLabel->setAnchorPoint(Vec2::ANCHOR_MIDDLE);
-    _clanInfoLabel->setPosition(Vec2(0, 0));
+    _clanInfoLabel->setPosition(Vec2(0, 10));
     _clanInfoLabel->setTextColor(Color4B::YELLOW);
     _clanManagementNode->addChild(_clanInfoLabel);
 
-    float btnY       = -40;
+    float btnY       = -25;
     float btnSpacing = 130;
 
     // 创建部落按钮
@@ -327,21 +329,68 @@ void ClanPanel::setupClanManagement()
     });
     _clanManagementNode->addChild(_joinClanBtn);
 
-    // 退出部落按钮
-    _leaveClanBtn = Button::create();
-    _leaveClanBtn->setTitleText("退出部落");
-    _leaveClanBtn->setTitleFontSize(14);
-    _leaveClanBtn->setScale9Enabled(true);
-    _leaveClanBtn->setContentSize(Size(110, 32));
-    _leaveClanBtn->setPosition(Vec2(0, btnY));
-    _leaveClanBtn->setVisible(false);
-    _leaveClanBtn->addClickEventListener([this](Ref*) {
-        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
-        onLeaveClanClicked();
-    });
-    _clanManagementNode->addChild(_leaveClanBtn);
+    // 退出部落按钮（已禁用）
+    _leaveClanBtn = nullptr;
 
     updateClanInfoDisplay();
+}
+
+void ClanPanel::setupChatUI()
+{
+    _chatNode = Node::create();
+    _chatNode->setPosition(Vec2(0, -230)); // 位于列表下方
+    _memberNode->addChild(_chatNode);
+
+    // 聊天背景
+    auto chatBg = LayerColor::create(Color4B(30, 30, 40, 200), 560, 140);
+    chatBg->setPosition(-280, 0);
+    _chatNode->addChild(chatBg);
+
+    // 聊天列表
+    _chatList = ListView::create();
+    _chatList->setContentSize(Size(540, 90));
+    _chatList->setPosition(Vec2(-270, 40));
+    _chatList->setItemsMargin(2);
+    _chatList->setScrollBarEnabled(true);
+    _chatNode->addChild(_chatList);
+
+    // 输入框背景
+    auto inputBg = LayerColor::create(Color4B(50, 50, 60, 255), 440, 30);
+    inputBg->setPosition(-270, 5);
+    _chatNode->addChild(inputBg);
+
+    // 输入框
+    _chatInput = TextField::create("在此输入聊天内容...", "Arial", 18);
+    _chatInput->setPosition(Vec2(-50, 20));
+    _chatInput->setTextHorizontalAlignment(TextHAlignment::LEFT);
+    _chatInput->setTextColor(Color4B::WHITE);
+    _chatInput->setCursorEnabled(true);
+    _chatInput->setContentSize(Size(420, 30));
+    _chatNode->addChild(_chatInput);
+
+    // 发送按钮
+    _sendChatBtn = Button::create();
+    _sendChatBtn->setTitleText("发送");
+    _sendChatBtn->setTitleFontSize(16);
+    _sendChatBtn->setScale9Enabled(true);
+    _sendChatBtn->setContentSize(Size(100, 30));
+    _sendChatBtn->setPosition(Vec2(220, 20));
+    _sendChatBtn->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onSendChatClicked();
+    });
+    _chatNode->addChild(_sendChatBtn);
+
+    // 初始隐藏，只有在部落成员标签页且已加入部落时显示
+    _chatNode->setVisible(false);
+
+    // 刷新聊天显示
+    refreshChatDisplay();
+    
+    // 启动定时刷新聊天消息（每0.5秒检查一次新消息）
+    this->schedule([this](float) {
+        refreshChatDisplay();
+    }, 0.5f, "chat_refresh");
 }
 
 // ============================================================================
@@ -398,6 +447,29 @@ void ClanPanel::onDataChanged(ClanDataChangeType type)
     case ClanDataChangeType::CLAN_LIST:
     case ClanDataChangeType::CLAN_INFO:
         updateClanInfoDisplay();
+        // 更新聊天界面可见性
+        if (_chatNode)
+        {
+            bool showChat = (_currentTab == TabType::CLAN_MEMBERS || _currentTab == TabType::CLAN_WAR) && 
+                            ClanDataCache::getInstance().isInClan();
+            _chatNode->setVisible(showChat);
+             // 调整列表高度以适应聊天框
+            if (showChat)
+            {
+                _memberList->setContentSize(Size(560, 200)); // 缩小列表
+                _memberList->setPosition(Vec2(-280, -90));   // 位于聊天框上方
+            }
+            else
+            {
+                _memberList->setContentSize(Size(560, 345)); // 扩大列表
+                _memberList->setPosition(Vec2(-280, -235));  // 位于管理面板上方
+            }
+        }
+        break;
+        
+    case ClanDataChangeType::CHAT_MESSAGE:
+        // 收到新聊天消息通知，刷新显示
+        refreshChatDisplay();
         break;
     }
 }
@@ -413,6 +485,36 @@ void ClanPanel::switchToTab(TabType tab)
     // 更新标签按钮样式
     _onlinePlayersTab->setBright(tab != TabType::ONLINE_PLAYERS);
     _clanMembersTab->setBright(tab != TabType::CLAN_MEMBERS);
+
+    // 更新聊天界面可见性
+    if (_chatNode)
+    {
+        bool showChat = (tab == TabType::CLAN_MEMBERS || tab == TabType::CLAN_WAR) && 
+                        ClanDataCache::getInstance().isInClan();
+        _chatNode->setVisible(showChat);
+        
+        // 调整列表高度以适应聊天框
+        if (showChat)
+        {
+            _memberList->setContentSize(Size(560, 200)); // 缩小列表
+            _memberList->setPosition(Vec2(-280, -90));   // 位于聊天框上方
+        }
+        else
+        {
+            _memberList->setContentSize(Size(560, 345)); // 扩大列表
+            _memberList->setPosition(Vec2(-280, -235));  // 位于管理面板上方
+        }
+    }
+
+    // 切换标签页时先清空列表，避免显示旧数据
+    _memberList->removeAllItems();
+
+    // 如果切换到部落成员页且未加入部落，直接显示空状态
+    if (tab == TabType::CLAN_MEMBERS && !ClanDataCache::getInstance().isInClan())
+    {
+        renderClanMembers();
+        return;
+    }
 
     safeRefreshCurrentTab();
 }
@@ -601,8 +703,7 @@ void ClanPanel::updateClanInfoDisplay()
 
         _clanInfoLabel->setString(StringUtils::format("当前部落: %s", displayName.c_str()));
 
-        // 🆕 已加入部落：显示退出按钮，隐藏创建/加入按钮
-        _leaveClanBtn->setVisible(true);
+        // 已加入部落：隐藏创建/加入按钮
         _createClanBtn->setVisible(false);
         _joinClanBtn->setVisible(false);
     }
@@ -610,8 +711,7 @@ void ClanPanel::updateClanInfoDisplay()
     {
         _clanInfoLabel->setString("未加入部落");
 
-        // 🆕 未加入部落：隐藏退出按钮，显示创建/加入按钮
-        _leaveClanBtn->setVisible(false);
+        // 未加入部落：显示创建/加入按钮
         _createClanBtn->setVisible(true);
         _joinClanBtn->setVisible(true);
     }
@@ -885,12 +985,14 @@ void ClanPanel::showLeaveClanConfirmDialog()
         layer->removeFromParent();
 
         ClanService::getInstance().leaveClan([this](bool success, const std::string& msg) {
-            showToast(msg, success ? Color4B::GREEN : Color4B::RED);
-            if (success)
-            {
-                updateClanInfoDisplay();
-                safeRefreshCurrentTab();
-            }
+            Director::getInstance()->getScheduler()->performFunctionInCocosThread([this, success, msg]() {
+                showToast(msg, success ? Color4B::GREEN : Color4B::RED);
+                if (success)
+                {
+                    updateClanInfoDisplay();
+                    safeRefreshCurrentTab();
+                }
+            });
         });
         showToast("正在退出部落...");
     });
@@ -1123,11 +1225,98 @@ void ClanPanel::onJoinClanClicked(const std::string& clanId)
     showToast("正在加入部落...");
 }
 
-// 🆕 退出部落按钮点击
+// 退出部落功能已禁用
 void ClanPanel::onLeaveClanClicked()
 {
-    // 显示确认对话框
-    showLeaveClanConfirmDialog();
+    // 功能已禁用
+}
+
+void ClanPanel::onSendChatClicked()
+{
+    std::string message = _chatInput->getString();
+    if (message.empty())
+        return;
+
+    // 获取当前用户名
+    std::string senderName = "我";
+    auto& accMgr = AccountManager::getInstance();
+    if (auto cur = accMgr.getCurrentAccount())
+    {
+        senderName = cur->account.username;
+    }
+
+    // 本地乐观更新：立即显示自己发送的消息
+    ClanDataCache::getInstance().addChatMessage(senderName, message);
+
+    // 发送消息到服务器
+    ClanService::getInstance().sendChatMessage(message);
+
+    _chatInput->setString("");
+    
+    // 重新聚焦输入框，方便连续输入
+    _chatInput->attachWithIME();
+}
+
+void ClanPanel::addChatMessage(const std::string& sender, const std::string& message)
+{
+    if (!_chatList) return;
+
+    // 格式化消息：[发送者]: 消息内容
+    std::string fullText = StringUtils::format("[%s]: %s", sender.c_str(), message.c_str());
+
+    auto label = Label::createWithSystemFont(fullText, "Arial", 16);
+    label->setAnchorPoint(Vec2::ANCHOR_TOP_LEFT);
+    label->setTextColor(Color4B::WHITE);
+    label->setDimensions(520, 0); // 限制宽度，自动换行
+
+    // 如果是自己发送的，显示为黄色
+    auto& accMgr = AccountManager::getInstance();
+    if (auto cur = accMgr.getCurrentAccount())
+    {
+        if (cur->account.username == sender)
+        {
+            label->setTextColor(Color4B::YELLOW);
+        }
+    }
+
+    // 计算高度
+    float height = label->getContentSize().height + 10;
+    if (height < 24) height = 24;
+
+    auto item = Layout::create();
+    item->setContentSize(Size(540, height));
+
+    label->setPosition(Vec2(10, height - 5));
+    item->addChild(label);
+
+    _chatList->pushBackCustomItem(item);
+
+    // 限制聊天记录最多显示20条
+    if (_chatList->getItems().size() > 20)
+    {
+        _chatList->removeItem(0);
+    }
+
+    _chatList->scrollToBottom(0.1f, true);
+}
+
+void ClanPanel::refreshChatDisplay()
+{
+    if (!_chatList) return;
+    
+    const auto& history = ClanDataCache::getInstance().getChatHistory();
+    
+    // 检查是否有新消息
+    if (_displayedChatCount < history.size())
+    {
+        // 添加新消息到UI
+        while (_displayedChatCount < history.size())
+        {
+            const auto& msg = history[_displayedChatCount];
+            addChatMessage(msg.sender, msg.message);
+            _displayedChatCount++;
+        }
+    }
 }
 
 // ============================================================================

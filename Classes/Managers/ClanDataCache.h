@@ -80,7 +80,8 @@ enum class ClanDataChangeType
     CLAN_WAR_MEMBERS,  ///< 部落战成员
     BATTLE_STATUS,     ///< 战斗状态
     CLAN_LIST,         ///< 部落列表
-    CLAN_INFO          ///< 部落信息
+    CLAN_INFO,         ///< 部落信息
+    CHAT_MESSAGE       ///< 聊天消息
 };
 
 /**
@@ -153,6 +154,31 @@ public:
      */
     std::string findClanNameById(const std::string& clanId) const;
 
+    /**
+     * @struct ChatMessage
+     * @brief 聊天消息
+     */
+    struct ChatMessage
+    {
+        std::string sender;
+        std::string message;
+    };
+
+    /** @brief 添加聊天消息（返回是否为新消息） */
+    bool addChatMessage(const std::string& sender, const std::string& message);
+
+    /** @brief 获取聊天记录 */
+    const std::vector<ChatMessage>& getChatHistory() const { return _chatHistory; }
+
+    /** @brief 保存聊天记录到本地 */
+    void saveChatHistory();
+
+    /** @brief 从本地加载聊天记录 */
+    void loadChatHistory();
+
+    /** @brief 清空聊天记录 */
+    void clearChatHistory();
+
     using DataChangeCallback = std::function<void(ClanDataChangeType)>;
 
     /**
@@ -177,6 +203,7 @@ private:
     std::vector<ClanMemberInfo> _clanMembers;           ///< 部落成员列表
     std::vector<ClanWarMemberInfo> _clanWarMembers;     ///< 部落战成员列表
     std::vector<ClanInfoClient> _clanList;              ///< 部落列表
+    std::vector<ChatMessage> _chatHistory;              ///< 聊天记录
     std::map<std::string, PlayerBattleStatus> _battleStatusMap;  ///< 战斗状态映射
     std::set<std::string> _playersInBattle;             ///< 战斗中的玩家
 

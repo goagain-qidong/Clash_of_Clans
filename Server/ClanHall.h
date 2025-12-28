@@ -175,19 +175,51 @@ class ClanHall {
      */
     std::vector<std::string> GetClanMemberIds(const std::string& clan_id);
 
+    /**
+     * @brief 确保玩家在指定部落中（用于登录时恢复部落归属）。
+     *
+     * 如果部落存在且玩家不在成员列表中，则添加玩家到部落。
+     * 如果部落不存在，则直接返回，不创建临时部落。
+     *
+     * @param player_id 玩家ID
+     * @param clan_id 部落ID
+     *
+     * @note 线程安全：此方法内部加锁保护。
+     */
+    void EnsurePlayerInClan(const std::string& player_id, const std::string& clan_id);
+
  private:
     std::map<std::string, ClanInfo> clans_;  ///< 部落映射表（部落ID -> 部落信息）
     std::mutex clan_mutex_;                   ///< 保护 clans_ 的互斥锁
     PlayerRegistry* player_registry_;         ///< 玩家注册表指针（非拥有）
+    std::string data_file_path_;              ///< 部落数据文件路径
+    int clan_id_counter_;                     ///< 部落ID计数器
 
     /**
      * @brief 生成唯一的部落ID。
      *
-     * 使用静态计数器生成格式为 "CLAN_xxx" 的唯一标识符。
+     * 使用计数器生成格式为 "CLAN_xxx" 的唯一标识符。
      *
      * @return 新生成的部落ID字符串
      *
      * @note 此方法不是线程安全的，应在持有 clan_mutex_ 时调用。
      */
     std::string GenerateClanId();
+
+    /**
+     * @brief 从文件加载部落数据。
+     *
+     * 在构造时调用，从本地文件恢复所有部落信息。
+     * 如果文件不存在或格式错误，则跳过加载。
+     */
+    void LoadFromFile();
+
+    /**
+     * @brief 将部落数据保存到文件。
+     *
+     * 在部落创建、加入、离开等操作后调用，持久化当前状态。
+     *
+     * @note 应在持有 clan_mutex_ 时调用。
+     */
+    void SaveToFile();
 };

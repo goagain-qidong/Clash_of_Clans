@@ -694,9 +694,15 @@ void DraggableMapScene::connectToServer()
             auto currentAccount = accMgr.getCurrentAccount();
             if (currentAccount)
             {
-                SocketClient::getInstance().login(currentAccount->account.userId, currentAccount->account.username, currentAccount->gameData.trophies);
+                // 发送登录信息，包含部落ID
+                SocketClient::getInstance().login(
+                    currentAccount->account.userId, 
+                    currentAccount->account.username, 
+                    currentAccount->gameState.progress.trophies,
+                    currentAccount->gameState.progress.clanId  // 发送部落ID
+                );
                 
-                std::string mapData = currentAccount->gameData.toJson();
+                std::string mapData = accMgr.exportGameStateJson();
                 SocketClient::getInstance().uploadMap(mapData);
             }
         }
@@ -721,7 +727,7 @@ void DraggableMapScene::connectToServer()
         auto currentAccount = accMgr.getCurrentAccount();
         if (currentAccount)
         {
-            std::string mapData = currentAccount->gameData.toJson();
+            std::string mapData = accMgr.exportGameStateJson();
             sock.uploadMap(mapData);
         }
     }

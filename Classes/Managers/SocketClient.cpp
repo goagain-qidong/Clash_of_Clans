@@ -376,6 +376,16 @@ void SocketClient::handlePacket(uint32_t type, const std::string& data) {
             }
             break;
 
+        case PACKET_CHAT_MESSAGE:
+            if (on_chat_message_) {
+                std::istringstream iss(data);
+                std::string sender, message;
+                std::getline(iss, sender, kFieldSeparator);
+                std::getline(iss, message);
+                on_chat_message_(sender, message);
+            }
+            break;
+
         case PACKET_WAR_MATCH:
             if (on_clan_war_match_) {
                 std::istringstream iss(data);
@@ -658,11 +668,13 @@ void SocketClient::handleClanList(const std::string& data) {
 
 void SocketClient::login(const std::string& player_id, 
                          const std::string& player_name, 
-                         int trophies) {
+                         int trophies,
+                         const std::string& clan_id) {
     std::ostringstream oss;
     oss << player_id << kFieldSeparator 
         << player_name << kFieldSeparator 
-        << trophies;
+        << trophies << kFieldSeparator
+        << clan_id;
     sendPacket(PACKET_LOGIN, oss.str());
 }
 
@@ -721,6 +733,10 @@ void SocketClient::getClanList() {
 
 void SocketClient::getClanMembers(const std::string& clan_id) {
     sendPacket(PACKET_CLAN_MEMBERS, clan_id);
+}
+
+void SocketClient::sendChatMessage(const std::string& message) {
+    sendPacket(PACKET_CLAN_CHAT, message);
 }
 
 // ============================================================================
@@ -872,6 +888,10 @@ void SocketClient::setOnClanList(SocketCallback::OnClanList callback) {
 
 void SocketClient::setOnClanMembers(SocketCallback::OnClanMembers callback) {
     on_clan_members_ = callback;
+}
+
+void SocketClient::setOnChatMessage(SocketCallback::OnChatMessage callback) {
+    on_chat_message_ = callback;
 }
 
 void SocketClient::setOnClanWarMatch(SocketCallback::OnClanWarMatch callback) {

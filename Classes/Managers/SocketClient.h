@@ -69,6 +69,8 @@ enum PacketType : uint32_t {
     PACKET_CLAN_LIST = 23,
     PACKET_CLAN_MEMBERS = 24,
     PACKET_CLAN_INFO = 25,
+    PACKET_CLAN_CHAT = 26,
+    PACKET_CHAT_MESSAGE = 27,
 
     // 部落战争基础 (30-39)
     PACKET_WAR_SEARCH = 30,
@@ -202,6 +204,7 @@ namespace SocketCallback {
     using OnClanLeft = std::function<void(bool success)>;
     using OnClanList = std::function<void(const std::vector<ClanInfoClient>& clans)>;
     using OnClanMembers = std::function<void(const std::string& data)>;
+    using OnChatMessage = std::function<void(const std::string& sender, const std::string& message)>;
     
     // 部落战争相关
     using OnClanWarMatch = std::function<void(const std::string& war_id, 
@@ -268,7 +271,8 @@ class SocketClient {
     
     void login(const std::string& player_id, 
                const std::string& player_name, 
-               int trophies);
+               int trophies,
+               const std::string& clan_id = "");
     void uploadMap(const std::string& map_data);
     void queryMap(const std::string& target_id);
     void requestUserList();
@@ -287,6 +291,7 @@ class SocketClient {
     void leaveClan();
     void getClanList();
     void getClanMembers(const std::string& clan_id);
+    void sendChatMessage(const std::string& message);
 
     // ======================== 部落战争 ========================
     
@@ -355,6 +360,7 @@ class SocketClient {
     void setOnClanLeft(SocketCallback::OnClanLeft callback);
     void setOnClanList(SocketCallback::OnClanList callback);
     void setOnClanMembers(SocketCallback::OnClanMembers callback);
+    void setOnChatMessage(SocketCallback::OnChatMessage callback);
     
     // 部落战争回调
     void setOnClanWarMatch(SocketCallback::OnClanWarMatch callback);
@@ -435,6 +441,7 @@ class SocketClient {
     SocketCallback::OnClanLeft on_clan_left_;
     SocketCallback::OnClanList on_clan_list_;
     SocketCallback::OnClanMembers on_clan_members_;
+    SocketCallback::OnChatMessage on_chat_message_;
     
     SocketCallback::OnClanWarMatch on_clan_war_match_;
     SocketCallback::OnClanWarStatus on_clan_war_status_;
