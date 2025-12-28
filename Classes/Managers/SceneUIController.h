@@ -30,7 +30,7 @@ class MapConfigManager;
  * - 管理建筑选择列表
  * - 管理确认/取消按钮
  * - 管理提示信息
- * - 提供Android设备的ESC替代按钮
+ * - 提供退出建造模式的按钮（支持移动端和桌面端）
  */
 class SceneUIController : public cocos2d::Node
 {
@@ -61,7 +61,7 @@ public:
     /** @brief 设置取消建造回调 */
     void setOnCancelBuilding(const ButtonCallback& callback) { _onCancelBuilding = callback; }
 
-    /** @brief 设置退出建造模式回调（Android ESC替代） */
+    /** @brief 设置退出建造模式回调 */
     void setOnExitBuildMode(const ButtonCallback& callback) { _onExitBuildMode = callback; }
 
     /** @brief 设置账号切换回调 */
@@ -104,15 +104,15 @@ public:
     void hideHint();
 
     /**
-     * @brief 显示退出建造模式按钮（Android ESC替代）
+     * @brief 显示退出放置按钮
      * 
-     * 在进入建造模式时调用，显示一个固定位置的取消按钮，
-     * 让Android用户可以随时退出建造模式。
+     * 在进入建造模式时调用，在屏幕底部居中显示"退出放置"按钮，
+     * 让用户可以随时退出建造模式（包括城墙连续放置模式）。
      */
     void showExitBuildModeButton();
 
     /**
-     * @brief 隐藏退出建造模式按钮
+     * @brief 隐藏退出放置按钮
      * 
      * 在退出建造模式时调用。
      */
@@ -136,7 +136,7 @@ private:
     cocos2d::ui::Button* _confirmButton = nullptr;  ///< 确认按钮
     cocos2d::ui::Button* _cancelButton = nullptr;   ///< 取消按钮
 
-    /// @brief 退出建造模式按钮（Android ESC替代）
+    /// @brief 退出建造模式按钮
     cocos2d::ui::Button* _exitBuildModeButton = nullptr;
 
     cocos2d::Label* _hintLabel = nullptr;  ///< 提示标签

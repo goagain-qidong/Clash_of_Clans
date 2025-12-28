@@ -157,6 +157,7 @@ public:
     using HintCallback            = std::function<void(const std::string&)>;
     using BuildingClickedCallback = std::function<void(BaseBuilding*)>;
     using BuildingMovedCallback   = std::function<void(BaseBuilding*, const cocos2d::Vec2&)>;
+    using BuildModeChangedCallback = std::function<void(bool isInBuildMode)>;
 
     /** @brief 设置建筑放置成功的回调 */
     void setOnBuildingPlaced(const BuildingPlacedCallback& callback) { _onBuildingPlaced = callback; }
@@ -169,6 +170,9 @@ public:
 
     /** @brief 设置建筑移动完成的回调 */
     void setOnBuildingMoved(const BuildingMovedCallback& callback) { _onBuildingMoved = callback; }
+
+    /** @brief 设置建造模式变化的回调 */
+    void setOnBuildModeChanged(const BuildModeChangedCallback& callback) { _onBuildModeChanged = callback; }
 
     // ==================== 建筑移动相关 ====================
     /**
@@ -297,6 +301,7 @@ public:
     HintCallback            _onHint            = nullptr;
     BuildingClickedCallback _onBuildingClicked = nullptr;
     BuildingMovedCallback   _onBuildingMoved   = nullptr;
+    BuildModeChangedCallback _onBuildModeChanged = nullptr;
 
     // ==================== 建筑移动状态 ====================
     BaseBuilding*    _movingBuilding = nullptr;    // 当前移动的建筑

@@ -358,7 +358,7 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
             if (resMgr.hasEnough(costType, cost))
             {
                 canContinue = true;
-                showHint("继续放置城墙，按ESC取消");
+                showHint("继续放置城墙，点击底部按钮退出");
             }
             else
             {
@@ -489,6 +489,12 @@ void BuildingManager::endPlacing()
     {
         _ghostSprite->removeFromParent();
         _ghostSprite = nullptr;
+    }
+    
+    // 通知场景建造模式已退出
+    if (_onBuildModeChanged)
+    {
+        _onBuildModeChanged(false);
     }
 }
 void BuildingManager::update(float dt)

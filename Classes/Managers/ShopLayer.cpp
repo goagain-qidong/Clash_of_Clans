@@ -130,9 +130,12 @@ void ShopLayer::loadCategory(const std::string& categoryName)
         // 构建用于 BuildingManager 的 BuildingData
         BuildingData bData(cfg.name, cfg.iconPath, Size(3, 3), 1.0f, cfg.cost, 0, cfg.costType);
 
-        // 针对特定建筑修正尺寸
+        // 针对特定建筑修正尺寸和缩放
         if (cfg.name == "Wall" || cfg.name == "城墙")
+        {
             bData.gridSize = Size(1, 1);
+            bData.scaleFactor = 0.6f;  // 与 WallBuilding::init 中的缩放保持一致
+        }
         else if (cfg.name == "Town Hall" || cfg.name == "大本营")
             bData.gridSize = Size(5, 5);
         else if (cfg.name == "Barracks" || cfg.name == "Army Camp" || cfg.name == "兵营" || cfg.name == "军营")

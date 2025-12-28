@@ -98,11 +98,11 @@ bool AppDelegate::applicationDidFinishLaunching()
     {
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
         // Android 平台：使用 GLViewImpl::create
-        glview = GLViewImpl::create("部落冲突(同济大学版)");
+        glview = GLViewImpl::create("Clash-of-Clans (Xiangcheng Liu, Yuzhe Xue, Chongzhi Zhao)");
         director->setOpenGLView(glview);
 #elif (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX) || (CC_TARGET_PLATFORM == CC_PLATFORM_MAC)
         // Windows/Linux/Mac 平台：使用 createWithRect 支持自定义窗口尺寸
-        glview = GLViewImpl::createWithRect("部落冲突(同济大学版)",        // 标题
+        glview = GLViewImpl::createWithRect("Clash-of-Clans (Xiangcheng Liu, Yuzhe Xue, Chongzhi Zhao)",        // 标题
                                             Rect(0, 0, 2560, 1440), // 初始位置和大小(2K)
                                             1.0f,                   // 缩放系数
                                             true                    // 设为 true 表示可以用鼠标拉伸窗口
@@ -110,16 +110,11 @@ bool AppDelegate::applicationDidFinishLaunching()
         director->setOpenGLView(glview);
 #else
         // 其他平台：使用默认创建方式
-        glview = GLView::create("部落冲突(同济大学版)");
+        glview = GLView::create("Clash-of-Clans (Xiangcheng Liu, Yuzhe Xue, Chongzhi Zhao)");
         director->setOpenGLView(glview);
 #endif
     }
-    // 2. 开启调试数据显示 (FPS等)
-    //director->setDisplayStats(true);
-    // 3. 设置帧率
     director->setAnimationInterval(1.0f / 60);
-    // 4. 不要用 NO_BORDER，因为你现在允许乱拉窗口了，NO_BORDER 会切掉你的 UI
-    // 推荐用 FIXED_HEIGHT：高度固定，宽度视野变大 (适合 COC 类游戏)
     glview->setDesignResolutionSize(1280, 720, ResolutionPolicy::FIXED_HEIGHT);
 
     // VLD: 引擎初始化完成，恢复追踪，只检测应用代码的内存泄漏

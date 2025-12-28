@@ -167,7 +167,7 @@ void DraggableMapScene::setupCallbacks()
     _uiController->setOnLogout([this]() { onLogout(); });
     _uiController->setOnMapChanged([this](const std::string& newMap) { onMapChanged(newMap); });
     
-    // 退出建造模式回调（Android ESC替代）
+    // 退出建造模式回调
     _uiController->setOnExitBuildMode([this]() {
         if (_buildingManager && _buildingManager->isInBuildingMode())
         {
@@ -187,6 +187,15 @@ void DraggableMapScene::setupCallbacks()
     _buildingManager->setOnBuildingPlaced([this](BaseBuilding* building) { onBuildingPlaced(building); });
     _buildingManager->setOnBuildingClicked([this](BaseBuilding* building) { onBuildingClicked(building); });
     _buildingManager->setOnHint([this](const std::string& hint) { onBuildingHint(hint); });
+    
+    // 建造模式变化回调 - 当建造模式退出时隐藏退出按钮
+    _buildingManager->setOnBuildModeChanged([this](bool isInBuildMode) {
+        if (!isInBuildMode && _uiController)
+        {
+            _uiController->hideExitBuildModeButton();
+            CCLOG("🏗️ 建造模式已退出，隐藏退出按钮");
+        }
+    });
 }
 
 void DraggableMapScene::setupUpgradeManagerCallbacks()
@@ -443,15 +452,8 @@ void DraggableMapScene::onMouseScroll(float scrollY, Vec2 mousePos)
 
 void DraggableMapScene::onKeyPressed(EventKeyboard::KeyCode keyCode)
 {
-    if (keyCode == EventKeyboard::KeyCode::KEY_ESCAPE)
-    {
-        if (_buildingManager && _buildingManager->isInBuildingMode())
-        {
-            _buildingManager->cancelPlacing();
-            _uiController->hideConfirmButtons();
-            _uiController->hideExitBuildModeButton();
-        }
-    }
+    // 预留键盘事件处理接口
+    // 建造模式的退出通过屏幕底部的"退出放置"按钮实现
 }
 
 // ========== UI 回调 ==========
@@ -503,12 +505,8 @@ void DraggableMapScene::onClanClicked()
 
 void DraggableMapScene::onBuildingSelected(const BuildingData& data)
 {
-    // 进入建造模式，显示退出按钮（Android ESC替代）
+    // 进入建造模式（退出按钮在 startPlacingBuilding 中统一显示）
     startPlacingBuilding(data);
-    if (_uiController)
-    {
-        _uiController->showExitBuildModeButton();
-    }
 }
 
 void DraggableMapScene::onConfirmBuilding()
@@ -521,12 +519,8 @@ void DraggableMapScene::onConfirmBuilding()
         _buildingManager->confirmBuilding();
     }
     
-    // 如果退出了建造模式，隐藏退出按钮
-    if (_buildingManager && !_buildingManager->isInBuildingMode())
-    {
-        if (_uiController)
-            _uiController->hideExitBuildModeButton();
-    }
+    // 注意：退出按钮的隐藏由 BuildingManager::endPlacing() 的回调统一处理
+    // 这样可以确保城墙连续放置模式下按钮保持显示
 }
 
 void DraggableMapScene::onCancelBuilding()
@@ -539,12 +533,7 @@ void DraggableMapScene::onCancelBuilding()
         _buildingManager->cancelBuilding();
     }
     
-    // 如果退出了建造模式，隐藏退出按钮
-    if (_buildingManager && !_buildingManager->isInBuildingMode())
-    {
-        if (_uiController)
-            _uiController->hideExitBuildModeButton();
-    }
+    // 注意：退出按钮的隐藏由 BuildingManager::endPlacing() 的回调统一处理
 }
 
 void DraggableMapScene::onMapChanged(const std::string& newMap)
@@ -587,11 +576,10 @@ void DraggableMapScene::onBuildingPlaced(BaseBuilding* building)
 
     _uiController->hideConfirmButtons();
     
-    // 如果退出了建造模式，隐藏退出按钮
-    if (_buildingManager && !_buildingManager->isInBuildingMode())
-    {
-        _uiController->hideExitBuildModeButton();
-    }
+    // 注意：不在这里隐藏退出按钮
+    // 退出按钮的隐藏由 BuildingManager::endPlacing() 触发后，
+    // 在 onConfirmBuilding/onCancelBuilding 中处理
+    // 这样可以确保城墙连续放置模式下按钮保持显示
 }
 
 void DraggableMapScene::onBuildingClicked(BaseBuilding* building)
@@ -835,7 +823,16 @@ int DraggableMapScene::getBuildingCount(const std::string& name) const
 void DraggableMapScene::startPlacingBuilding(const BuildingData& data)
 {
     if (_buildingManager)
+    {
         _buildingManager->startPlacing(data);
+        
+        // 统一在此处显示退出建造模式按钮
+        // 确保无论从 ShopLayer 还是其他入口进入建造模式都能显示
+        if (_uiController)
+        {
+            _uiController->showExitBuildModeButton();
+        }
+    }
 }
 
 // ========== 生命周期 ==========

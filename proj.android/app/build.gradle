@@ -96,3 +96,10 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':libcocos2dx')
 }
+
+android.applicationVariants.all { variant ->
+    variant.outputs.all {
+        // 项目名_版本_小组号.apk
+        outputFileName = "Clash_of_Clans_${variant.versionName}_Group32.apk"
+    }
+}
