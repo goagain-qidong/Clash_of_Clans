@@ -3,11 +3,13 @@
 * File Name:     BuildingManager.cpp
 * File Function: 建筑管理器实现
 * Author:        赵崇治、薛毓哲
-* Update Date:   2025/12/24
+* Update Date:   2025/12/28
 * Modified By:   薛毓哲 (2025/12/24) - 添加升级任务持久化支持
 * License:       MIT License
 ****************************************************************/
 #include "BuildingManager.h"
+
+#include "Audio/AudioManager.h"
 #include "Managers/UpgradeManager.h"
 #include "Managers/TroopInventory.h"
 #include "Managers/BuildingLimitManager.h"
@@ -307,6 +309,10 @@ void BuildingManager::placeBuilding(const cocos2d::Vec2& gridPos)
     auto scaleAction = EaseBackOut::create(ScaleTo::create(0.4f, targetScale));
     auto fadeIn = FadeIn::create(0.3f);
     building->runAction(Spawn::create(scaleAction, fadeIn, nullptr));
+    
+    // 播放建筑放置音效
+    PlayBuildingPlaceSound(building);
+    
     // 6. 保存到建筑列表
     _buildings.pushBack(building);
     
@@ -586,6 +592,9 @@ void BuildingManager::startMovingBuilding(BaseBuilding* building)
         _mapSprite->addChild(_movingGhostSprite, 2000);
     }
 
+    // 播放建筑拾取音效
+    PlayBuildingPickupSound(building);
+
     building->setVisible(false);
     showHint("拖动调整建筑位置，松开鼠标后确认");
 }
@@ -739,6 +748,136 @@ cocos2d::Vec2 BuildingManager::calculateBuildingPositionForMoving(const cocos2d:
         gridPos + Vec2(_movingBuilding->getGridSize().width - 1, _movingBuilding->getGridSize().height - 1));
     Vec2 centerPos = (posStart + posEnd) / 2.0f;
     return centerPos;
+}
+
+// ==================== 音效播放 ====================
+
+void BuildingManager::PlayBuildingPlaceSound(BaseBuilding* building)
+{
+    if (!building)
+        return;
+
+    BuildingType type = building->getBuildingType();
+    
+    // 根据建筑类型播放对应的放置音效
+    switch (type)
+    {
+    case BuildingType::kWall:
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kWallPlace);
+        break;
+    case BuildingType::kDefense:
+        // 防御建筑根据具体子类型播放
+        {
+            auto* defenseBuilding = dynamic_cast<DefenseBuilding*>(building);
+            if (defenseBuilding)
+            {
+                DefenseType defType = defenseBuilding->getDefenseType();
+                if (defType == DefenseType::kCannon)
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kCannonPlace);
+                }
+                else if (defType == DefenseType::kArcherTower)
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kArcherTowerPlace);
+                }
+                else
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kBuildingConstruct);
+                }
+            }
+        }
+        break;
+    case BuildingType::kResource:
+        // 资源建筑根据具体子类型播放
+        {
+            auto* resBuilding = dynamic_cast<ResourceBuilding*>(building);
+            if (resBuilding)
+            {
+                ResourceBuildingType resType = resBuilding->getBuildingSubType();
+                if (resType == ResourceBuildingType::kGoldMine)
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kGoldMinePlace);
+                }
+                else if (resType == ResourceBuildingType::kElixirStorage)
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kElixirStoragePlace);
+                }
+                else
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kBuildingConstruct);
+                }
+            }
+        }
+        break;
+    default:
+        // 其他建筑使用通用建造音效
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kBuildingConstruct);
+        break;
+    }
+}
+
+void BuildingManager::PlayBuildingPickupSound(BaseBuilding* building)
+{
+    if (!building)
+        return;
+
+    BuildingType type = building->getBuildingType();
+    
+    // 根据建筑类型播放对应的拾取音效
+    switch (type)
+    {
+    case BuildingType::kWall:
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kWallPickup);
+        break;
+    case BuildingType::kDefense:
+        // 防御建筑根据具体子类型播放
+        {
+            auto* defenseBuilding = dynamic_cast<DefenseBuilding*>(building);
+            if (defenseBuilding)
+            {
+                DefenseType defType = defenseBuilding->getDefenseType();
+                if (defType == DefenseType::kCannon)
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kCannonPickup);
+                }
+                else if (defType == DefenseType::kArcherTower)
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kArcherTowerPickup);
+                }
+                else
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kBuildingPickup);
+                }
+            }
+        }
+        break;
+    case BuildingType::kResource:
+        // 资源建筑根据具体子类型播放
+        {
+            auto* resBuilding = dynamic_cast<ResourceBuilding*>(building);
+            if (resBuilding)
+            {
+                ResourceBuildingType resType = resBuilding->getBuildingSubType();
+                if (resType == ResourceBuildingType::kGoldMine)
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kGoldMinePickup);
+                }
+                else if (resType == ResourceBuildingType::kElixirStorage)
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kElixirStoragePickup);
+                }
+                else
+                {
+                    AudioManager::GetInstance().PlayEffect(SoundEffectId::kBuildingPickup);
+                }
+            }
+        }
+        break;
+    default:
+        // 其他建筑使用通用拾取音效
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kBuildingPickup);
+        break;
+    }
 }
 
 // ==================== Serialization / Multiplayer Support ====================

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 
-set(APP_NAME HelloCpp)
+set(APP_NAME "Clash_of_Clans")
 project(${APP_NAME})
 
 if(MSVC)
@@ -81,6 +81,7 @@ target_link_libraries(${APP_NAME} cocos2d)
 target_include_directories(${APP_NAME}
     PRIVATE Classes
     PRIVATE Classes/App
+    PRIVATE Classes/Audio
     PRIVATE Classes/Buildings
     PRIVATE Classes/GridMap
     PRIVATE Classes/Managers

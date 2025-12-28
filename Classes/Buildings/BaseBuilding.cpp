@@ -13,6 +13,7 @@
 #include "Services/BuildingUpgradeService.h"
 #include "Unit/BaseUnit.h"
 #include "Unit/CombatStats.h"
+#include "Audio/AudioManager.h"
 
 USING_NS_CC;
 
@@ -675,6 +676,8 @@ void BaseBuilding::takeDamage(int damage)
 
     if (isDestroyed())
     {
+        // 播放建筑被摧毁音效
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kBuildingDestroyed);
         this->setVisible(false);
     }
 }

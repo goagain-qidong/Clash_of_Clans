@@ -3,14 +3,15 @@
  * File Name:     SceneUIController.cpp
  * File Function: 场景UI控制器 - 负责管理游戏场景中的UI元素
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #include "SceneUIController.h"
-#include "../Managers/AccountManager.h" // Ensure AccountManager is included
+#include "../Managers/AccountManager.h"
 #include "../Managers/SocketClient.h"
 #include "../Scenes/BattleScene.h"
 #include "../UI/SettingsPanel.h"
+#include "Audio/AudioManager.h"
 #include "json/document.h"
 
 USING_NS_CC;
@@ -27,14 +28,6 @@ bool SceneUIController::init()
 
     setupMainButtons();
 
-    // 🔴 修复：移除全局PVP回调设置
-    // 这个回调会与ClanPanel的回调冲突，导致点击"部落"按钮时
-    // 错误地触发异步对战的玩家选择界面
-    // PVP回调应该只在ClanPanel中设置和管理
-
-    // 原代码已删除:
-    // SocketClient::getInstance().setOnPvpStart([](const std::string& role, ...){...});
-
     return true;
 }
 
@@ -48,6 +41,7 @@ void SceneUIController::setupMainButtons()
     if (_shopButton->getContentSize().equals(Size::ZERO))
     {
         _shopButton = createFlatButton("Shop", Size(120, 120), Color3B(50, 150, 50), [this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (_onShopClicked)
                 _onShopClicked();
         });
@@ -56,6 +50,7 @@ void SceneUIController::setupMainButtons()
     {
         _shopButton->setScale(90.0f / _shopButton->getContentSize().width);
         _shopButton->addClickEventListener([this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (_onShopClicked)
                 _onShopClicked();
         });
@@ -68,13 +63,19 @@ void SceneUIController::setupMainButtons()
     if (_settingsButton->getContentSize().equals(Size::ZERO))
     {
         _settingsButton = createFlatButton("\xE2\x9A\x99", Size(60, 60), Color3B(100, 100, 100),
-                                           [this](Ref*) { onSettingsClicked(); });
+                                           [this](Ref*) {
+                                               AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+                                               onSettingsClicked();
+                                           });
         _settingsButton->setTitleFontSize(36);
     }
     else
     {
         _settingsButton->setScale(60.0f / _settingsButton->getContentSize().width);
-        _settingsButton->addClickEventListener([this](Ref*) { onSettingsClicked(); });
+        _settingsButton->addClickEventListener([this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+            onSettingsClicked();
+        });
     }
     _settingsButton->setPosition(Vec2(_visibleSize.width - 60, 160)); // 右下角，Shop 上方
     this->addChild(_settingsButton, 10);
@@ -85,6 +86,7 @@ void SceneUIController::setupMainButtons()
     if (_attackButton->getContentSize().equals(Size::ZERO))
     {
         _attackButton = createFlatButton("Attack!", Size(120, 60), Color3B(200, 80, 0), [this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (_onAttackClicked)
                 _onAttackClicked();
         });
@@ -93,6 +95,7 @@ void SceneUIController::setupMainButtons()
     {
         _attackButton->setScale(110.0f / _attackButton->getContentSize().width);
         _attackButton->addClickEventListener([this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (_onAttackClicked)
                 _onAttackClicked();
         });
@@ -106,6 +109,7 @@ void SceneUIController::setupMainButtons()
     if (_clanButton->getContentSize().equals(Size::ZERO))
     {
         _clanButton = createFlatButton("Clan", Size(100, 50), Color3B(50, 100, 150), [this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (_onClanClicked)
                 _onClanClicked();
         });
@@ -114,6 +118,7 @@ void SceneUIController::setupMainButtons()
     {
         _clanButton->setScale(90.0f / _clanButton->getContentSize().width);
         _clanButton->addClickEventListener([this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (_onClanClicked)
                 _onClanClicked();
         });
@@ -126,6 +131,7 @@ void SceneUIController::setupMainButtons()
     if (_defenseLogButton->getContentSize().equals(Size::ZERO))
     {
         _defenseLogButton = createFlatButton("Defense Log", Size(140, 50), Color3B(100, 50, 100), [this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (_onDefenseLogClicked)
                 _onDefenseLogClicked();
         });
@@ -134,6 +140,7 @@ void SceneUIController::setupMainButtons()
     {
         _defenseLogButton->setScale(110.0f / _defenseLogButton->getContentSize().width);
         _defenseLogButton->addClickEventListener([this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (_onDefenseLogClicked)
                 _onDefenseLogClicked();
         });
@@ -147,24 +154,19 @@ cocos2d::ui::Button* SceneUIController::createFlatButton(const std::string& text
                                                          const std::function<void(cocos2d::Ref*)>& callback)
 {
     auto button = Button::create();
-    // 强制使用自定义大小，确保布局正确
     button->ignoreContentAdaptWithSize(false);
     button->setContentSize(size);
 
     button->setTitleText(text);
     button->setTitleFontSize(20);
     button->setTitleColor(Color3B::WHITE);
-    // 确保文字居中
     if (button->getTitleRenderer())
     {
         button->getTitleRenderer()->setAlignment(TextHAlignment::CENTER, TextVAlignment::CENTER);
-        // 调整Label位置到中心
         button->getTitleRenderer()->setPosition(Vec2(size.width / 2, size.height / 2));
     }
 
     button->addClickEventListener(callback);
-
-    // 添加点击缩放效果
     button->setPressedActionEnabled(true);
     button->setZoomScale(0.1f);
 
@@ -176,7 +178,6 @@ void SceneUIController::onSettingsClicked()
     auto settingsPanel = SettingsPanel::create();
     this->getParent()->addChild(settingsPanel, 10000);
 
-    // 设置回调
     settingsPanel->setOnAccountSwitched([this]() {
         if (_onAccountSwitched)
         {
@@ -230,7 +231,6 @@ void SceneUIController::createBuildingListUI()
         item->setContentSize(Size(280, 60));
         item->setTouchEnabled(true);
 
-        // 建筑图标
         auto sprite = Sprite::create(building.imageFile);
         if (sprite)
         {
@@ -239,13 +239,11 @@ void SceneUIController::createBuildingListUI()
             item->addChild(sprite);
         }
 
-        // 建筑名称
         auto nameLabel = Label::createWithSystemFont(building.name, "Arial", 16);
         nameLabel->setPosition(Vec2(120, 40));
         nameLabel->setTextColor(Color4B::YELLOW);
         item->addChild(nameLabel);
 
-        // 建筑大小
         std::string sizeText =
             StringUtils::format("%dx%d", (int)building.gridSize.width, (int)building.gridSize.height);
         auto sizeLabel = Label::createWithSystemFont(sizeText, "Arial", 14);
@@ -253,19 +251,16 @@ void SceneUIController::createBuildingListUI()
         sizeLabel->setTextColor(Color4B::GREEN);
         item->addChild(sizeLabel);
 
-        // 建筑花费
         std::string costText  = StringUtils::format("Cost: %d", (int)building.cost);
         auto        costLabel = Label::createWithSystemFont(costText, "Arial", 12);
         costLabel->setPosition(Vec2(220, 40));
         costLabel->setTextColor(Color4B::WHITE);
         item->addChild(costLabel);
 
-        // 背景
         auto bg = LayerColor::create(Color4B(40, 40, 60, 255));
         bg->setContentSize(Size(280, 60));
         item->addChild(bg, -1);
 
-        // 点击事件
         item->addClickEventListener([this, building](Ref*) {
             if (_onBuildingSelected)
             {
@@ -293,20 +288,19 @@ void SceneUIController::showConfirmButtons(const Vec2& worldPos)
 {
     hideConfirmButtons();
 
-    float buttonSize = 36.0f;
-    float offsetX    = 50.0f;
-    float offsetY    = 70.0f;
+    float buttonSize = 48.0f;
+    float offsetX    = 60.0f;
+    float offsetY    = 80.0f;
 
-    // 确认按钮（绿色勾 - 使用confirm_button.png）
+    // 确认按钮
     _confirmButton = Button::create("icon/confirm_button.png");
     float confirmScale =
         buttonSize / std::max(_confirmButton->getContentSize().width, _confirmButton->getContentSize().height);
     if (_confirmButton->getContentSize().equals(Size::ZERO))
     {
-        // 如果图片不存在，回退到文本模式
         _confirmButton = Button::create();
-        _confirmButton->setTitleText("\xE2\x9C\x93"); // UTF-8编码的 ✓
-        _confirmButton->setTitleFontSize(24);
+        _confirmButton->setTitleText("\xE2\x9C\x93");
+        _confirmButton->setTitleFontSize(28);
         _confirmButton->setTitleColor(Color3B::WHITE);
         _confirmButton->setContentSize(Size(buttonSize, buttonSize));
         confirmScale = 1.0f;
@@ -314,21 +308,21 @@ void SceneUIController::showConfirmButtons(const Vec2& worldPos)
     _confirmButton->setPosition(Vec2(worldPos.x + offsetX, worldPos.y + offsetY));
 
     _confirmButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         if (_onConfirmBuilding)
             _onConfirmBuilding();
     });
     this->addChild(_confirmButton, 10000);
 
-    // 取消按钮（红色叉 - 使用return_button.png）
+    // 取消按钮
     _cancelButton = Button::create("icon/return_button.png");
     float cancelScale =
         buttonSize / std::max(_cancelButton->getContentSize().width, _cancelButton->getContentSize().height);
     if (_cancelButton->getContentSize().equals(Size::ZERO))
     {
-        // 如果图片不存在，回退到文本模式
         _cancelButton = Button::create();
-        _cancelButton->setTitleText("\xE2\x9C\x97"); // UTF-8编码的 ✗
-        _cancelButton->setTitleFontSize(24);
+        _cancelButton->setTitleText("\xE2\x9C\x97");
+        _cancelButton->setTitleFontSize(28);
         _cancelButton->setTitleColor(Color3B::WHITE);
         _cancelButton->setContentSize(Size(buttonSize, buttonSize));
         cancelScale = 1.0f;
@@ -336,6 +330,7 @@ void SceneUIController::showConfirmButtons(const Vec2& worldPos)
     _cancelButton->setPosition(Vec2(worldPos.x - offsetX, worldPos.y + offsetY));
 
     _cancelButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         if (_onCancelBuilding)
             _onCancelBuilding();
     });
@@ -360,6 +355,109 @@ void SceneUIController::hideConfirmButtons()
     {
         _cancelButton->removeFromParent();
         _cancelButton = nullptr;
+    }
+}
+
+void SceneUIController::showExitBuildModeButton()
+{
+    // 如果按钮已存在，先隐藏
+    hideExitBuildModeButton();
+
+    // 创建退出建造模式按钮 - 位于屏幕右上角
+    // 使用红色背景和 "✕ 取消" 文字，清晰表示退出功能
+    float buttonWidth = 100.0f;
+    float buttonHeight = 50.0f;
+    float margin = 20.0f;
+
+    _exitBuildModeButton = Button::create("icon/return_button.png");
+    
+    if (_exitBuildModeButton->getContentSize().equals(Size::ZERO))
+    {
+        // 图标不存在时，创建带文字的按钮
+        _exitBuildModeButton = Button::create();
+        _exitBuildModeButton->ignoreContentAdaptWithSize(false);
+        _exitBuildModeButton->setContentSize(Size(buttonWidth, buttonHeight));
+        _exitBuildModeButton->setTitleText("✕ 取消");
+        _exitBuildModeButton->setTitleFontSize(18);
+        _exitBuildModeButton->setTitleColor(Color3B::WHITE);
+        
+        // 添加红色背景
+        auto bg = LayerColor::create(Color4B(180, 50, 50, 220), buttonWidth, buttonHeight);
+        bg->setPosition(Vec2::ZERO);
+        _exitBuildModeButton->addChild(bg, -1);
+        
+        if (_exitBuildModeButton->getTitleRenderer())
+        {
+            _exitBuildModeButton->getTitleRenderer()->setPosition(Vec2(buttonWidth / 2, buttonHeight / 2));
+        }
+    }
+    else
+    {
+        // 图标存在时，缩放并添加标签
+        float iconScale = 50.0f / _exitBuildModeButton->getContentSize().width;
+        _exitBuildModeButton->setScale(iconScale);
+        
+        // 在按钮下方添加"取消"标签
+        auto label = Label::createWithSystemFont("取消建造", "Microsoft YaHei", 14);
+        label->setPosition(Vec2(
+            _exitBuildModeButton->getContentSize().width / 2,
+            -15 / iconScale  // 按钮下方
+        ));
+        label->setTextColor(Color4B::WHITE);
+        label->enableOutline(Color4B(0, 0, 0, 180), 2);
+        _exitBuildModeButton->addChild(label);
+    }
+
+    // 位置：屏幕右上角
+    _exitBuildModeButton->setPosition(Vec2(
+        _visibleSize.width - buttonWidth / 2 - margin,
+        _visibleSize.height - buttonHeight / 2 - margin - 30  // 留出状态栏空间
+    ));
+
+    _exitBuildModeButton->setPressedActionEnabled(true);
+    _exitBuildModeButton->setZoomScale(0.1f);
+
+    _exitBuildModeButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        if (_onExitBuildMode)
+        {
+            _onExitBuildMode();
+        }
+    });
+
+    this->addChild(_exitBuildModeButton, 10001);
+
+    // 入场动画：从右侧滑入
+    Vec2 targetPos = _exitBuildModeButton->getPosition();
+    _exitBuildModeButton->setPosition(Vec2(targetPos.x + 150, targetPos.y));
+    _exitBuildModeButton->setOpacity(0);
+    
+    auto moveIn = EaseBackOut::create(MoveTo::create(0.3f, targetPos));
+    auto fadeIn = FadeIn::create(0.2f);
+    _exitBuildModeButton->runAction(Spawn::create(moveIn, fadeIn, nullptr));
+
+    CCLOG("📱 显示退出建造模式按钮（Android ESC替代）");
+}
+
+void SceneUIController::hideExitBuildModeButton()
+{
+    if (_exitBuildModeButton)
+    {
+        // 退场动画：向右滑出
+        Vec2 currentPos = _exitBuildModeButton->getPosition();
+        auto moveOut = EaseBackIn::create(MoveTo::create(0.2f, Vec2(currentPos.x + 150, currentPos.y)));
+        auto fadeOut = FadeOut::create(0.15f);
+        auto remove = RemoveSelf::create();
+        
+        _exitBuildModeButton->runAction(Sequence::create(
+            Spawn::create(moveOut, fadeOut, nullptr),
+            remove,
+            nullptr
+        ));
+        
+        _exitBuildModeButton = nullptr;
+        
+        CCLOG("📱 隐藏退出建造模式按钮");
     }
 }
 

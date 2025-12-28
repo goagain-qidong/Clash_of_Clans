@@ -3,10 +3,12 @@
  * File Name:     ShopLayer.cpp
  * File Function: 商店界面
  * Author:        刘相成
- * Update Date:   2025/12/08
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #include "ShopLayer.h"
+
+#include "Audio/AudioManager.h"
 #include "DraggableMapScene.h"
 #include "Managers/BuildingLimitManager.h"
 #include "Managers/BuildingManager.h"
@@ -94,7 +96,11 @@ void ShopLayer::initUI()
     }
     _closeBtn->setPosition(
         Vec2(_container->getContentSize().width - 40.0f, _container->getContentSize().height - 30.0f));
-    _closeBtn->addClickEventListener([this](Ref*) { hide(); });
+    _closeBtn->addClickEventListener([this](Ref*) {
+        // 播放按钮点击音效
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        hide();
+    });
     _container->addChild(_closeBtn);
 
     // 商品列表
@@ -299,6 +305,9 @@ cocos2d::ui::Widget* ShopLayer::createShopItem(const BuildingData& data)
 
         itemLayout->setTouchEnabled(true);
         itemLayout->addClickEventListener([this, data](Ref*) {
+            // 播放按钮点击音效
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+            
             auto scene = dynamic_cast<DraggableMapScene*>(Director::getInstance()->getRunningScene());
             if (scene)
             {

@@ -3,7 +3,7 @@
  * File Name:     BuildingManager.h
  * File Function: 建筑管理器 - 管理所有建筑的创建、放置、升级和更新
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #ifndef BUILDING_MANAGER_H_
@@ -262,6 +262,18 @@ public:
      * @param building 要添加监听器的建筑
      */
     void setupBuildingClickListener(BaseBuilding* building);
+
+    /**
+     * @brief 播放建筑放置音效
+     * @param building 放置的建筑
+     */
+    void PlayBuildingPlaceSound(BaseBuilding* building);
+
+    /**
+     * @brief 播放建筑拾取音效
+     * @param building 拾取的建筑
+     */
+    void PlayBuildingPickupSound(BaseBuilding* building);
 
     // ==================== 成员变量 ====================
     cocos2d::Sprite* _mapSprite = nullptr; // 地图精灵引用

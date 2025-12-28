@@ -3,14 +3,17 @@
  * File Name:     AccountSelectScene.cpp
  * File Function: 负责账号选择界面
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #include "AccountSelectScene.h"
 
+#include "Audio/AudioManager.h"
 #include "DraggableMapScene.h"
 #include "Managers/AccountManager.h"
 #include "Managers/MusicManager.h"
+#include "UI/LoadingLayer.h"
+#include "audio/include/AudioEngine.h"
 
 USING_NS_CC;
 
@@ -415,16 +418,18 @@ void AccountSelectScene::showPasswordDialog(const std::string& userId)
         auto& mgr = AccountManager::getInstance();
         if (mgr.verifyPassword(userId, password))
         {
-            // 🆕 关键修复：切换账号前保存当前状态
-            auto& mgr = AccountManager::getInstance();
-            mgr.saveGameStateToFile();  // 保存当前账号数据
+            // 切换账号前保存当前状态
+            mgr.saveGameStateToFile();
             
-            // 密码正确，切换账号并进入游戏
+            // 密码正确，切换账号
             mgr.switchAccount(userId);
             mask->removeFromParent();
 
-            auto scene = DraggableMapScene::createScene();
-            Director::getInstance()->replaceScene(TransitionFade::create(0.3f, scene));
+            // 停止当前背景音乐
+            MusicManager::getInstance().stopMusic();
+
+            // 显示加载界面并进入游戏
+            showLoadingAndEnterGame();
         }
         else
         {
@@ -579,4 +584,28 @@ void AccountSelectScene::showDeleteConfirmDialog(const std::string& userId, cons
     // 添加弹出动画
     dialogBg->setScale(0.0f);
     dialogBg->runAction(EaseBackOut::create(ScaleTo::create(0.3f, 1.0f)));
+}
+
+// 显示加载界面并开始登录流程
+void AccountSelectScene::showLoadingAndEnterGame()
+{
+    // 创建加载层
+    _loadingLayer = LoadingLayer::create();
+    if (_loadingLayer)
+    {
+        this->addChild(_loadingLayer, 1000);
+        
+        // 显示加载界面，完成后切换到主场景
+        _loadingLayer->show([]() {
+            auto scene = DraggableMapScene::createScene();
+            Director::getInstance()->replaceScene(TransitionFade::create(0.3f, scene));
+        });
+    }
+    else
+    {
+        // 加载层创建失败，直接切换场景
+        CCLOG("⚠️ LoadingLayer 创建失败，直接切换场景");
+        auto scene = DraggableMapScene::createScene();
+        Director::getInstance()->replaceScene(TransitionFade::create(0.3f, scene));
+    }
 }

@@ -8,6 +8,7 @@
  ****************************************************************/
 
 #include "BattleUI.h"
+#include "Audio/AudioManager.h"
 
 USING_NS_CC;
 using namespace ui;
@@ -152,6 +153,7 @@ void BattleUI::setupBottomButtons()
     _endBattleButton->setPosition(Vec2(_visibleSize.width - 100, 60));
     _endBattleButton->setVisible(false);
     _endBattleButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         if (_onEndBattle)
             _onEndBattle();
     });
@@ -183,6 +185,7 @@ void BattleUI::setupBottomButtons()
     _returnButton->setPosition(Vec2(_visibleSize.width / 2, 60));
     _returnButton->setVisible(false);
     _returnButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         if (_onReturn)
             _onReturn();
     });
@@ -283,6 +286,9 @@ Node* BattleUI::createTroopCard(UnitType type, const std::string& iconPath, cons
 
 void BattleUI::onTroopCardClicked(UnitType type)
 {
+    // 播放按钮点击音效
+    AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+    
     // 如果点击的是已选中的兵种，则取消选中
     if (_hasSelectedUnit && _selectedUnitType == type)
     {

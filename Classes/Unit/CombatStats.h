@@ -4,7 +4,7 @@
  * File Name:     CombatStats.h
  * File Function: 战斗属性系统 - 定义所有战斗实体的基础属性
  * Author:        薛毓哲
- * Update Date:   2025/01/10
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #ifndef COMBAT_STATS_H_

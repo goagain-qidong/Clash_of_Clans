@@ -3,10 +3,12 @@
  * File Name:     PlayerListItemWidget.cpp
  * File Function: 玩家列表项组件实现
  * Author:        赵崇治
- * Update Date:   2025/12/21
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #include "PlayerListItem.h"
+
+#include "Audio/AudioManager.h"
 
 USING_NS_CC;
 using namespace ui;
@@ -203,6 +205,7 @@ void PlayerListItemWidget::addActionButtons(const std::string& playerId, const P
         spectateBtn->setContentSize(Size(90, 32));
         spectateBtn->setPosition(Vec2(480, 35));
         spectateBtn->addClickEventListener([playerId, onSpectate](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (onSpectate)
                 onSpectate(playerId);
         });
@@ -218,6 +221,7 @@ void PlayerListItemWidget::addActionButtons(const std::string& playerId, const P
         attackBtn->setContentSize(Size(90, 32));
         attackBtn->setPosition(Vec2(480, 35));
         attackBtn->addClickEventListener([playerId, onAttack](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             if (onAttack)
                 onAttack(playerId);
         });

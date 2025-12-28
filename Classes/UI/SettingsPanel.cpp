@@ -3,14 +3,16 @@
  * File Name:     SettingsPanel.cpp
  * File Function: 负责游戏设置面板
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #include "SettingsPanel.h"
+
 #include "AccountManager.h"
-#include "ResourceManager.h"
+#include "Audio/AudioManager.h"
 #include "Managers/GlobalAudioManager.h"
-#include "Managers/MusicManager.h" // 🆕 引入 MusicManager
+#include "Managers/MusicManager.h"
+#include "ResourceManager.h"
 
 USING_NS_CC;
 using namespace ui;
@@ -78,7 +80,10 @@ void SettingsPanel::setupUI()
         _closeButton->setScale(40.0f / _closeButton->getContentSize().width);
     }
     _closeButton->setPosition(Vec2(560, 560));
-    _closeButton->addClickEventListener([this](Ref*) { onCloseClicked(); });
+    _closeButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onCloseClicked();
+    });
     _panel->addChild(_closeButton);
     
     setupVolumeControls(480);
@@ -93,25 +98,25 @@ void SettingsPanel::setupVolumeControls(float startY)
     musicLabel->setAnchorPoint(Vec2(0, 0.5f));
     _panel->addChild(musicLabel);
     
-    // 🎨 创建自定义滑动条背景（使用纯色 LayerColor）
+    // 创建自定义滑动条背景
     auto musicBarBg = LayerColor::create(Color4B(80, 80, 80, 255), 250, 10);
     musicBarBg->setPosition(Vec2(280, startY - 5));
     _panel->addChild(musicBarBg);
     
-    // 🎨 创建进度条
+    // 创建进度条
     auto musicBarProgress = LayerColor::create(Color4B(50, 205, 50, 255), 250, 10);
     musicBarProgress->setPosition(Vec2(280, startY - 5));
     musicBarProgress->setName("musicProgress");
     _panel->addChild(musicBarProgress);
     
-    // 🎨 创建滑块（圆形按钮）
+    // 创建滑块
     auto musicThumb = LayerColor::create(Color4B(255, 255, 255, 255), 20, 20);
     musicThumb->setPosition(Vec2(530, startY - 10));
     musicThumb->setName("musicThumb");
     _panel->addChild(musicThumb);
     
-    // 🎮 创建透明的触摸响应层（覆盖整个滑动条区域）
-    auto musicTouchLayer = LayerColor::create(Color4B(0, 0, 0, 1), 250, 30);  // 几乎透明
+    // 创建透明的触摸响应层
+    auto musicTouchLayer = LayerColor::create(Color4B(0, 0, 0, 1), 250, 30);
     musicTouchLayer->setPosition(Vec2(280, startY - 15));
     _panel->addChild(musicTouchLayer, 10);
     
@@ -123,18 +128,14 @@ void SettingsPanel::setupVolumeControls(float startY)
         Rect rect(Vec2::ZERO, musicTouchLayer->getContentSize());
         if (rect.containsPoint(localPos))
         {
-            // 计算百分比
             float percent = (localPos.x / 250.0f) * 100.0f;
             percent = std::max(0.0f, std::min(100.0f, percent));
             
-            // 更新进度条
             musicBarProgress->setContentSize(Size(250 * percent / 100.0f, 10));
             musicThumb->setPositionX(280 + 250 * percent / 100.0f - 10);
             _musicValueLabel->setString(StringUtils::format("%.0f%%", percent));
             
-            // 🎵 设置音乐音量（通过全局管理器）
             GlobalAudioManager::getInstance().setMusicVolume(percent / 100.0f);
-            // 🆕 同步设置 MusicManager 音量
             MusicManager::getInstance().setVolume(percent / 100.0f);
             
             return true;
@@ -144,18 +145,14 @@ void SettingsPanel::setupVolumeControls(float startY)
     musicTouchListener->onTouchMoved = [this, musicBarProgress, musicThumb, musicTouchLayer](Touch* touch, Event* event) {
         Vec2 localPos = musicTouchLayer->convertToNodeSpace(touch->getLocation());
         
-        // 计算百分比（允许超出范围但限制在0-100）
         float percent = (localPos.x / 250.0f) * 100.0f;
         percent = std::max(0.0f, std::min(100.0f, percent));
         
-        // 更新进度条
         musicBarProgress->setContentSize(Size(250 * percent / 100.0f, 10));
         musicThumb->setPositionX(280 + 250 * percent / 100.0f - 10);
         _musicValueLabel->setString(StringUtils::format("%.0f%%", percent));
         
-        // 🎵 设置音乐音量
         GlobalAudioManager::getInstance().setMusicVolume(percent / 100.0f);
-        // 🆕 同步设置 MusicManager 音量
         MusicManager::getInstance().setVolume(percent / 100.0f);
     };
     musicTouchListener->onTouchEnded = [this](Touch* touch, Event* event) {
@@ -163,10 +160,9 @@ void SettingsPanel::setupVolumeControls(float startY)
     };
     _eventDispatcher->addEventListenerWithSceneGraphPriority(musicTouchListener, musicTouchLayer);
     
-    // 保存slider的百分比（用于加载设置）
     _musicSlider = Slider::create();
     _musicSlider->setPercent(100);
-    _musicSlider->setVisible(false);  // 隐藏，只用于存储值
+    _musicSlider->setVisible(false);
     _panel->addChild(_musicSlider);
     
     _musicValueLabel = Label::createWithSystemFont("100%", "Arial", 12);
@@ -179,29 +175,24 @@ void SettingsPanel::setupVolumeControls(float startY)
     sfxLabel->setAnchorPoint(Vec2(0, 0.5f));
     _panel->addChild(sfxLabel);
     
-    // 🎨 创建自定义滑动条背景
     auto sfxBarBg = LayerColor::create(Color4B(80, 80, 80, 255), 250, 10);
     sfxBarBg->setPosition(Vec2(280, startY - 75));
     _panel->addChild(sfxBarBg);
     
-    // 🎨 创建进度条
     auto sfxBarProgress = LayerColor::create(Color4B(30, 144, 255, 255), 250, 10);
     sfxBarProgress->setPosition(Vec2(280, startY - 75));
     sfxBarProgress->setName("sfxProgress");
     _panel->addChild(sfxBarProgress);
     
-    // 🎨 创建滑块
     auto sfxThumb = LayerColor::create(Color4B(255, 255, 255, 255), 20, 20);
     sfxThumb->setPosition(Vec2(530, startY - 80));
     sfxThumb->setName("sfxThumb");
     _panel->addChild(sfxThumb);
     
-    // 🎮 创建透明的触摸响应层（音效）
     auto sfxTouchLayer = LayerColor::create(Color4B(0, 0, 0, 1), 250, 30);
     sfxTouchLayer->setPosition(Vec2(280, startY - 85));
     _panel->addChild(sfxTouchLayer, 10);
     
-    // 添加触摸监听器
     auto sfxTouchListener = EventListenerTouchOneByOne::create();
     sfxTouchListener->setSwallowTouches(true);
     sfxTouchListener->onTouchBegan = [this, sfxBarProgress, sfxThumb, sfxTouchLayer](Touch* touch, Event* event) {
@@ -209,16 +200,13 @@ void SettingsPanel::setupVolumeControls(float startY)
         Rect rect(Vec2::ZERO, sfxTouchLayer->getContentSize());
         if (rect.containsPoint(localPos))
         {
-            // 计算百分比
             float percent = (localPos.x / 250.0f) * 100.0f;
             percent = std::max(0.0f, std::min(100.0f, percent));
             
-            // 更新进度条
             sfxBarProgress->setContentSize(Size(250 * percent / 100.0f, 10));
             sfxThumb->setPositionX(280 + 250 * percent / 100.0f - 10);
             _sfxValueLabel->setString(StringUtils::format("%.0f%%", percent));
             
-            // 🔊 设置音效音量（通过全局管理器）
             GlobalAudioManager::getInstance().setEffectVolume(percent / 100.0f);
             
             return true;
@@ -228,16 +216,13 @@ void SettingsPanel::setupVolumeControls(float startY)
     sfxTouchListener->onTouchMoved = [this, sfxBarProgress, sfxThumb, sfxTouchLayer](Touch* touch, Event* event) {
         Vec2 localPos = sfxTouchLayer->convertToNodeSpace(touch->getLocation());
         
-        // 计算百分比
         float percent = (localPos.x / 250.0f) * 100.0f;
         percent = std::max(0.0f, std::min(100.0f, percent));
         
-        // 更新进度条
         sfxBarProgress->setContentSize(Size(250 * percent / 100.0f, 10));
         sfxThumb->setPositionX(280 + 250 * percent / 100.0f - 10);
         _sfxValueLabel->setString(StringUtils::format("%.0f%%", percent));
         
-        // 🔊 设置音效音量
         GlobalAudioManager::getInstance().setEffectVolume(percent / 100.0f);
     };
     sfxTouchListener->onTouchEnded = [this](Touch* touch, Event* event) {
@@ -245,7 +230,6 @@ void SettingsPanel::setupVolumeControls(float startY)
     };
     _eventDispatcher->addEventListenerWithSceneGraphPriority(sfxTouchListener, sfxTouchLayer);
     
-    // 保存slider的百分比
     _sfxSlider = Slider::create();
     _sfxSlider->setPercent(100);
     _sfxSlider->setVisible(false);
@@ -270,18 +254,29 @@ void SettingsPanel::setupFunctionButtons(float startY)
         return btn;
     };
     
-    // 地图切换按钮
     _mapSwitchButton = createButton("🗺️ 切换地图", startY);
-    _mapSwitchButton->addClickEventListener([this](Ref*) { onMapSwitchClicked(); });
+    _mapSwitchButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onMapSwitchClicked();
+    });
     
     _accountSwitchButton = createButton("👤 切换账号", startY - 70);
-    _accountSwitchButton->addClickEventListener([this](Ref*) { onAccountSwitchClicked(); });
+    _accountSwitchButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onAccountSwitchClicked();
+    });
     
     _logoutButton = createButton("🚪 退出游戏", startY - 140);
-    _logoutButton->addClickEventListener([this](Ref*) { onLogoutClicked(); });
+    _logoutButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onLogoutClicked();
+    });
     
     _fullResourceButton = createButton("💰 资源全满 (测试)", startY - 210);
-    _fullResourceButton->addClickEventListener([this](Ref*) { onFullResourceClicked(); });
+    _fullResourceButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onFullResourceClicked();
+    });
 }
 
 void SettingsPanel::onCloseClicked()
@@ -333,18 +328,15 @@ void SettingsPanel::onFullResourceClicked()
 {
     CCLOG("📊 点击了资源全满按钮");
     
-    // 调用 ResourceManager 的新方法
     auto& resMgr = ResourceManager::getInstance();
     resMgr.fillAllResourcesMax();
     
-    // 显示提示信息
     auto hint = Label::createWithSystemFont("✅ 资源已全满！", "Microsoft YaHei", 24);
     hint->setPosition(Vec2(300, 50));
     hint->setTextColor(Color4B::GREEN);
     hint->setOpacity(0);
     _panel->addChild(hint);
     
-    // 播放提示动画
     hint->runAction(Sequence::create(
         FadeIn::create(0.2f),
         DelayTime::create(2.0f),
@@ -400,11 +392,11 @@ void SettingsPanel::showMapSelectionPanel()
     }
     closeBtn->setPosition(Vec2(470, 320));
     closeBtn->addClickEventListener([mapPanel](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         mapPanel->removeFromParent();
     });
     mapPanel->addChild(closeBtn);
     
-    // 地图选项
     struct MapOption {
         std::string name;
         std::string path;
@@ -433,7 +425,6 @@ void SettingsPanel::showMapSelectionPanel()
         auto    bg        = LayerColor::create(Color4B(bgColor.r, bgColor.g, bgColor.b, 255), 460, 70);
         itemLayout->addChild(bg);
 
-        // 🔴 修复：创建地图名称标签并添加到界面
         std::string labelText = mapOption.name + " - " + mapOption.description;
         if (isCurrent)
         {
@@ -453,6 +444,7 @@ void SettingsPanel::showMapSelectionPanel()
         {
             itemLayout->setTouchEnabled(true);
             itemLayout->addClickEventListener([this, mapOption, mapPanel](Ref*) {
+                AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
                 CCLOG("✅ Switching to map: %s", mapOption.path.c_str());
 
                 auto&       accMgr  = AccountManager::getInstance();
@@ -487,12 +479,10 @@ void SettingsPanel::showMapSelectionPanel()
 
 void SettingsPanel::loadVolumeSettings()
 {
-    // 从全局音频管理器读取音量
     auto& audioMgr = GlobalAudioManager::getInstance();
     float musicVolume = audioMgr.getMusicVolume() * 100.0f;
     float sfxVolume = audioMgr.getEffectVolume() * 100.0f;
     
-    // 🆕 确保 MusicManager 音量与全局设置同步
     MusicManager::getInstance().setVolume(audioMgr.getMusicVolume());
     
     if (_musicSlider)
@@ -500,7 +490,6 @@ void SettingsPanel::loadVolumeSettings()
         _musicSlider->setPercent(static_cast<int>(musicVolume));
         _musicValueLabel->setString(StringUtils::format("%.0f%%", musicVolume));
         
-        // 更新视觉效果
         auto musicProgress = _panel->getChildByName("musicProgress");
         auto musicThumb = _panel->getChildByName("musicThumb");
         if (musicProgress)
@@ -518,7 +507,6 @@ void SettingsPanel::loadVolumeSettings()
         _sfxSlider->setPercent(static_cast<int>(sfxVolume));
         _sfxValueLabel->setString(StringUtils::format("%.0f%%", sfxVolume));
         
-        // 更新视觉效果
         auto sfxProgress = _panel->getChildByName("sfxProgress");
         auto sfxThumb = _panel->getChildByName("sfxThumb");
         if (sfxProgress)
@@ -577,6 +565,7 @@ void SettingsPanel::showAccountList()
     }
     closeBtn->setPosition(Vec2(370, 370));
     closeBtn->addClickEventListener([accountPanel](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         accountPanel->removeFromParent();
     });
     accountPanel->addChild(closeBtn);
@@ -612,12 +601,10 @@ void SettingsPanel::showAccountList()
         {
             itemLayout->setTouchEnabled(true);
             itemLayout->addClickEventListener([this, account, accountPanel](Ref*) {
+                AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
                 CCLOG("✅ Preparing to switch to account: %s", account.username.c_str());
                 
-                // 关闭账号选择面板
                 accountPanel->removeFromParent();
-                
-                // 显示密码验证对话框
                 showPasswordDialog(account.userId, account.username);
             });
         }
@@ -644,18 +631,15 @@ void SettingsPanel::hide()
 
 void SettingsPanel::showPasswordDialog(const std::string& userId, const std::string& username)
 {
-    // 创建半透明背景遮罩
     auto mask = LayerColor::create(Color4B(0, 0, 0, 180));
     mask->setContentSize(_visibleSize);
     mask->setName("PasswordDialogMask");
     this->addChild(mask, 200);
     
-    // 对话框背景
     auto dialogBg = LayerColor::create(Color4B(50, 50, 60, 255), 400, 250);
     dialogBg->setPosition(Vec2(_visibleSize.width / 2 - 200, _visibleSize.height / 2 - 125));
     mask->addChild(dialogBg);
     
-    // 对话框标题
     std::string titleText = StringUtils::format("切换到账号: %s", username.c_str());
     auto title = Label::createWithSystemFont(titleText, "Microsoft YaHei", 24);
     title->setPosition(Vec2(200, 210));
@@ -666,11 +650,10 @@ void SettingsPanel::showPasswordDialog(const std::string& userId, const std::str
     subtitle->setTextColor(Color4B(200, 200, 200, 255));
     dialogBg->addChild(subtitle);
     
-    // 密码输入框
     auto passwordInput = TextField::create("密码", "Arial", 24);
     passwordInput->setMaxLength(20);
     passwordInput->setMaxLengthEnabled(true);
-    passwordInput->setPasswordEnabled(true);  // 密码模式
+    passwordInput->setPasswordEnabled(true);
     passwordInput->setPasswordStyleText("*");
     passwordInput->setPosition(Vec2(200, 130));
     passwordInput->setContentSize(Size(300, 40));
@@ -679,7 +662,6 @@ void SettingsPanel::showPasswordDialog(const std::string& userId, const std::str
     passwordInput->setName("passwordInput");
     dialogBg->addChild(passwordInput);
     
-    // 错误提示标签（初始隐藏）
     auto errorTip = Label::createWithSystemFont("", "Microsoft YaHei", 18);
     errorTip->setPosition(Vec2(200, 90));
     errorTip->setTextColor(Color4B::RED);
@@ -687,7 +669,6 @@ void SettingsPanel::showPasswordDialog(const std::string& userId, const std::str
     errorTip->setVisible(false);
     dialogBg->addChild(errorTip);
     
-    // 确认按钮
     auto confirmBtn = Button::create();
     confirmBtn->setTitleText("确认");
     confirmBtn->setTitleFontSize(24);
@@ -696,6 +677,7 @@ void SettingsPanel::showPasswordDialog(const std::string& userId, const std::str
     confirmBtn->setScale9Enabled(true);
     confirmBtn->setPosition(Vec2(120, 40));
     confirmBtn->addClickEventListener([this, mask, passwordInput, errorTip, userId](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         std::string password = passwordInput->getString();
         
         if (password.empty())
@@ -705,14 +687,11 @@ void SettingsPanel::showPasswordDialog(const std::string& userId, const std::str
             return;
         }
         
-        // 验证密码
         auto& accMgr = AccountManager::getInstance();
         if (accMgr.verifyPassword(userId, password))
         {
-            // 密码正确，执行切换
             mask->removeFromParent();
             
-            // 保存目标账号ID并触发切换
             UserDefault::getInstance()->setStringForKey("switching_to_account", userId);
             UserDefault::getInstance()->flush();
             
@@ -723,14 +702,11 @@ void SettingsPanel::showPasswordDialog(const std::string& userId, const std::str
         }
         else
         {
-            // 密码错误
             errorTip->setString("密码错误！请重试");
             errorTip->setVisible(true);
             
-            // 清空输入框
             passwordInput->setString("");
             
-            // 播放错误动画
             auto shake = Sequence::create(
                 MoveBy::create(0.05f, Vec2(-5, 0)),
                 MoveBy::create(0.05f, Vec2(10, 0)),
@@ -744,7 +720,6 @@ void SettingsPanel::showPasswordDialog(const std::string& userId, const std::str
     });
     dialogBg->addChild(confirmBtn);
     
-    // 取消按钮
     auto cancelBtn = Button::create();
     cancelBtn->setTitleText("取消");
     cancelBtn->setTitleFontSize(24);
@@ -753,11 +728,11 @@ void SettingsPanel::showPasswordDialog(const std::string& userId, const std::str
     cancelBtn->setScale9Enabled(true);
     cancelBtn->setPosition(Vec2(280, 40));
     cancelBtn->addClickEventListener([mask](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         mask->removeFromParent();
     });
     dialogBg->addChild(cancelBtn);
     
-    // 添加弹出动画
     dialogBg->setScale(0.0f);
     dialogBg->runAction(EaseBackOut::create(ScaleTo::create(0.3f, 1.0f)));
 }

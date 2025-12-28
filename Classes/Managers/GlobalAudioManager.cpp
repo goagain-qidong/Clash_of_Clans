@@ -1,130 +1,69 @@
 ﻿/****************************************************************
  * Project Name:  Clash_of_Clans
  * File Name:     GlobalAudioManager.cpp
- * File Function: 全局音频管理器实现
+ * File Function: 全局音频管理器实现（兼容层）
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #include "GlobalAudioManager.h"
 
+#include "Audio/AudioManager.h"
+
 USING_NS_CC;
 
-GlobalAudioManager* GlobalAudioManager::_instance = nullptr;
+GlobalAudioManager* GlobalAudioManager::instance_ = nullptr;
 
-GlobalAudioManager& GlobalAudioManager::getInstance()
-{
-    if (!_instance)
-    {
-        _instance = new (std::nothrow) GlobalAudioManager();
-        _instance->loadSettings();
-    }
-    return *_instance;
+GlobalAudioManager& GlobalAudioManager::getInstance() {
+  if (!instance_) {
+    instance_ = new (std::nothrow) GlobalAudioManager();
+  }
+  return *instance_;
 }
 
-GlobalAudioManager::GlobalAudioManager()
-{
+GlobalAudioManager::GlobalAudioManager() {
+  // 确保新的 AudioManager 已初始化
+  AudioManager::GetInstance().Initialize();
 }
 
-// ==================== 音乐管理 ====================
+// ==================== 音乐管理（委托给 AudioManager）====================
 
-int GlobalAudioManager::playMusic(const std::string& filename)
-{
-    // 停止当前音乐
-    if (_currentMusicID != -1)
-    {
-        cocos2d::AudioEngine::stop(_currentMusicID);
-    }
-    
-    // 播放新音乐（循环播放）
-    _currentMusicID = cocos2d::AudioEngine::play2d(filename, true, _musicVolume);
-    
-    CCLOG("🎵 Playing music: %s (ID: %d, Volume: %.2f)", filename.c_str(), _currentMusicID, _musicVolume);
-    
-    return _currentMusicID;
+int GlobalAudioManager::playMusic(const std::string& filename) {
+  return AudioManager::GetInstance().PlayMusicByPath(filename, true);
 }
 
-void GlobalAudioManager::stopMusic()
-{
-    if (_currentMusicID != -1)
-    {
-        cocos2d::AudioEngine::stop(_currentMusicID);
-        _currentMusicID = -1;
-    }
+void GlobalAudioManager::stopMusic() {
+  AudioManager::GetInstance().StopMusic();
 }
 
-void GlobalAudioManager::setMusicVolume(float volume)
-{
-    _musicVolume = std::max(0.0f, std::min(1.0f, volume));
-    
-    // 如果有音乐正在播放，立即更新音量
-    if (_currentMusicID != -1)
-    {
-        cocos2d::AudioEngine::setVolume(_currentMusicID, _musicVolume);
-        CCLOG("🔊 Music volume updated: %.2f", _musicVolume);
-    }
-    
-    saveSettings();
+void GlobalAudioManager::setMusicVolume(float volume) {
+  AudioManager::GetInstance().SetMusicVolume(volume);
 }
 
-// ==================== 音效管理 ====================
-
-int GlobalAudioManager::playEffect(const std::string& filename)
-{
-    int effectID = cocos2d::AudioEngine::play2d(filename, false, _effectVolume);
-    
-    if (effectID != cocos2d::AudioEngine::INVALID_AUDIO_ID)
-    {
-        _effectIDs.push_back(effectID);
-        
-        // 设置完成回调，播放完后从列表中移除
-        cocos2d::AudioEngine::setFinishCallback(effectID, [this, effectID](int id, const std::string& file) {
-            auto it = std::find(_effectIDs.begin(), _effectIDs.end(), effectID);
-            if (it != _effectIDs.end())
-            {
-                _effectIDs.erase(it);
-            }
-        });
-        
-        CCLOG("🔔 Playing effect: %s (ID: %d, Volume: %.2f)", filename.c_str(), effectID, _effectVolume);
-    }
-    
-    return effectID;
+float GlobalAudioManager::getMusicVolume() const {
+  return AudioManager::GetInstance().GetMusicVolume();
 }
 
-void GlobalAudioManager::setEffectVolume(float volume)
-{
-    _effectVolume = std::max(0.0f, std::min(1.0f, volume));
-    
-    // 更新所有正在播放的音效音量
-    for (int effectID : _effectIDs)
-    {
-        if (cocos2d::AudioEngine::getState(effectID) == cocos2d::AudioEngine::AudioState::PLAYING)
-        {
-            cocos2d::AudioEngine::setVolume(effectID, _effectVolume);
-        }
-    }
-    
-    CCLOG("🔊 Effect volume updated: %.2f", _effectVolume);
-    
-    saveSettings();
+// ==================== 音效管理（委托给 AudioManager）====================
+
+int GlobalAudioManager::playEffect(const std::string& filename) {
+  return AudioManager::GetInstance().PlayEffectByPath(filename);
 }
 
-// ==================== 保存/加载设置 ====================
-
-void GlobalAudioManager::loadSettings()
-{
-    auto userDefault = UserDefault::getInstance();
-    _musicVolume = userDefault->getFloatForKey("GlobalMusicVolume", 1.0f);
-    _effectVolume = userDefault->getFloatForKey("GlobalEffectVolume", 1.0f);
-    
-    CCLOG("📂 Audio settings loaded: Music=%.2f, Effect=%.2f", _musicVolume, _effectVolume);
+void GlobalAudioManager::setEffectVolume(float volume) {
+  AudioManager::GetInstance().SetEffectVolume(volume);
 }
 
-void GlobalAudioManager::saveSettings()
-{
-    auto userDefault = UserDefault::getInstance();
-    userDefault->setFloatForKey("GlobalMusicVolume", _musicVolume);
-    userDefault->setFloatForKey("GlobalEffectVolume", _effectVolume);
-    userDefault->flush();
+float GlobalAudioManager::getEffectVolume() const {
+  return AudioManager::GetInstance().GetEffectVolume();
+}
+
+// ==================== 设置持久化（委托给 AudioManager）====================
+
+void GlobalAudioManager::loadSettings() {
+  AudioManager::GetInstance().LoadSettings();
+}
+
+void GlobalAudioManager::saveSettings() {
+  AudioManager::GetInstance().SaveSettings();
 }

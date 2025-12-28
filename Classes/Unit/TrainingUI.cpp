@@ -3,12 +3,13 @@
  * File Name:     TrainingUI.cpp
  * File Function: 训练小兵UI界面实现
  * Author:        薛毓哲
- * Update Date:   2025/01/09
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 
 #include "TrainingUI.h"
 #include "ArmyBuilding.h"
+#include "Audio/AudioManager.h"
 #include "ResourceManager.h"
 
 USING_NS_CC;
@@ -68,6 +69,7 @@ void TrainingUI::setupUI()
     maskListener->setSwallowTouches(true);
     maskListener->onTouchBegan = [this](Touch* touch, Event* event) {
         // 点击遮罩层关闭UI
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiPanelClose);
         this->hide();
         return true;
     };
@@ -117,7 +119,10 @@ void TrainingUI::setupUI()
     _closeButton->setTitleText("X");
     _closeButton->setTitleFontSize(30);
     _closeButton->setPosition(Vec2(panelWidth - 40.0f, panelHeight - 30.0f));
-    _closeButton->addClickEventListener([this](Ref*) { onCloseClicked(); });
+    _closeButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onCloseClicked();
+    });
     _panel->addChild(_closeButton);
 
     // 横向滚动列表 - 像ShopLayer一样
@@ -245,6 +250,7 @@ void TrainingUI::createUnitCard(cocos2d::ui::ListView* scrollView, UnitType unit
     {
         cardLayout->setTouchEnabled(true);
         cardLayout->addClickEventListener([this, unitType](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
             onTrainButtonClicked(unitType);
             // 训练后更新UI
             updatePopulationDisplay();

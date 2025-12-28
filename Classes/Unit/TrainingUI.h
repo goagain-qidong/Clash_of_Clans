@@ -3,7 +3,7 @@
  * File Name:     TrainingUI.h
  * File Function: 训练小兵UI界面
  * Author:        薛毓哲
- * Update Date:   2025/01/10
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #ifndef TRAINING_UI_H_

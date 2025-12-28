@@ -3,13 +3,16 @@
  * File Name:     AccountSelectScene.h
  * File Function: 负责账号选择界面
  * Author:        赵崇治
- * Update Date:   2025/12/14
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #pragma once
 
 #include "cocos2d.h"
 #include "ui/CocosGUI.h"
+
+// 前向声明
+class LoadingLayer;
 
 /**
  * @class AccountSelectScene
@@ -32,11 +35,17 @@ private:
     cocos2d::ui::ListView* _list = nullptr;    ///< 账号列表
     cocos2d::ui::Button* _startBtn = nullptr;  ///< 开始按钮
     std::string _selectedUserId;               ///< 选中的用户ID
+    LoadingLayer* _loadingLayer = nullptr;     ///< 加载界面层
 
     void buildUI();       ///< 构建UI
     void refreshList();   ///< 刷新列表
     void onAddAccount();  ///< 添加账号
     void onStartGame();   ///< 开始游戏
+
+    /**
+     * @brief 显示加载界面并开始登录流程
+     */
+    void showLoadingAndEnterGame();
 
     /**
      * @brief 显示输入对话框

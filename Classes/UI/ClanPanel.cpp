@@ -7,6 +7,7 @@
  * License:       MIT License
  ****************************************************************/
 #include "ClanPanel.h"
+#include "Audio/AudioManager.h"
 #include "ClanDataCache.h"
 #include "Managers/AccountManager.h"
 #include "Managers/SocketClient.h"
@@ -145,7 +146,10 @@ void ClanPanel::setupUI()
         closeBtn->setScale(50.0f / closeBtn->getContentSize().width);
     }
     closeBtn->setPosition(Vec2(270, 170));
-    closeBtn->addClickEventListener([this](Ref*) { this->removeFromParent(); });
+    closeBtn->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        this->removeFromParent();
+    });
     _panelNode->addChild(closeBtn);
 
     setupConnectionUI();
@@ -194,7 +198,10 @@ void ClanPanel::setupConnectionUI()
     connectBtn->setTitleText("连接");
     connectBtn->setTitleFontSize(24);
     connectBtn->setPosition(Vec2(0, -80));
-    connectBtn->addClickEventListener([this](Ref*) { onConnectClicked(); });
+    connectBtn->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onConnectClicked();
+    });
     _connectionNode->addChild(connectBtn);
 }
 
@@ -224,7 +231,10 @@ void ClanPanel::setupTabBar()
     _onlinePlayersTab->setScale9Enabled(true);
     _onlinePlayersTab->setContentSize(Size(tabWidth, tabHeight));
     _onlinePlayersTab->setPosition(Vec2(-185, tabY));
-    _onlinePlayersTab->addClickEventListener([this](Ref*) { switchToTab(TabType::ONLINE_PLAYERS); });
+    _onlinePlayersTab->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        switchToTab(TabType::ONLINE_PLAYERS);
+    });
     _memberNode->addChild(_onlinePlayersTab);
 
     // 部落成员标签
@@ -234,7 +244,10 @@ void ClanPanel::setupTabBar()
     _clanMembersTab->setScale9Enabled(true);
     _clanMembersTab->setContentSize(Size(tabWidth, tabHeight));
     _clanMembersTab->setPosition(Vec2(0, tabY));
-    _clanMembersTab->addClickEventListener([this](Ref*) { switchToTab(TabType::CLAN_MEMBERS); });
+    _clanMembersTab->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        switchToTab(TabType::CLAN_MEMBERS);
+    });
     _memberNode->addChild(_clanMembersTab);
 
     // 默认高亮在线玩家
@@ -260,7 +273,10 @@ void ClanPanel::setupListView()
     refreshBtn->setScale9Enabled(true);
     refreshBtn->setContentSize(Size(120, 36));
     refreshBtn->setPosition(Vec2(0, -260));
-    refreshBtn->addClickEventListener([this](Ref*) { safeRefreshCurrentTab(); });
+    refreshBtn->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        safeRefreshCurrentTab();
+    });
     _memberNode->addChild(refreshBtn);
 }
 
@@ -292,7 +308,10 @@ void ClanPanel::setupClanManagement()
     _createClanBtn->setScale9Enabled(true);
     _createClanBtn->setContentSize(Size(110, 32));
     _createClanBtn->setPosition(Vec2(-btnSpacing / 2, btnY));
-    _createClanBtn->addClickEventListener([this](Ref*) { showCreateClanDialog(); });
+    _createClanBtn->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        showCreateClanDialog();
+    });
     _clanManagementNode->addChild(_createClanBtn);
 
     // 加入部落按钮
@@ -302,10 +321,13 @@ void ClanPanel::setupClanManagement()
     _joinClanBtn->setScale9Enabled(true);
     _joinClanBtn->setContentSize(Size(110, 32));
     _joinClanBtn->setPosition(Vec2(btnSpacing / 2, btnY));
-    _joinClanBtn->addClickEventListener([this](Ref*) { showClanListDialog(); });
+    _joinClanBtn->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        showClanListDialog();
+    });
     _clanManagementNode->addChild(_joinClanBtn);
 
-    // 🆕 退出部落按钮（已加入部落时显示）
+    // 退出部落按钮
     _leaveClanBtn = Button::create();
     _leaveClanBtn->setTitleText("退出部落");
     _leaveClanBtn->setTitleFontSize(14);
@@ -313,7 +335,10 @@ void ClanPanel::setupClanManagement()
     _leaveClanBtn->setContentSize(Size(110, 32));
     _leaveClanBtn->setPosition(Vec2(0, btnY));
     _leaveClanBtn->setVisible(false);
-    _leaveClanBtn->addClickEventListener([this](Ref*) { onLeaveClanClicked(); });
+    _leaveClanBtn->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onLeaveClanClicked();
+    });
     _clanManagementNode->addChild(_leaveClanBtn);
 
     updateClanInfoDisplay();
@@ -630,6 +655,7 @@ void ClanPanel::showCreateClanDialog()
     panel->addChild(cancelBtn);
 
     okBtn->addClickEventListener([this, layer, input](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         std::string name = input->getString();
         if (name.length() <= 6)
         {
@@ -647,7 +673,10 @@ void ClanPanel::showCreateClanDialog()
         showToast("正在创建部落...");
     });
 
-    cancelBtn->addClickEventListener([layer](Ref*) { layer->removeFromParent(); });
+    cancelBtn->addClickEventListener([layer](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        layer->removeFromParent();
+    });
 }
 
 void ClanPanel::showClanListDialog()
@@ -682,6 +711,7 @@ void ClanPanel::showClanListDialog()
     closeBtn->setContentSize(Size(100, 40));
     closeBtn->setPosition(Vec2(260, 20));
     closeBtn->addClickEventListener([this, layer](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         this->unschedule("fill_clan_list_delayed");
         layer->removeFromParent();
     });
@@ -736,6 +766,7 @@ void ClanPanel::showClanListDialog()
 
             std::string clanId = c.clan_id;
             joinBtn->addClickEventListener([this, clanId, layer](Ref*) {
+                AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
                 onJoinClanClicked(clanId);
                 if (layer && layer->getParent())
                     layer->removeFromParent();
@@ -801,6 +832,7 @@ void ClanPanel::showJoinClanFirstDialog()
     createBtn->setContentSize(Size(140, 45));
     createBtn->setPosition(Vec2(100, 45));
     createBtn->addClickEventListener([this, layer](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         layer->removeFromParent();
         showCreateClanDialog();
     });
@@ -813,13 +845,13 @@ void ClanPanel::showJoinClanFirstDialog()
     joinBtn->setContentSize(Size(140, 45));
     joinBtn->setPosition(Vec2(300, 45));
     joinBtn->addClickEventListener([this, layer](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         layer->removeFromParent();
         showClanListDialog();
     });
     panel->addChild(joinBtn);
 }
 
-// 🆕 退出部落确认对话框
 void ClanPanel::showLeaveClanConfirmDialog()
 {
     auto layer = LayerColor::create(Color4B(0, 0, 0, 200));
@@ -849,6 +881,7 @@ void ClanPanel::showLeaveClanConfirmDialog()
     confirmBtn->setContentSize(Size(140, 45));
     confirmBtn->setPosition(Vec2(100, 40));
     confirmBtn->addClickEventListener([this, layer](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         layer->removeFromParent();
 
         ClanService::getInstance().leaveClan([this](bool success, const std::string& msg) {

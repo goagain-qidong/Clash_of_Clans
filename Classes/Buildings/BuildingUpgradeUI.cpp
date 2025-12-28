@@ -10,6 +10,7 @@
 #include "BuildingUpgradeUI.h"
 #include "ArmyBuilding.h"
 #include "ArmyCampBuilding.h"
+#include "Audio/AudioManager.h"
 #include "Managers/UpgradeManager.h"
 #include "Managers/BuildingManager.h"
 #include "Managers/TroopInventory.h"
@@ -99,7 +100,10 @@ void BuildingUpgradeUI::setupUI()
     _closeButton->setPosition(Vec2(20, panelHeight - 20)); // 左上角位置
     _closeButton->setTouchEnabled(true);
     _closeButton->setPressedActionEnabled(true);
-    _closeButton->addClickEventListener([this](Ref*) { onCloseClicked(); });
+    _closeButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onCloseClicked();
+    });
     _panel->addChild(_closeButton);
 
     // ============================================================
@@ -161,13 +165,11 @@ void BuildingUpgradeUI::setupUI()
     _upgradeButton->setTitleColor(Color3B::WHITE);
     _upgradeButton->setTouchEnabled(true);
     _upgradeButton->setPressedActionEnabled(true);
-    _upgradeButton->addClickEventListener([this](Ref*) { onUpgradeClicked(); });
+    _upgradeButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onUpgradeClicked();
+    });
 
-    // auto upgradeBg = LayerColor::create(Color4B(0, 150, 0, 200), btnWidth, btnHeight);
-    // upgradeBg->setAnchorPoint(Vec2::ZERO);
-    // upgradeBg->setPosition(Vec2::ZERO);
-    // // upgradeBg->setTouchEnabled(false); // 关键：背景不吃点击
-    // _upgradeButton->addChild(upgradeBg, -1);
     _panel->addChild(_upgradeButton);
 
     // --- B. 宝石按钮 (紫色) ---
@@ -183,14 +185,9 @@ void BuildingUpgradeUI::setupUI()
     gemButton->setPressedActionEnabled(true); // 开启缩放反馈
     gemButton->setName("gemButton");
 
-    // auto gemBg = LayerColor::create(Color4B(80, 0, 120, 200), btnWidth, btnHeight); // 紫色背景
-    // gemBg->setAnchorPoint(Vec2::ZERO);
-    // gemBg->setPosition(Vec2::ZERO);
-    // // gemBg->setTouchEnabled(false); // 关键：背景不吃点击
-    // gemButton->addChild(gemBg, -1);
-
     // 重新写一遍点击逻辑，确保无误
     gemButton->addClickEventListener([this](Ref* sender) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         CCLOG("Gem Button Clicked!");
         if (!_building)
             return;
@@ -285,7 +282,10 @@ void BuildingUpgradeUI::setupUI()
     _moveButton->setTitleColor(Color3B::WHITE);
     _moveButton->setTouchEnabled(true);
     _moveButton->setPressedActionEnabled(true);
-    _moveButton->addClickEventListener([this](Ref*) { onMoveClicked(); });
+    _moveButton->addClickEventListener([this](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+        onMoveClicked();
+    });
     _panel->addChild(_moveButton);
 
     // ============================================================
@@ -304,13 +304,11 @@ void BuildingUpgradeUI::setupUI()
         _trainButton->setPosition(Vec2(centerX, 100));
         _trainButton->setTouchEnabled(true);
         _trainButton->setPressedActionEnabled(true);
-        _trainButton->addClickEventListener([this](Ref*) { onTrainClicked(); });
+        _trainButton->addClickEventListener([this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+            onTrainClicked();
+        });
 
-        // auto trainBg = LayerColor::create(Color4B(50, 100, 200, 200), trainSize.width, trainSize.height);
-        // trainBg->setAnchorPoint(Vec2::ZERO);
-        // trainBg->setPosition(Vec2::ZERO);
-        // // trainBg->setTouchEnabled(false);
-        // _trainButton->addChild(trainBg, -1);
         _panel->addChild(_trainButton);
     }
     
@@ -330,7 +328,10 @@ void BuildingUpgradeUI::setupUI()
         _armyCampButton->setPosition(Vec2(centerX, 100));
         _armyCampButton->setTouchEnabled(true);
         _armyCampButton->setPressedActionEnabled(true);
-        _armyCampButton->addClickEventListener([this](Ref*) { onArmyCampClicked(); });
+        _armyCampButton->addClickEventListener([this](Ref*) {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
+            onArmyCampClicked();
+        });
 
         _panel->addChild(_armyCampButton);
     }
@@ -580,6 +581,7 @@ void BuildingUpgradeUI::onArmyCampClicked()
     }
     closeBtn->setPosition(Vec2(20, 480));
     closeBtn->addClickEventListener([bgLayer](Ref*) {
+        AudioManager::GetInstance().PlayEffect(SoundEffectId::kUiButtonClick);
         bgLayer->removeFromParent();
     });
     panel->addChild(closeBtn);

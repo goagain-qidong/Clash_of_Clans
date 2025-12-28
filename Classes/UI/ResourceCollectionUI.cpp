@@ -3,10 +3,12 @@
 * File Name:     ResourceCollectionUI.cpp
 * File Function: 资源收集UI类
 * Author:        刘相成、薛毓哲
-* Update Date:   2025/12/24
+* Update Date:   2025/12/28
 * License:       MIT License
 ****************************************************************/
 #include "ResourceCollectionUI.h"
+
+#include "Audio/AudioManager.h"
 #include "../Buildings/ResourceBuilding.h"
 #include "cocos2d.h"
 
@@ -171,10 +173,20 @@ void ResourceCollectionUI::performCollection()
         int actualAdded = resMgr.addResource(resType, collectedAmount);
         int afterCount = resMgr.getResourceCount(resType);
 
-        // 4. 播放收集反馈动画
+        // 4. 播放收集音效
+        if (resType == ResourceType::kGold)
+        {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kResourceGoldCollect);
+        }
+        else if (resType == ResourceType::kElixir)
+        {
+            AudioManager::GetInstance().PlayEffect(SoundEffectId::kResourceElixirCollect);
+        }
+
+        // 5. 播放收集反馈动画
         playCollectionAnimation(collectedAmount);
 
-        // 5. 详细日志
+        // 6. 详细日志
         std::string resName = (resType == ResourceType::kGold) ? "金币" : "圣水";
         CCLOG("💰 收集完成: %s", _building->getDisplayName().c_str());
         CCLOG("   资源类型: %s", resName.c_str());

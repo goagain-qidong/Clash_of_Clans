@@ -3,7 +3,7 @@
  * File Name:     BarbarianUnit.h
  * File Function: 野蛮人单位类
  * Author:        薛毓哲
- * Update Date:   2025/01/10
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #ifndef BARBARIAN_UNIT_H_
@@ -34,6 +34,10 @@ public:
 protected:
     virtual bool init(int level) override;
     virtual void loadAnimations() override;
+
+    // 音效回调
+    virtual void onAttackBefore() override;
+    virtual void onDeathBefore() override;
 };
 
 #endif // BARBARIAN_UNIT_H_

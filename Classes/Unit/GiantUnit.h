@@ -3,7 +3,7 @@
  * File Name:     GiantUnit.h
  * File Function: 巨人单位类
  * Author:        赵崇治、薛毓哲
- * Update Date:   2025/01/10
+ * Update Date:   2025/12/28
  * License:       MIT License
  ****************************************************************/
 #ifndef GIANT_UNIT_H_
@@ -34,6 +34,11 @@ public:
 protected:
     virtual bool init(int level) override;
     virtual void loadAnimations() override;
+
+    // 音效回调
+    void onAttackBefore() override;
+    void onAttackAfter() override;
+    void onDeathBefore() override;
 };
 
 #endif // GIANT_UNIT_H_
