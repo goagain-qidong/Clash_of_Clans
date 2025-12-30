@@ -13,12 +13,12 @@
 
 | 主界面 / 基地建设 | 战斗场景 / 施放单位 |
 | :---: | :---: |
-| ![{59E64FCB-1FD0-4C86-8FB1-BB184AF233C6}](C:\Users\刘相成\AppData\Local\Packages\MicrosoftWindows.Client.Core_cw5n1h2txyewy\TempState\ScreenClip\{59E64FCB-1FD0-4C86-8FB1-BB184AF233C6}.png) | ![{A2AFF892-9AB7-49F1-81CE-E09164FCAC4F}](C:\Users\刘相成\AppData\Local\Packages\MicrosoftWindows.Client.Core_cw5n1h2txyewy\TempState\ScreenClip\{A2AFF892-9AB7-49F1-81CE-E09164FCAC4F}.png) |
+| ![{59E64FCB-1FD0-4C86-8FB1-BB184AF233C6}](Resources/readme/{59E64FCB-1FD0-4C86-8FB1-BB184AF233C6}.png) | ![{A2AFF892-9AB7-49F1-81CE-E09164FCAC4F}](Resources/readme/{A2AFF892-9AB7-49F1-81CE-E09164FCAC4F}.png) |
 | *自定义布局与建筑升级* | *实时寻路与战斗特效* |
 
 | 部落系统 / 聊天 | 回放系统 / 防守日志 |
 | :---: | :---: |
-| ![{619604FC-C04D-4CF2-BC2D-3E2620AF6CCD}](C:\Users\刘相成\AppData\Local\Packages\MicrosoftWindows.Client.Core_cw5n1h2txyewy\TempState\ScreenClip\{619604FC-C04D-4CF2-BC2D-3E2620AF6CCD}.png) | ![{DBA2390A-417F-451F-B020-A5E6903C48E0}](C:\Users\刘相成\AppData\Local\Packages\MicrosoftWindows.Client.Core_cw5n1h2txyewy\TempState\ScreenClip\{DBA2390A-417F-451F-B020-A5E6903C48E0}.png)![{59294869-8BF7-4942-8AF5-C49DE2B19DDF}](C:\Users\刘相成\AppData\Local\Packages\MicrosoftWindows.Client.Core_cw5n1h2txyewy\TempState\ScreenClip\{59294869-8BF7-4942-8AF5-C49DE2B19DDF}.png) |
+| ![{619604FC-C04D-4CF2-BC2D-3E2620AF6CCD}](Resources/readme/{619604FC-C04D-4CF2-BC2D-3E2620AF6CCD}.png) | ![{DBA2390A-417F-451F-B020-A5E6903C48E0}](Resources/readme/{DBA2390A-417F-451F-B020-A5E6903C48E0}.png)![{59294869-8BF7-4942-8AF5-C49DE2B19DDF}](Resources/readme/{59294869-8BF7-4942-8AF5-C49DE2B19DDF}.png) |
 | *多人在线聊天与捐兵* | *完整复盘战斗过程* |
 
 ---
@@ -114,7 +114,7 @@ coc/
 
 3. **部署**：连接真机或启动模拟器，点击顶部绿色的 **Run** 按钮。
 
-   ![{79E58991-70D2-4DE8-9A13-7817FC23CAAC}](C:\Users\刘相成\AppData\Local\Packages\MicrosoftWindows.Client.Core_cw5n1h2txyewy\TempState\ScreenClip\{79E58991-70D2-4DE8-9A13-7817FC23CAAC}.png)
+   ![{79E58991-70D2-4DE8-9A13-7817FC23CAAC}](Resources/readme/{79E58991-70D2-4DE8-9A13-7817FC23CAAC}.png)
 
 ---
 
