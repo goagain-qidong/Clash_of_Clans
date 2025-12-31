@@ -1,0 +1,15 @@
+1~8 downright run
+9~16 right run
+17~24 upright attack run
+
+25 downright stand
+26 right stand
+27 upright stand
+
+
+28~31 downright attack 
+32~36 right attack
+37~40 upright attack
+
+41死亡光环
+42墓碑

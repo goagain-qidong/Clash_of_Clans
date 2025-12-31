@@ -1,0 +1,17 @@
+57 downright朝向的骷髅抱着的炸弹
+58 right朝向的骷髅抱着的炸弹
+59 upright朝向的骷髅抱着的炸弹
+
+
+1死亡墓碑
+2死亡光环
+
+以下内容是骷髅本体，没有炸弹
+
+33~40 upright 抱着炸弹跑
+41~48 right run
+49~56 downright run
+
+27 downright stand
+21 right stand
+20 upright stand

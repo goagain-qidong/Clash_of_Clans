@@ -1,0 +1,24 @@
+1~12 downright run
+13~24 right run
+25~36 upright run
+
+
+37 downright stand1
+38 right stand 1
+39 upright stand 1
+
+40,41 downright 应该是stand待机的小动作，下同
+42,43 right
+44,45 upright
+
+
+46~54 downright attack 1
+55~63 right attack1
+64~71 upright attack1
+
+72~80 downright attack 2
+81~89 right attack 2
+90~97 upright attack 2
+
+99 死亡光环
+100 墓碑
