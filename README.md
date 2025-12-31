@@ -5,7 +5,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android-pink.svg?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-orange.svg?style=flat-square)
 
-> 基于 **Cocos2d-x 4.0** 开发的塔防策略游戏，支持本地多账号管理、Socket 网络通信、本地账号之间对战、联机部落之内对战及战斗回放功能。
+> 基于 **Cocos2d-x 4.0** 开发的塔防策略游戏，支持本地多账号管理、Socket 网络通信、本地账号之间对战、联机部落之内对战及战斗回放功能。测试联网功能的基础环境详见文档最后的常见问题第四个，具体游戏操作详见PPT视频。
 
 ---
 
@@ -1818,7 +1818,7 @@ Windows 防火墙默认会拦截来自虚拟网卡的入站连接，你必须手
 
 ## ⚠️ 免责声明 (Disclaimer)
 
-本项目为同济大学《程序设计方式》课程期末设计作品，仅供学习与技术交流使用。
+本项目为同济大学《程序设计范式》课程期末设计作品，仅供学习与技术交流使用。
 *   项目中的美术资源（图片、动画）与音频资源版权归 **Supercell** 公司所有。
 *   本项目不用于任何商业用途。
 
